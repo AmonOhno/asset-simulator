@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useFinancialStore } from '../stores/financialStore';
 
 export const JournalEntryList: React.FC = () => {
-  const { journalEntries, accounts, journalAccounts, fetchData } = useFinancialStore();
+  const { journalEntries, journalAccounts, fetchData } = useFinancialStore();
 
   useEffect(() => {
     fetchData();
@@ -10,7 +10,7 @@ export const JournalEntryList: React.FC = () => {
 
   // 勘定科目名を取得する関数
   const getAccountName = (accountId: string) => {
-    const account = accounts.find(acc => acc.id === accountId);
+    const account = journalAccounts.find(acc => acc.id === accountId);
     return account?.name || '不明';
   };
 
