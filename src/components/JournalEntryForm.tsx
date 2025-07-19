@@ -20,6 +20,7 @@ export const JournalEntryForm: React.FC = () => {
     }
 
     addJournalEntry({
+      id: `entry_${crypto.randomUUID()}`, // Generate a unique ID
       date,
       description,
       debitAccountId,

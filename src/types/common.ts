@@ -44,6 +44,7 @@ export interface JournalAccount {
   id: string; 
   name: string; 
   category: AccountCategory;
+  balance: number;
 }
 
 // --- 仕訳データ定義 ---
@@ -61,7 +62,6 @@ export interface JournalEntry {
 }
 
 // --- 財務レポート ---
-
 export interface BalanceSheetItem {
   accountName: string;
   amount: number;

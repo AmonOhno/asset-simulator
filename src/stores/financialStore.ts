@@ -1,5 +1,5 @@
-
 import { create } from 'zustand';
+import { createClient } from '@supabase/supabase-js';
 import {
   Account,
   CreditCard,
@@ -9,6 +9,12 @@ import {
   ProfitAndLossStatement,
   BalanceSheetItem,
 } from '../types/common';
+
+
+const supabase = createClient(
+  process.env.REACT_APP_SUPABASE_URL!,
+  process.env.REACT_APP_SUPABASE_KEY!
+);
 
 const API_URL = 'http://localhost:3001/api';
 
@@ -28,7 +34,7 @@ interface FinancialState {
   addAccount: (account: Omit<Account, 'id'>) => Promise<void>;
   addCreditCard: (card: Omit<CreditCard, 'id'>) => Promise<void>;
   addJournalAccount: (account: Omit<JournalAccount, 'id'>) => Promise<void>;
-  addJournalEntry: (entry: Omit<JournalEntry, 'id'>) => Promise<void>;
+  addJournalEntry: (entry: JournalEntry) => Promise<void>;
   updateAccount: (account: Account) => Promise<void>;
   updateCreditCard: (card: CreditCard) => Promise<void>;
   updateJournalAccount: (account: JournalAccount) => Promise<void>;
@@ -49,25 +55,26 @@ export const useFinancialStore = create<FinancialState>((set, get) => ({
 
   // --- ACTIONS ---
 
+// ...existing code...
+
   fetchData: async () => {
     try {
-      const [accountsRes, creditCardsRes, journalEntriesRes, journalAccountsRes] = await Promise.all([
-        fetch(`${API_URL}/accounts`),
-        fetch(`${API_URL}/credit-cards`),
-        fetch(`${API_URL}/journal-entries`),
-        fetch(`${API_URL}/journal-accounts`),
+      const [
+        { data: accounts },
+        { data: creditCards },
+        { data: journalAccounts },
+        { data: journalEntries }
+      ] = await Promise.all([
+        supabase.from('accounts').select('*'),
+        supabase.from('credit_cards').select('*'),
+        supabase.from('journal_accounts').select('*'),
+        supabase.from('journal_entries').select(`*`)
       ]);
-
-      const accounts = await accountsRes.json();
-      const creditCards = await creditCardsRes.json();
-      const journalEntries = await journalEntriesRes.json();
-      const journalAccounts = await journalAccountsRes.json();
-
-      set({ 
-        accounts, 
-        creditCards, 
-        journalEntries, 
-        journalAccounts
+      set({
+        accounts: accounts || [],
+        creditCards: creditCards || [],
+        journalAccounts: journalAccounts || [],
+        journalEntries: journalEntries || [],
       });
     } catch (error) {
       console.error("Failed to fetch data:", error);
@@ -190,19 +197,24 @@ export const useFinancialStore = create<FinancialState>((set, get) => ({
     }
   },
 
-  addJournalEntry: async (entry) => {
+  addJournalEntry: async (journalEntry) => {
     try {
-      await fetch(`${API_URL}/journal-entries`, {
-        method: 'POST',
+      const response = await fetch(`${API_URL}/journal-entries/${journalEntry.id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...entry, id: `je_${Date.now()}` }),
+        body: JSON.stringify(journalEntry),
       });
-      await get().fetchData(); // データを再取得
+      if (!response.ok) {
+        throw new Error('Failed to update journal entry');
+      }
+      const updatedJournalEntry = await response.json();
+      set((state) => ({
+        journalEntries: state.journalEntries.map((a) => (a.id === updatedJournalEntry.id ? updatedJournalEntry : a)),
+      }));
     } catch (error) {
-      console.error("Failed to add journal entry:", error);
+      console.error("Failed to update journal account:", error);
     }
   },
-
   // --- GETTERS (Calculations) ---
 
   /**
