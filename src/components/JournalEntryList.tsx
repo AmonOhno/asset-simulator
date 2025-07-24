@@ -1,16 +1,17 @@
-
-// src/components/JournalEntryList.tsx
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useFinancialStore } from '../stores/financialStore';
 
 export const JournalEntryList: React.FC = () => {
-  const { journalEntries, journalAccounts } = useFinancialStore();
+  const { journalEntries, journalAccounts, fetchData } = useFinancialStore();
 
-  // IDから勘定科目名を取得するためのヘルパー関数
-  const getAccountName = (id: string) => {
-    const account = journalAccounts.find((acc) => acc.id === id);
-    return account ? account.name : '不明';
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // 勘定科目名を取得する関数
+  const getAccountName = (accountId: string) => {
+    const account = journalAccounts.find(acc => acc.id === accountId);
+    return account?.name || '不明';
   };
 
   return (
