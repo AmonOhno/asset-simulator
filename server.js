@@ -147,7 +147,8 @@ app.get('/api/journal-entries', async (req, res) => {
     console.log('Fetching journal entries...');
     const { data, error } = await supabase
       .from('journal_entries')
-      .select(`*`);
+      .select(`*`)
+      .order('date', { ascending: false });
     
       if (error) throw error;
       res.json(data);
