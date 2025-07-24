@@ -34,20 +34,12 @@ app.get('/api/accounts', async (req, res) => {
 });
 
 app.post('/api/accounts', async (req, res) => {
-  const { name, institution, branchNumber, type, accountNumber, accountHolder } = req.body;
-  if (!name || !institution || !branchNumber || !type || !accountNumber || !accountHolder) {
+  const newAccount = req.body; // req.bodyを直接使用
+  if (!newAccount.name || !newAccount.institution || !newAccount.branch_number || !newAccount.type || !newAccount.account_number || !newAccount.account_holder) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  const newAccount = {
-    id: `acc_${crypto.randomUUID()}`,
-    name,
-    institution,
-    branchNumber,
-    type,
-    accountNumber,
-    accountHolder
-  };
+  newAccount.id = `acc_${crypto.randomUUID()}`;
 
   try {
     // トランザクションは Supabase の RPC 機能を使用して実装
@@ -84,18 +76,12 @@ app.get('/api/credit-cards', async (req, res) => {
 });
 
 app.post('/api/credit-cards', async (req, res) => {
-  const { name, closingDay, paymentDay, linkedAccountId } = req.body;
-  if (!name || !closingDay || !paymentDay || !linkedAccountId) {
+  const newCard = req.body; // req.bodyを直接使用
+  if (!newCard.name || !newCard.closing_day || !newCard.payment_day || !newCard.linked_account_id) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  const newCard = {
-    id: `card_${crypto.randomUUID()}`,
-    name,
-    closingDay,
-    paymentDay,
-    linkedAccountId
-  };
+  newCard.id = `card_${crypto.randomUUID()}`;
 
   try {
     const { data, error } = await supabase.rpc('create_credit_card_with_journal', {
@@ -171,24 +157,160 @@ app.get('/api/journal-entries', async (req, res) => {
     }
   });
 
+app.get('/api/accounts', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('accounts')
+      .select('*');
+    
+    if (error) throw error;
+    res.json(data);
+  } catch (error) {
+    console.error("Error fetching accounts:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/credit-cards', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('credit_cards')
+      .select('*');
+    
+    if (error) throw error;
+    res.json(data);
+  } catch (error) {
+    console.error("Error fetching credit cards:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/journal-accounts', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('journal_accounts')
+      .select('*');
+    
+    if (error) throw error;
+    res.json(data);
+  } catch (error) {
+    console.error("Error fetching journal accounts:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/journal-entries', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('journal_entries')
+      .select(`*`);
+    
+      if (error) throw error;
+      res.json(data);
+    } catch (error) {
+      console.error("Error fetching journal entries:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+app.put('/api/accounts/:id', async (req, res) => {
+    const { id } = req.params;
+    const updatedAccountData = req.body; // req.bodyを直接使用
+
+    try {
+        const { data, error } = await supabase
+            .from('accounts')
+            .update(updatedAccountData)
+            .eq('id', id)
+            .select();
+
+        if (error) throw error;
+        res.json(data[0]);
+    } catch (error) {
+        console.error(`Error updating account ${id}:`, error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.put('/api/credit-cards/:id', async (req, res) => {
+    const { id } = req.params;
+    const updatedCardData = req.body; // req.bodyを直接使用
+
+    try {
+        const { data, error } = await supabase
+            .from('credit_cards')
+            .update(updatedCardData)
+            .eq('id', id)
+            .select();
+
+        if (error) throw error;
+        res.json(data[0]);
+    } catch (error) {
+        console.error(`Error updating credit card ${id}:`, error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.put('/api/journal-accounts/:id', async (req, res) => {
+    const { id } = req.params;
+    const updatedJournalAccountData = req.body; // req.bodyを直接使用
+
+    try {
+        const { data, error } = await supabase
+            .from('journal_accounts')
+            .update(updatedJournalAccountData)
+            .eq('id', id)
+            .select();
+
+        if (error) throw error;
+        res.json(data[0]);
+    } catch (error) {
+        console.error(`Error updating journal account ${id}:`, error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.put('/api/journal-entries/:id', async (req, res) => {
+    const { id } = req.params;
+    const updatedJournalEntryData = req.body; // req.bodyを直接使用
+
+    try {
+        const { data, error } = await supabase
+            .from('journal_entries')
+            .update(updatedJournalEntryData)
+            .eq('id', id)
+            .select();
+
+        if (error) throw error;
+        res.json(data[0]);
+    } catch (error) {
+        console.error(`Error updating journal entry ${id}:`, error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.post('/api/journal-entries', async (req, res) => {
-  const { date, description, debitAccountId, creditAccountId, amount } = req.body;
-  if (!date || !description || !debitAccountId || !creditAccountId || !amount) {
+  const newEntry = req.body; // req.bodyを直接使用
+  if (!newEntry.date || !newEntry.description || !newEntry.debit_account_id || !newEntry.credit_account_id || !newEntry.amount) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  const newEntry = {
-    id: `entry_${crypto.randomUUID()}`,
-    date,
-    description,
-    debitAccountId,  // ストアドプロシージャ内で変換されます
-    creditAccountId, // ストアドプロシージャ内で変換されます
-    amount: parseFloat(amount)
+  newEntry.id = `entry_${crypto.randomUUID()}`;
+  newEntry.amount = parseFloat(newEntry.amount);
+
+  // RPC関数に渡すデータはキャメルケースに変換
+  const rpcEntryData = {
+    id: newEntry.id,
+    date: newEntry.date,
+    description: newEntry.description,
+    debitAccountId: newEntry.debit_account_id, // スネークケースからキャメルケースへ
+    creditAccountId: newEntry.credit_account_id, // スネークケースからキャメルケースへ
+    amount: newEntry.amount
   };
 
   try {
     const { error } = await supabase.rpc('create_journal_entry', {
-      entry_data: newEntry,
+      entry_data: rpcEntryData, // キャメルケースに変換したデータを渡す
       update_balances: true
     });
 

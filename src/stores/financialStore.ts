@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { createClient } from '@supabase/supabase-js';
 import {
   Account,
   CreditCard,
@@ -10,13 +9,37 @@ import {
   BalanceSheetItem,
 } from '../types/common';
 
-
-const supabase = createClient(
-  process.env.REACT_APP_SUPABASE_URL!,
-  process.env.REACT_APP_SUPABASE_KEY!
-);
-
 const API_URL = 'http://localhost:3001/api';
+
+// ヘルパー関数：キャメルケースからスネークケースへ変換
+const toSnakeCase = (obj: any): any => {
+  if (Array.isArray(obj)) {
+    return obj.map(v => toSnakeCase(v));
+  } else if (obj !== null && typeof obj === 'object') {
+    return Object.keys(obj).reduce((acc: { [key: string]: any }, key: string) => {
+      const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+      acc[snakeKey] = toSnakeCase(obj[key]);
+      return acc;
+    }, {});
+  } else {
+    return obj;
+  }
+};
+
+// ヘルパー関数：スネークケースからキャメルケースへ変換
+const toCamelCase = (obj: any): any => {
+  if (Array.isArray(obj)) {
+    return obj.map(v => toCamelCase(v));
+  } else if (obj !== null && typeof obj === 'object') {
+    return Object.keys(obj).reduce((acc: { [key: string]: any }, key: string) => {
+      const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+      acc[camelKey] = toCamelCase(obj[key]);
+      return acc;
+    }, {});
+  } else {
+    return obj;
+  }
+};
 
 // --- ストアの型定義 ---
 
@@ -60,16 +83,22 @@ export const useFinancialStore = create<FinancialState>((set, get) => ({
   fetchData: async () => {
     try {
       const [
-        { data: accounts },
-        { data: creditCards },
-        { data: journalAccounts },
-        { data: journalEntries }
+        accountsResponse,
+        creditCardsResponse,
+        journalAccountsResponse,
+        journalEntriesResponse
       ] = await Promise.all([
-        supabase.from('accounts').select('*'),
-        supabase.from('credit_cards').select('*'),
-        supabase.from('journal_accounts').select('*'),
-        supabase.from('journal_entries').select(`*`)
+        fetch(`${API_URL}/accounts`),
+        fetch(`${API_URL}/credit-cards`),
+        fetch(`${API_URL}/journal-accounts`),
+        fetch(`${API_URL}/journal-entries`)
       ]);
+
+      const accounts = accountsResponse.ok ? toCamelCase(await accountsResponse.json()) : [];
+      const creditCards = creditCardsResponse.ok ? toCamelCase(await creditCardsResponse.json()) : [];
+      const journalAccounts = journalAccountsResponse.ok ? toCamelCase(await journalAccountsResponse.json()) : [];
+      const journalEntries = journalEntriesResponse.ok ? toCamelCase(await journalEntriesResponse.json()) : [];
+
       set({
         accounts: accounts || [],
         creditCards: creditCards || [],
@@ -86,12 +115,12 @@ export const useFinancialStore = create<FinancialState>((set, get) => ({
       const response = await fetch(`${API_URL}/accounts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(account),
+        body: JSON.stringify(toSnakeCase(account)),
       });
       if (!response.ok) {
         throw new Error('Failed to add account');
       }
-      const newAccount = await response.json();
+      const newAccount = toCamelCase(await response.json());
       set((state) => ({
         accounts: [...state.accounts, newAccount],
         journalAccounts: [...state.journalAccounts, { ...newAccount, category: 'Asset' }],
@@ -106,12 +135,12 @@ export const useFinancialStore = create<FinancialState>((set, get) => ({
       const response = await fetch(`${API_URL}/credit-cards`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(card),
+        body: JSON.stringify(toSnakeCase(card)),
       });
       if (!response.ok) {
         throw new Error('Failed to add credit card');
       }
-      const newCard = await response.json();
+      const newCard = toCamelCase(await response.json());
       set((state) => ({
         creditCards: [...state.creditCards, newCard],
         journalAccounts: [...state.journalAccounts, { ...newCard, category: 'Liability' }],
@@ -143,12 +172,12 @@ export const useFinancialStore = create<FinancialState>((set, get) => ({
       const response = await fetch(`${API_URL}/accounts/${account.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(account),
+        body: JSON.stringify(toSnakeCase(account)),
       });
       if (!response.ok) {
         throw new Error('Failed to update account');
       }
-      const updatedAccount = await response.json();
+      const updatedAccount = toCamelCase(await response.json());
       set((state) => ({
         accounts: state.accounts.map((a) => (a.id === updatedAccount.id ? updatedAccount : a)),
         journalAccounts: state.journalAccounts.map((ja) => (ja.id === updatedAccount.id ? { ...ja, name: updatedAccount.name } : ja)),
@@ -163,12 +192,12 @@ export const useFinancialStore = create<FinancialState>((set, get) => ({
       const response = await fetch(`${API_URL}/credit-cards/${card.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(card),
+        body: JSON.stringify(toSnakeCase(card)),
       });
       if (!response.ok) {
         throw new Error('Failed to update credit card');
       }
-      const updatedCard = await response.json();
+      const updatedCard = toCamelCase(await response.json());
       set((state) => ({
         creditCards: state.creditCards.map((c) => (c.id === updatedCard.id ? updatedCard : c)),
         journalAccounts: state.journalAccounts.map((ja) => (ja.id === updatedCard.id ? { ...ja, name: updatedCard.name } : ja)),
@@ -199,20 +228,20 @@ export const useFinancialStore = create<FinancialState>((set, get) => ({
 
   addJournalEntry: async (journalEntry) => {
     try {
-      const response = await fetch(`${API_URL}/journal-entries/${journalEntry.id}`, {
-        method: 'PUT',
+      const response = await fetch(`${API_URL}/journal-entries`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(journalEntry),
+        body: JSON.stringify(toSnakeCase(journalEntry)),
       });
       if (!response.ok) {
-        throw new Error('Failed to update journal entry');
+        throw new Error('Failed to add journal entry');
       }
-      const updatedJournalEntry = await response.json();
-      set((state) => ({
-        journalEntries: state.journalEntries.map((a) => (a.id === updatedJournalEntry.id ? updatedJournalEntry : a)),
+      const newJournalEntry = toCamelCase(await response.json());
+      set((state) => ({ 
+        journalEntries: [...state.journalEntries, newJournalEntry]
       }));
     } catch (error) {
-      console.error("Failed to update journal account:", error);
+      console.error("Failed to add journal entry:", error);
     }
   },
   // --- GETTERS (Calculations) ---
