@@ -158,62 +158,6 @@ app.get('/api/journal-entries', async (req, res) => {
     }
   });
 
-app.get('/api/accounts', async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('accounts')
-      .select('*');
-    
-    if (error) throw error;
-    res.json(data);
-  } catch (error) {
-    console.error("Error fetching accounts:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.get('/api/credit-cards', async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('credit_cards')
-      .select('*');
-    
-    if (error) throw error;
-    res.json(data);
-  } catch (error) {
-    console.error("Error fetching credit cards:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.get('/api/journal-accounts', async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('journal_accounts')
-      .select('*');
-    
-    if (error) throw error;
-    res.json(data);
-  } catch (error) {
-    console.error("Error fetching journal accounts:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.get('/api/journal-entries', async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('journal_entries')
-      .select(`*`);
-    
-      if (error) throw error;
-      res.json(data);
-    } catch (error) {
-      console.error("Error fetching journal entries:", error);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
 app.put('/api/accounts/:id', async (req, res) => {
     const { id } = req.params;
     const updatedAccountData = req.body; // req.bodyを直接使用
