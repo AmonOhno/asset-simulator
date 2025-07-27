@@ -61,6 +61,7 @@ interface FinancialState {
   updateAccount: (account: Account) => Promise<void>;
   updateCreditCard: (card: CreditCard) => Promise<void>;
   updateJournalAccount: (account: JournalAccount) => Promise<void>;
+  updateJournalEntry: (entry: JournalEntry) => Promise<void>;
 
   // Calculation Getters
   calculateBalanceSheet: () => BalanceSheet;
@@ -242,6 +243,27 @@ export const useFinancialStore = create<FinancialState>((set, get) => ({
       }));
     } catch (error) {
       console.error("Failed to add journal entry:", error);
+    }
+  },
+
+  updateJournalEntry: async (journalEntry) => {
+    try {
+      const response = await fetch(`${API_URL}/journal-entries/${journalEntry.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(toSnakeCase(journalEntry)),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update journal entry');
+      }
+      const updatedJournalEntry = toCamelCase(await response.json());
+      set((state) => ({
+        journalEntries: state.journalEntries.map((entry) => 
+          entry.id === updatedJournalEntry.id ? updatedJournalEntry : entry
+        ),
+      }));
+    } catch (error) {
+      console.error("Failed to update journal entry:", error);
     }
   },
   // --- GETTERS (Calculations) ---

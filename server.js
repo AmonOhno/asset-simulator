@@ -158,62 +158,6 @@ app.get('/api/journal-entries', async (req, res) => {
     }
   });
 
-app.get('/api/accounts', async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('accounts')
-      .select('*');
-    
-    if (error) throw error;
-    res.json(data);
-  } catch (error) {
-    console.error("Error fetching accounts:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.get('/api/credit-cards', async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('credit_cards')
-      .select('*');
-    
-    if (error) throw error;
-    res.json(data);
-  } catch (error) {
-    console.error("Error fetching credit cards:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.get('/api/journal-accounts', async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('journal_accounts')
-      .select('*');
-    
-    if (error) throw error;
-    res.json(data);
-  } catch (error) {
-    console.error("Error fetching journal accounts:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.get('/api/journal-entries', async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('journal_entries')
-      .select(`*`);
-    
-      if (error) throw error;
-      res.json(data);
-    } catch (error) {
-      console.error("Error fetching journal entries:", error);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
 app.put('/api/accounts/:id', async (req, res) => {
     const { id } = req.params;
     const updatedAccountData = req.body; // req.bodyを直接使用
@@ -273,15 +217,24 @@ app.put('/api/journal-accounts/:id', async (req, res) => {
 
 app.put('/api/journal-entries/:id', async (req, res) => {
     const { id } = req.params;
-    const updatedJournalEntryData = req.body; // req.bodyを直接使用
+    const entry = req.body;
+    // 必須項目チェック
+    if (!entry.date || !entry.description || !entry.debit_account_id || !entry.credit_account_id || !entry.amount) {
+        return res.status(400).json({ error: "Missing required fields" });
+    }
 
     try {
         const { data, error } = await supabase
             .from('journal_entries')
-            .update(updatedJournalEntryData)
+            .update({
+                date: entry.date,
+                description: entry.description,
+                debit_account_id: entry.debit_account_id,
+                credit_account_id: entry.credit_account_id,
+                amount: parseFloat(entry.amount)
+            })
             .eq('id', id)
             .select();
-
         if (error) throw error;
         res.json(data[0]);
     } catch (error) {
