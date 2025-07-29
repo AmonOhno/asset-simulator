@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { StateCreator } from 'zustand';
 import {
   Account,
   CreditCard,
@@ -70,7 +71,7 @@ interface FinancialState {
 
 // --- Zustandストアの作成 ---
 
-export const useFinancialStore = create<FinancialState>((set, get) => ({
+const financialStore: StateCreator<FinancialState> = (set, get) => ({
   // --- STATE ---
   accounts: [],
   creditCards: [],
@@ -396,4 +397,6 @@ export const useFinancialStore = create<FinancialState>((set, get) => ({
     pl.netIncome = totalRevenue - totalExpense;
     return pl;
   },
-}));
+});
+
+export const useFinancialStore = create<FinancialState>(financialStore);
