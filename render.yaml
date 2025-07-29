@@ -2,7 +2,7 @@ services:
   - type: web
     name: asset-simulator
     env: node
-    buildCommand: npm install && npm run build:prod
+    buildCommand: npm ci && npm run build:prod
     startCommand: npm start
     plan: free
     envVars:
