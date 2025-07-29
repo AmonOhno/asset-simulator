@@ -27,9 +27,15 @@ jobs:
 
     - name: Build web application
       run: npm run build:web
+      env:
+        REACT_APP_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        REACT_APP_SUPABASE_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
     - name: Build server application
       run: npm run build:server
+      env:
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
 
     - name: Deploy to Render
       uses: johnbeynon/render-deploy-action@v0.0.8

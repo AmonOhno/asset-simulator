@@ -12,3 +12,7 @@ services:
         fromSecret: SUPABASE_URL
       - key: SUPABASE_KEY
         fromSecret: SUPABASE_KEY
+      - key: REACT_APP_SUPABASE_URL
+        fromSecret: SUPABASE_URL
+      - key: REACT_APP_SUPABASE_KEY
+        fromSecret: SUPABASE_ANON_KEY
