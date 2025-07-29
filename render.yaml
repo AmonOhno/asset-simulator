@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: asset-simulator
+    env: node
+    buildCommand: npm run build:prod
+    startCommand: npm start
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        fromSecret: SUPABASE_URL
+      - key: SUPABASE_KEY
+        fromSecret: SUPABASE_KEY
