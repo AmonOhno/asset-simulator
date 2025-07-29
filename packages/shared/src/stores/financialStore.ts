@@ -82,7 +82,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
 
 // ...existing code...
 
-  fetchData: async () => {
+  fetchData: async (): Promise<void> => {
     try {
       const [
         accountsResponse,
@@ -112,7 +112,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
     }
   },
 
-  addAccount: async (account) => {
+  addAccount: async (account: Omit<Account, 'id'>): Promise<void> => {
     try {
       const response = await fetch(`${API_URL}/accounts`, {
         method: 'POST',
@@ -123,7 +123,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
         throw new Error('Failed to add account');
       }
       const newAccount = toCamelCase(await response.json());
-      set((state) => ({
+      set((state: FinancialState) => ({
         accounts: [...state.accounts, newAccount],
         journalAccounts: [...state.journalAccounts, { ...newAccount, category: 'Asset' }],
       }));
@@ -132,7 +132,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
     }
   },
 
-  addCreditCard: async (card) => {
+  addCreditCard: async (card: Omit<CreditCard, 'id'>): Promise<void> => {
     try {
       const response = await fetch(`${API_URL}/credit-cards`, {
         method: 'POST',
@@ -152,7 +152,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
     }
   },
 
-  addJournalAccount: async (account) => {
+  addJournalAccount: async (account: Omit<JournalAccount, 'id'>): Promise<void> => {
     try {
       const response = await fetch(`${API_URL}/journal-accounts`, {
         method: 'POST',
@@ -169,7 +169,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
     }
   },
 
-  updateAccount: async (account) => {
+  updateAccount: async (account: Account): Promise<void> => {
     try {
       const response = await fetch(`${API_URL}/accounts/${account.id}`, {
         method: 'PUT',
@@ -189,7 +189,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
     }
   },
 
-  updateCreditCard: async (card) => {
+  updateCreditCard: async (card: CreditCard): Promise<void> => {
     try {
       const response = await fetch(`${API_URL}/credit-cards/${card.id}`, {
         method: 'PUT',
@@ -209,7 +209,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
     }
   },
 
-  updateJournalAccount: async (account) => {
+  updateJournalAccount: async (account: JournalAccount): Promise<void> => {
     try {
       const response = await fetch(`${API_URL}/journal-accounts/${account.id}`, {
         method: 'PUT',
@@ -228,7 +228,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
     }
   },
 
-  addJournalEntry: async (journalEntry) => {
+  addJournalEntry: async (journalEntry: JournalEntry): Promise<void> => {
     try {
       const response = await fetch(`${API_URL}/journal-entries`, {
         method: 'POST',
@@ -247,7 +247,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
     }
   },
 
-  updateJournalEntry: async (journalEntry) => {
+  updateJournalEntry: async (journalEntry: JournalEntry): Promise<void> => {
     try {
       const response = await fetch(`${API_URL}/journal-entries/${journalEntry.id}`, {
         method: 'PUT',
@@ -272,12 +272,12 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
   /**
    * 貸借対照表（BS）を計算
    */
-  calculateBalanceSheet: () => {
+  calculateBalanceSheet: (): BalanceSheet => {
     const { journalEntries, journalAccounts } = get();
     const accountBalances = new Map<string, number>();
 
     // 各勘定科目の残高を計算
-    journalEntries.forEach((entry) => {
+    journalEntries.forEach((entry: JournalEntry) => {
       accountBalances.set(
         entry.debitAccountId,
         (accountBalances.get(entry.debitAccountId) || 0) + entry.amount
@@ -300,7 +300,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
     const pl = get().calculateProfitAndLossStatement();
     const netIncome = pl.netIncome;
 
-    journalAccounts.forEach((account) => {
+    journalAccounts.forEach((account: JournalAccount) => {
       let balance = accountBalances.get(account.id) || 0;
 
       // 利益剰余金に当期純利益を加算
@@ -345,11 +345,11 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
   /**
    * 損益計算書（PL）を計算
    */
-  calculateProfitAndLossStatement: () => {
+  calculateProfitAndLossStatement: (): ProfitAndLossStatement => {
     const { journalEntries, journalAccounts } = get();
     const accountBalances = new Map<string, number>();
 
-    journalEntries.forEach((entry) => {
+    journalEntries.forEach((entry: JournalEntry) => {
       accountBalances.set(
         entry.debitAccountId,
         (accountBalances.get(entry.debitAccountId) || 0) + entry.amount
@@ -369,7 +369,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
     let totalRevenue = 0;
     let totalExpense = 0;
 
-    journalAccounts.forEach((account) => {
+    journalAccounts.forEach((account: JournalAccount) => {
       const balance = accountBalances.get(account.id) || 0;
       if (balance === 0) return;
 
