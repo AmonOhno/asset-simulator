@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import MobileJournalEntry from './components/MobileJournalEntry';
 import MobileJournalList from './components/MobileJournalList';
+import { JournalCalendar } from './components/JournalCalendar';
 import { useFinancialStore } from './shared/stores/financialStore';
 import './mobile.css';
 
 const MobileApp: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'entry' | 'list'>('entry');
+  const [activeTab, setActiveTab] = useState<'entry' | 'list' | 'calendar'>('entry');
   const { fetchData } = useFinancialStore();
 
   useEffect(() => {
@@ -31,11 +32,18 @@ const MobileApp: React.FC = () => {
         >
           仕訳履歴
         </button>
+        <button
+          className={`mobile-nav-btn ${activeTab === 'calendar' ? 'active' : ''}`}
+          onClick={() => setActiveTab('calendar')}
+        >
+          カレンダー
+        </button>
       </nav>
 
       <main className="mobile-main">
         {activeTab === 'entry' && <MobileJournalEntry />}
         {activeTab === 'list' && <MobileJournalList />}
+        {activeTab === 'calendar' && <JournalCalendar />}
       </main>
     </div>
   );

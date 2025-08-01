@@ -7,12 +7,13 @@ import { CreditCardManager } from './components/CreditCardManager';
 import { JournalAccountManager } from './components/JournalAccountManager';
 import { JournalEntryForm } from './components/JournalEntryForm';
 import { JournalEntryList } from './components/JournalEntryList';
+import { JournalCalendar } from './components/JournalCalendar';
 import { BalanceSheetDisplay } from './components/BalanceSheetDisplay';
 import { ProfitAndLossDisplay } from './components/ProfitAndLossDisplay';
 
 import { useFinancialStore } from './shared';
 
-type Tab = 'dashboard' | 'transactions' | 'masters';
+type Tab = 'dashboard' | 'transactions' | 'calendar' | 'masters';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('masters');
@@ -32,6 +33,14 @@ function App() {
             </div>
             <div className="col-lg-7">
               <JournalEntryList />
+            </div>
+          </div>
+        );
+      case 'calendar':
+        return (
+          <div className="row">
+            <div className="col-12">
+              <JournalCalendar />
             </div>
           </div>
         );
@@ -77,6 +86,9 @@ function App() {
         </li>
         <li className="nav-item">
           <button className={`nav-link ${activeTab === 'transactions' ? 'active' : ''}`} onClick={() => setActiveTab('transactions')}>取引入力</button>
+        </li>
+        <li className="nav-item">
+          <button className={`nav-link ${activeTab === 'calendar' ? 'active' : ''}`} onClick={() => setActiveTab('calendar')}>仕訳カレンダー</button>
         </li>
         <li className="nav-item">
           <button className={`nav-link ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>ダッシュボード</button>
