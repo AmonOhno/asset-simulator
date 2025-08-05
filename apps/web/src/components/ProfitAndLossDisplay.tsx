@@ -2,7 +2,7 @@
 // src/components/ProfitAndLossDisplay.tsx
 
 import React from 'react';
-import { useFinancialStore } from '../shared';
+import { useFinancialStore } from '@asset-simulator/shared';
 
 export const ProfitAndLossDisplay: React.FC = () => {
   const { calculateProfitAndLossStatement } = useFinancialStore();

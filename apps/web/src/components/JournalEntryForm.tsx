@@ -1,7 +1,7 @@
 // src/components/JournalEntryForm.tsx
 
 import React, { useState } from 'react';
-import { useFinancialStore } from '../shared';
+import { useFinancialStore } from '@asset-simulator/shared';
 
 export const JournalEntryForm: React.FC = () => {
   const { journalAccounts, addJournalEntry } = useFinancialStore();

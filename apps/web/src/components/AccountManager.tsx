@@ -2,8 +2,8 @@
 // src/components/AccountManager.tsx
 
 import React, { useState } from 'react';
-import { useFinancialStore } from '../shared';
-import { Account } from '../shared';
+import { useFinancialStore } from '@asset-simulator/shared';
+import { Account } from '@asset-simulator/shared';
 
 export const AccountManager: React.FC = () => {
   const { accounts, addAccount, updateAccount } = useFinancialStore();

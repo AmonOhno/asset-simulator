@@ -11,7 +11,7 @@ import { JournalCalendar } from './components/JournalCalendar';
 import { BalanceSheetDisplay } from './components/BalanceSheetDisplay';
 import { ProfitAndLossDisplay } from './components/ProfitAndLossDisplay';
 
-import { useFinancialStore } from './shared';
+import { useFinancialStore } from '@asset-simulator/shared';
 
 type Tab = 'dashboard' | 'transactions' | 'calendar' | 'masters';
 

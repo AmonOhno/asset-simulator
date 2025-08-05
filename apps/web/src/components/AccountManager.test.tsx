@@ -2,7 +2,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { AccountManager } from './AccountManager';
-import { useFinancialStore } from '../shared';
+import { useFinancialStore } from '@asset-simulator/shared';
 
 // Zustandストアをモックします
 jest.mock('../stores/financialStore');

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import MobileJournalEntry from './components/MobileJournalEntry';
 import MobileJournalList from './components/MobileJournalList';
 import { JournalCalendar } from './components/JournalCalendar';
-import { useFinancialStore } from './shared/stores/financialStore';
+import { useFinancialStore } from '@asset-simulator/shared';
 import './mobile.css';
 
 const MobileApp: React.FC = () => {

@@ -2,7 +2,7 @@
 // src/components/BalanceSheetDisplay.tsx
 
 import React from 'react';
-import { useFinancialStore } from '../shared';
+import { useFinancialStore } from '@asset-simulator/shared';
 
 export const BalanceSheetDisplay: React.FC = () => {
   const { calculateBalanceSheet } = useFinancialStore();
