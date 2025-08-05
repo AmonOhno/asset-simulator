@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useFinancialStore } from '../shared';
-import { JournalEntry } from '../shared';
+import { useFinancialStore } from '@asset-simulator/shared';
+import { JournalEntry } from '@asset-simulator/shared';
 
 export const JournalEntryList: React.FC = () => {
   const { journalEntries, journalAccounts, updateJournalEntry, fetchData } = useFinancialStore();

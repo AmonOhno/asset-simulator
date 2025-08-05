@@ -1,5 +1,5 @@
 import React from 'react';
-import { useFinancialStore } from '../shared/stores/financialStore';
+import { useFinancialStore } from '@asset-simulator/shared';
 
 const MobileJournalList: React.FC = () => {
   const { journalEntries, accounts } = useFinancialStore();

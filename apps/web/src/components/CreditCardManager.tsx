@@ -2,8 +2,8 @@
 // src/components/CreditCardManager.tsx
 
 import React, { useState } from 'react';
-import { useFinancialStore } from '../shared';
-import { CreditCard } from '../shared';
+import { useFinancialStore } from '@asset-simulator/shared';
+import { CreditCard } from '@asset-simulator/shared';
 
 export const CreditCardManager: React.FC = () => {
   const { creditCards, addCreditCard, updateCreditCard, accounts } = useFinancialStore();

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { useFinancialStore } from '../shared';
-import { JournalAccount } from '../shared';
+import { useFinancialStore } from '@asset-simulator/shared';
+import { JournalAccount } from '@asset-simulator/shared';
 
 export const JournalAccountManager: React.FC = () => {
   const { journalAccounts, addJournalAccount, updateJournalAccount } = useFinancialStore();
