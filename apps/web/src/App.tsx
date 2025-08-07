@@ -8,12 +8,12 @@ import { JournalAccountManager } from './components/JournalAccountManager';
 import { JournalEntryForm } from './components/JournalEntryForm';
 import { JournalEntryList } from './components/JournalEntryList';
 import { JournalCalendar } from './components/JournalCalendar';
-import { BalanceSheetDisplay } from './components/BalanceSheetDisplay';
-import { ProfitAndLossDisplay } from './components/ProfitAndLossDisplay';
+import { Dashboard } from './components/Dashboard';
+import { RecurringTransactionManager } from './components/RecurringTransactionManager';
 
 import { useFinancialStore } from '@asset-simulator/shared';
 
-type Tab = 'dashboard' | 'transactions' | 'calendar' | 'masters';
+type Tab = 'dashboard' | 'transactions' | 'calendar' | 'masters' | 'recurring';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('masters');
@@ -45,16 +45,9 @@ function App() {
           </div>
         );
       case 'dashboard':
-        return (
-          <div className="row">
-            <div className="col-lg-6 mb-4">
-              <BalanceSheetDisplay />
-            </div>
-            <div className="col-lg-6 mb-4">
-              <ProfitAndLossDisplay />
-            </div>
-          </div>
-        );
+        return <Dashboard />;
+      case 'recurring':
+        return <RecurringTransactionManager />;
       case 'masters':
         return (
           <div className="row">
@@ -89,6 +82,9 @@ function App() {
         </li>
         <li className="nav-item">
           <button className={`nav-link ${activeTab === 'calendar' ? 'active' : ''}`} onClick={() => setActiveTab('calendar')}>仕訳カレンダー</button>
+        </li>
+        <li className="nav-item">
+          <button className={`nav-link ${activeTab === 'recurring' ? 'active' : ''}`} onClick={() => setActiveTab('recurring')}>定期取引</button>
         </li>
         <li className="nav-item">
           <button className={`nav-link ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>ダッシュボード</button>

@@ -65,8 +65,8 @@ interface FinancialState {
   updateJournalEntry: (entry: JournalEntry) => Promise<void>;
 
   // Calculation Getters
-  calculateBalanceSheet: () => BalanceSheet;
-  calculateProfitAndLossStatement: () => ProfitAndLossStatement;
+  calculateBalanceSheet: (asOfDate?: string) => BalanceSheet;
+  calculateProfitAndLossStatement: (startDate?: string, endDate?: string) => ProfitAndLossStatement;
 }
 
 // --- Zustandストアの作成 ---
@@ -272,12 +272,17 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
   /**
    * 貸借対照表（BS）を計算
    */
-  calculateBalanceSheet: (): BalanceSheet => {
+  calculateBalanceSheet: (asOfDate?: string): BalanceSheet => {
     const { journalEntries, journalAccounts } = get();
     const accountBalances = new Map<string, number>();
 
+    // 期間でフィルタリング
+    const filteredEntries = asOfDate 
+      ? journalEntries.filter(entry => entry.date <= asOfDate)
+      : journalEntries;
+
     // 各勘定科目の残高を計算
-    journalEntries.forEach((entry: JournalEntry) => {
+    filteredEntries.forEach((entry: JournalEntry) => {
       accountBalances.set(
         entry.debitAccountId,
         (accountBalances.get(entry.debitAccountId) || 0) + entry.amount
@@ -296,8 +301,10 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
       totalLiabilitiesAndEquity: 0,
     };
 
-    // PLを計算して当期純利益を求める
-    const pl = get().calculateProfitAndLossStatement();
+    // PLを計算して当期純利益を求める（期間指定がある場合は同じ期間で計算）
+    const pl = asOfDate 
+      ? get().calculateProfitAndLossStatement(undefined, asOfDate)
+      : get().calculateProfitAndLossStatement();
     const netIncome = pl.netIncome;
 
     journalAccounts.forEach((account: JournalAccount) => {
@@ -345,11 +352,18 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
   /**
    * 損益計算書（PL）を計算
    */
-  calculateProfitAndLossStatement: (): ProfitAndLossStatement => {
+  calculateProfitAndLossStatement: (startDate?: string, endDate?: string): ProfitAndLossStatement => {
     const { journalEntries, journalAccounts } = get();
     const accountBalances = new Map<string, number>();
 
-    journalEntries.forEach((entry: JournalEntry) => {
+    // 期間でフィルタリング
+    const filteredEntries = journalEntries.filter((entry: JournalEntry) => {
+      if (startDate && entry.date < startDate) return false;
+      if (endDate && entry.date > endDate) return false;
+      return true;
+    });
+
+    filteredEntries.forEach((entry: JournalEntry) => {
       accountBalances.set(
         entry.debitAccountId,
         (accountBalances.get(entry.debitAccountId) || 0) + entry.amount

@@ -1,12 +1,21 @@
 
 // src/components/BalanceSheetDisplay.tsx
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useFinancialStore } from '@asset-simulator/shared';
 
 export const BalanceSheetDisplay: React.FC = () => {
   const { calculateBalanceSheet } = useFinancialStore();
-  const bs = calculateBalanceSheet();
+  
+  // デフォルトは今日の日付
+  const today = new Date().toISOString().split('T')[0];
+  const [asOfDate, setAsOfDate] = useState<string>(today);
+  
+  const bs = calculateBalanceSheet(asOfDate);
+
+  const handleAsOfDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAsOfDate(e.target.value);
+  };
 
   const renderSection = (title: string, items: { accountName: string; amount: number }[]) => (
     <>
@@ -30,7 +39,21 @@ export const BalanceSheetDisplay: React.FC = () => {
 
   return (
     <div className="card h-100">
-      <div className="card-header">貸借対照表 (BS)</div>
+      <div className="card-header">
+        <div className="d-flex justify-content-between align-items-center">
+          <span>貸借対照表 (BS)</span>
+          <div className="d-flex align-items-center gap-2">
+            <label className="form-label mb-0 small">基準日:</label>
+            <input
+              type="date"
+              className="form-control form-control-sm"
+              style={{ width: '140px' }}
+              value={asOfDate}
+              onChange={handleAsOfDateChange}
+            />
+          </div>
+        </div>
+      </div>
       <div className="card-body">
         <table className="table table-sm">
           <tbody>
