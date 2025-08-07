@@ -286,6 +286,45 @@ body {
   }
 }
 
+/* Date Range Picker */
+.mobile-date-range-picker {
+  margin-bottom: 15px;
+}
+
+.mobile-date-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mobile-preset-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: white;
+}
+
+.mobile-date-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-date-input {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.mobile-date-separator {
+  color: #666;
+  font-size: 12px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 375px) {
   .mobile-main {

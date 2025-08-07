@@ -80,3 +80,22 @@ export interface ProfitAndLossStatement {
   expenses: BalanceSheetItem[];
   netIncome: number;
 }
+
+// --- 定期取引リマインド ---
+export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
+
+export interface RecurringTransaction {
+  id: string;
+  name: string; // 取引名（例：「家賃支払い」）
+  description: string; // 仕訳の摘要
+  debitAccountId: string; // 借方勘定科目のID
+  creditAccountId: string; // 貸方勘定科目のID
+  amount: number; // 金額
+  frequency: RecurrenceFrequency; // 頻度
+  startDate: string; // 開始日 (YYYY-MM-DD)
+  endDate?: string; // 終了日 (YYYY-MM-DD) - オプション
+  dayOfMonth?: number; // 月の何日か（月次の場合）
+  dayOfWeek?: number; // 曜日（週次の場合、0=日曜日）
+  isActive: boolean; // アクティブかどうか
+  lastExecuted?: string; // 最後に実行された日付
+}
