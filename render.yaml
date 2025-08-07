@@ -4,7 +4,7 @@ services:
     runtime: node
     region: oregon
     plan: free
-    buildCommand: npm ci && npm run build:prod
+    buildCommand: rm -rf node_modules package-lock.json && npm run clean && npm ci --cache /tmp/empty-cache && npx turbo run build --filter=@asset-simulator/shared --filter=web --filter=server
     startCommand: npm start
     envVars:
       - key: NODE_ENV
