@@ -28,7 +28,7 @@ jobs:
     - name: Login to Render Registry
       uses: docker/login-action@v3
       with:
-        registry: registry.render.com
+        registry: registry.app.render.com
         username: ${{ secrets.RENDER_SERVICE_ID }}
         password: ${{ secrets.RENDER_API_KEY }}
 
@@ -38,7 +38,7 @@ jobs:
         context: .
         push: true
         target: production
-        tags: registry.render.com/${{ secrets.RENDER_SERVICE_ID }}/asset-simulator:latest
+        tags: registry.app.render.com/${{ secrets.RENDER_SERVICE_ID }}/asset-simulator:latest
         build-args: |
           REACT_APP_SUPABASE_URL=${{ secrets.SUPABASE_URL }}
           REACT_APP_SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}
