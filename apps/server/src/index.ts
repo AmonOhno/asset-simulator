@@ -14,18 +14,25 @@ app.use(express.json());
 // --- API Routes ---
 app.use('/api', apiRouter);
 
-// --- Static Files and Frontend Routing for Production ---
-if (process.env.NODE_ENV === 'production') {
-    const webBuildPath = path.resolve(__dirname, '../../../apps/web/build');
-    
-    // 静的ファイルの配信
-    app.use(express.static(webBuildPath));
-    
-    // フロントエンドのルーティングに対応
-    app.get('*', (req, res) => {
-        res.sendFile(path.join(webBuildPath, 'index.html'));
-    });
-}
+// --- Static Files and Frontend Routing ---
+const webBuildPath = path.resolve(__dirname, '../../../apps/web/build');
+const mobileBuildPath = path.resolve(__dirname, '../../../apps/mobile/build');
+
+// Web版の静的ファイル配信（デフォルト）
+app.use(express.static(webBuildPath));
+
+// Mobile版の静的ファイル配信（/mobile パス）
+app.use('/mobile', express.static(mobileBuildPath));
+
+// Mobile版のルーティング
+app.get('/mobile/*', (req, res) => {
+    res.sendFile(path.join(mobileBuildPath, 'index.html'));
+});
+
+// Web版のフロントエンドルーティング（その他すべて）
+app.get('*', (req, res) => {
+    res.sendFile(path.join(webBuildPath, 'index.html'));
+});
 
 // --- Server Startup ---
 app.listen(port, () => {
