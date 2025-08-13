@@ -4,29 +4,22 @@
   "private": true,
   "main": "dist/index.js",
   "scripts": {
-    "dev": "npm run build:apps && nodemon --watch 'src/**/*.ts' --watch '../web/src/**/*' --watch '../mobile/src/**/*' --exec 'npm run build:apps && ts-node' src/index.ts",
-    "build": "npm run build:apps && tsc",
-    "build:apps": "npm run build:web && npm run build:mobile",
-    "build:web": "cd ../web && npm run build",
-    "build:mobile": "cd ../mobile && npm run build",
-    "start": "node dist/index.js",
-    "clean": "rm -rf dist",
-    "lint": "eslint src --ext .ts"
+    "dev": "PORT=3001 nodemon src/index.js",
+    "build": "tsc",
+    "start": "PORT=3001 node dist/index.js",
+    "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@asset-simulator/shared": "*",
     "@supabase/supabase-js": "^2.52.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.0",
-    "express": "^4.19.2",
-    "zustand": "^5.0.6"
+    "express": "^4.19.2"
   },
   "devDependencies": {
     "@types/cors": "^2.8.12",
     "@types/express": "^4.17.17",
     "@types/node": "^16.18.126",
     "nodemon": "^3.0.1",
-    "ts-node": "^10.9.2",
     "typescript": "^4.9.5"
   }
 }

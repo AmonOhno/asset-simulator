@@ -3,11 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "echo 'Use npm run dev from root directory for unified server-driven development' && exit 1",
-    "dev:standalone": "PORT=3000 react-scripts start",
+    "dev": "PORT=3000 react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "lint": "eslint src",
     "clean": "rm -rf build"
   },
   "dependencies": {
