@@ -140,3 +140,8 @@ yarn.lock
 # Local development
 .local
 local/
+
+# Bat script
+*.bat
+*.cmd
+*.sh
