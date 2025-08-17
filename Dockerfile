@@ -75,10 +75,6 @@ COPY packages/shared/tsconfig.json ./packages/shared/
 COPY apps/server/package*.json ./apps/server/
 COPY apps/server/tsconfig.json ./apps/server/
 
-# 本番用依存関係のインストール
-RUN npm install
-RUN npm ci --only=production
-
 # ビルド済みファイルをコピー
 COPY --from=builder /app/apps/server/dist ./apps/server/dist
 COPY --from=builder /app/apps/web/build ./apps/web/build
