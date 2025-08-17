@@ -23,6 +23,7 @@ COPY apps/server/package*.json ./apps/server/
 COPY apps/server/tsconfig.json ./apps/server/
 
 # 依存関係のインストール
+RUN npm install
 RUN npm ci
 
 # ソースコードをコピー
