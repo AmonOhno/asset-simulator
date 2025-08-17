@@ -1,4 +1,4 @@
-# マルチステージビルド: 本番環境とテスト環境両対応
+# マルチステージビルド: 本番環境とテスト環境両対応(ソースビルドは完了している前提)
 FROM node:20-alpine AS base
 
 # 作業ディレクトリの設定
@@ -90,10 +90,10 @@ COPY apps/server/src/config ./apps/server/src/config
 # 環境変数の設定
 ENV NODE_ENV=production
 ENV PORT=3001
-ENV REACT_APP_SUPABASE_URL=${REACT_APP_SUPABASE_URL}
-ENV REACT_APP_SUPABASE_KEY=${REACT_APP_SUPABASE_KEY}
-ENV SUPABASE_URL=${SUPABASE_URL}
-ENV SUPABASE_KEY=${SUPABASE_KEY}
+ENV REACT_APP_SUPABASE_URL=$REACT_APP_SUPABASE_URL
+ENV REACT_APP_SUPABASE_KEY=$REACT_APP_SUPABASE_KEY
+ENV SUPABASE_URL=$SUPABASE_URL
+ENV SUPABASE_KEY=$SUPABASE_KEY
 
 # ヘルスチェック
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
