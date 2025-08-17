@@ -76,6 +76,7 @@ COPY apps/server/package*.json ./apps/server/
 COPY apps/server/tsconfig.json ./apps/server/
 
 # 本番用依存関係のインストール
+RUN npm install
 RUN npm ci --only=production
 
 # ビルド済みファイルをコピー
