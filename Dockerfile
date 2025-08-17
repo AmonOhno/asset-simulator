@@ -31,25 +31,6 @@ COPY packages/ ./packages/
 COPY apps/ ./apps/
 
 # ==================================================
-# 開発/テスト環境ステージ
-# ==================================================
-FROM base AS development
-
-# 環境変数の設定
-ENV NODE_ENV=development
-ENV PORT=3001
-ENV REACT_APP_SUPABASE_URL=${REACT_APP_SUPABASE_URL}
-ENV REACT_APP_SUPABASE_KEY=${REACT_APP_SUPABASE_KEY}
-ENV SUPABASE_URL=${SUPABASE_URL}
-ENV SUPABASE_KEY=${SUPABASE_KEY}
-
-# 開発用ポートを公開
-EXPOSE 3001
-
-# 開発サーバーの起動
-CMD ["npm", "run", "dev"]
-
-# ==================================================
 # ビルドステージ
 # ==================================================
 FROM base AS builder
