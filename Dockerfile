@@ -59,7 +59,7 @@ RUN npm run build
 # ==================================================
 # 本番環境ステージ
 # ==================================================
-FROM node:20-alpine AS production
+FROM builder AS production
 
 WORKDIR /app
 
