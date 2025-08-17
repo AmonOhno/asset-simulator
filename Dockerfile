@@ -59,7 +59,7 @@ RUN npm run build
 # ==================================================
 # 本番環境ステージ
 # ==================================================
-FROM builder AS production
+FROM node:20-alpine AS production
 
 WORKDIR /app
 
@@ -76,7 +76,7 @@ COPY apps/server/package*.json ./apps/server/
 COPY apps/server/tsconfig.json ./apps/server/
 
 # 本番用依存関係のインストール
-RUN npm ci
+RUN npm ci --only=production
 
 # ビルド済みファイルをコピー
 COPY --from=builder /app/apps/server/dist ./apps/server/dist
