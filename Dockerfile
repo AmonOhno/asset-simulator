@@ -57,6 +57,10 @@ COPY packages/shared/tsconfig.json ./packages/shared/
 COPY apps/server/package*.json ./apps/server/
 COPY apps/server/tsconfig.json ./apps/server/
 
+# 本番環境用の依存関係をインストール
+RUN npm install --omit=dev
+RUN npm ci --omit=dev
+
 # ビルド済みファイルをコピー
 COPY --from=builder /app/apps/server/dist ./apps/server/dist
 COPY --from=builder /app/apps/web/build ./apps/web/build
@@ -65,13 +69,9 @@ COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 # 環境設定ファイルをコピー
 COPY apps/server/src/config ./apps/server/src/config
 
-# 環境変数の設定
+# 基本的な環境変数の設定
 ENV NODE_ENV=production
 ENV PORT=3001
-ENV REACT_APP_SUPABASE_URL=$REACT_APP_SUPABASE_URL
-ENV REACT_APP_SUPABASE_KEY=$REACT_APP_SUPABASE_KEY
-ENV SUPABASE_URL=$SUPABASE_URL
-ENV SUPABASE_KEY=$SUPABASE_KEY
 
 # ヘルスチェック
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
@@ -89,4 +89,4 @@ USER appuser
 EXPOSE 3001
 
 # 本番サーバーの起動
-CMD ["npm", "start"]
+CMD ["npm", "run", "start"]
