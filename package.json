@@ -5,7 +5,7 @@
   "packageManager": "npm@10.9.0",
   "workspaces": [
     "apps/*",
-    "packages/shared/*"
+    "packages/*"
   ],
   "scripts": {
     "dev": "npx turbo run dev --filter=server",

@@ -23,7 +23,7 @@ COPY apps/server/package*.json ./apps/server/
 COPY apps/server/tsconfig.json ./apps/server/
 
 # 依存関係のインストール
-RUN npm install
+RUN npm install --include=dev
 RUN npm ci
 
 # ソースコードをコピー
@@ -36,12 +36,12 @@ COPY apps/ ./apps/
 FROM base AS builder
 
 # ビルド実行
-RUN npm run build
+RUN npm run build:prod
 
 # ==================================================
 # 本番環境ステージ
 # ==================================================
-FROM builder AS production
+FROM node:20-alpine AS production
 
 WORKDIR /app
 
@@ -60,7 +60,6 @@ COPY apps/server/tsconfig.json ./apps/server/
 # ビルド済みファイルをコピー
 COPY --from=builder /app/apps/server/dist ./apps/server/dist
 COPY --from=builder /app/apps/web/build ./apps/web/build
-COPY --from=builder /app/apps/mobile/build ./apps/mobile/build
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 
 # 環境設定ファイルをコピー
