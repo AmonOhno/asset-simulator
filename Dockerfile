@@ -23,7 +23,6 @@ COPY apps/server/package*.json ./apps/server/
 COPY apps/server/tsconfig.json ./apps/server/
 
 # 依存関係のインストール
-RUN npm install --include=dev
 RUN npm ci
 
 # ソースコードをコピー
@@ -58,7 +57,6 @@ COPY apps/server/package*.json ./apps/server/
 COPY apps/server/tsconfig.json ./apps/server/
 
 # 本番環境用の依存関係をインストール
-RUN npm install --omit=dev
 RUN npm ci --omit=dev
 
 # ビルド済みファイルをコピー
@@ -72,10 +70,12 @@ COPY apps/server/src/config ./apps/server/src/config
 # 基本的な環境変数の設定
 ENV NODE_ENV=production
 ENV PORT=3001
+ENV SUPABASE_URL=""
+ENV SUPABASE_KEY=""
 
 # ヘルスチェック
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3001/api || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
+  CMD curl -f http://localhost:3001/health || exit 1
 
 # アプリケーション用ユーザーの作成
 RUN addgroup -g 1001 -S nodejs

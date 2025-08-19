@@ -14,6 +14,15 @@ app.use(express.json());
 // --- API Routes ---
 app.use('/api', apiRouter);
 
+// --- Health Check ---
+app.get('/health', (req, res) => {
+    res.status(200).json({ 
+        status: 'OK', 
+        timestamp: new Date().toISOString(),
+        env: process.env.NODE_ENV 
+    });
+});
+
 // --- Static Files and Frontend Routing ---
 const webBuildPath = path.resolve(__dirname, '../../../apps/web/build');
 const mobileBuildPath = path.resolve(__dirname, '../../../apps/mobile/build');
