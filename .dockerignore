@@ -68,5 +68,4 @@ docker-compose.yml
 .travis.yml
 
 # その他
-.eslintcache
 class-diagram.md
