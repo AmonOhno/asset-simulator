@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "PORT=3001 nodemon src/index.js",
     "build": "tsc",
-    "start": "PORT=3001 node dist/index.js",
+    "start": "PORT=3001 NODE_ENV=production node dist/index.js",
     "debug": "PORT=3001 node --inspect dist/index.js",
     "debug:watch": "PORT=3001 nodemon --inspect src/index.js",
     "clean": "rm -rf dist"

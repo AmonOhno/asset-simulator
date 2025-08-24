@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import apiRouter from './routes';
-import './config/environment'; // .envの読み込みを最初に行う
+import './config/supabase'; // Supabaseクライアントの初期化（環境変数の読み込みも含む）
 
 const app = express();
 const port = process.env.PORT || 3001;

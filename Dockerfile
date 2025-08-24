@@ -39,7 +39,7 @@ FROM base AS builder
 COPY packages/ ./packages/
 COPY apps/ ./apps/
 
-# ビルド実行
+# ビルド
 RUN npm run build:prod
 
 # ==================================================
@@ -60,6 +60,9 @@ COPY packages/shared/package*.json ./packages/shared/
 COPY packages/shared/tsconfig.json ./packages/shared/
 COPY apps/server/package*.json ./apps/server/
 COPY apps/server/tsconfig.json ./apps/server/
+COPY apps/web/package*.json ./apps/web/
+COPY apps/web/tsconfig.json ./apps/web/
+COPY .env ./
 
 # 本番環境用の依存関係をインストール
 RUN npm ci --omit=dev
