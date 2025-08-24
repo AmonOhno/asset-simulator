@@ -13,12 +13,12 @@ dist
 build
 .cache
 
-# 環境変数ファイル（本番では別途設定）
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# # 環境変数ファイル（本番では別途設定）
+# .env
+# .env.local
+# .env.development.local
+# .env.test.local
+# .env.production.local
 
 # IDE設定
 .vscode/
@@ -68,4 +68,5 @@ docker-compose.yml
 .travis.yml
 
 # その他
+.eslintcache
 class-diagram.md

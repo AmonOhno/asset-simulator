@@ -1,4 +1,8 @@
-# マルチステージビルド: 本番環境とテスト環境両対応(ソースビルドは完了している前提)
+# マルチステージビルド: 本番環境
+
+# ==================================================
+# 環境構築ステージ
+# ==================================================
 FROM node:20-alpine AS base
 
 # 作業ディレクトリの設定
@@ -25,14 +29,15 @@ COPY apps/server/tsconfig.json ./apps/server/
 # 依存関係のインストール
 RUN npm ci
 
-# ソースコードをコピー
-COPY packages/ ./packages/
-COPY apps/ ./apps/
 
 # ==================================================
 # ビルドステージ
 # ==================================================
 FROM base AS builder
+
+# ソースコードをコピー
+COPY packages/ ./packages/
+COPY apps/ ./apps/
 
 # ビルド実行
 RUN npm run build:prod
@@ -64,14 +69,9 @@ COPY --from=builder /app/apps/server/dist ./apps/server/dist
 COPY --from=builder /app/apps/web/build ./apps/web/build
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 
-# 環境設定ファイルをコピー
-COPY apps/server/src/config ./apps/server/src/config
-
 # 基本的な環境変数の設定
 ENV NODE_ENV=production
 ENV PORT=3001
-ENV SUPABASE_URL=""
-ENV SUPABASE_KEY=""
 
 # ヘルスチェック
 HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
