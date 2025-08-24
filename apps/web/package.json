@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "PORT=3000 react-scripts start",
     "build": "react-scripts build",
-    "start:2": "PORT=3000 serve -s build",
-    "start": "PORT=3000 react-scripts start",
+    "start": "PORT=3000 serve -s build",
+    "start:2": "PORT=3000 react-scripts start",
     "test": "react-scripts test",
     "clean": "rm -rf build"
   },

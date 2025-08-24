@@ -16,6 +16,9 @@ if (process.env.NODE_ENV !== 'production') {
   console.log('Running in production mode - using environment variables only');
 }
 
+export const supabaseUrl = process.env.SUPABASE_URL!;
+export const supabaseKey = process.env.SUPABASE_KEY!;
+
 // 環境変数の状態をログ出力
 console.log('Environment variables status:');
 console.log('Environment:', process.env.NODE_ENV);
