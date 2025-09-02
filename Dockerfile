@@ -60,7 +60,6 @@ COPY apps/server/package*.json ./apps/server/
 COPY apps/server/tsconfig.json ./apps/server/
 COPY apps/web/package*.json ./apps/web/
 COPY apps/web/tsconfig.json ./apps/web/
-# COPY .env ./
 
 # 本番環境用の依存関係をインストール
 RUN npm ci --omit=dev
@@ -71,12 +70,11 @@ COPY --from=builder /app/apps/web/build ./apps/web/build
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 
 # 基本的な環境変数の設定
-# 基本的な環境変数の設定
 ENV NODE_ENV=production
 ENV PORT=3001
-ENV SUPABASE_URL=""
-ENV SUPABASE_KEY=""
-ENV DEFAULT_USER_ID=""
+
+# デプロイ先で必要
+COPY /etc/secrets/.env ./
 
 # ヘルスチェック
 HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
