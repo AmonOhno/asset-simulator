@@ -11,11 +11,12 @@ import {
 } from './types';
 
 // 開発環境と本番環境で異なるAPI URLを使用
-const API_URL = process.env.NODE_ENV === 'production' 
-  ? '/api'  // 本番環境では相対パス（同じポート）
-  : 'http://localhost:3000/api';  // 開発環境では統合ポート
+const API_URL: string =
+  process.env.NODE_ENV !== 'production'
+    ? 'http://localhost:3001/api'
+    : 'https://asset-simulator-7sgj.onrender.com/api';
 
-// ヘルパ�E関数�E�キャメルケースからスネ�Eクケースへ変換
+// ヘルパー関数：キャメルケースからスネークケースへ変換
 const toSnakeCase = (obj: any): any => {
   if (Array.isArray(obj)) {
     return obj.map(v => toSnakeCase(v));

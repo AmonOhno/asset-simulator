@@ -10,7 +10,10 @@ import {
   BalanceSheetItem,
 } from '../types/common';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL: string =
+  process.env.NODE_ENV !== 'production'
+    ? 'http://localhost:3001/api'
+    : 'https://asset-simulator-7sgj.onrender.com/api';
 
 // ヘルパー関数：キャメルケースからスネークケースへ変換
 const toSnakeCase = (obj: any): any => {

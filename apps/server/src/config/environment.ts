@@ -24,7 +24,6 @@ export const defaultUserId = process.env.DEFAULT_USER_ID!;
 // 環境変数の状態をログ出力
 console.log('Environment variables status:');
 console.log('Environment:', process.env.NODE_ENV);
-console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? 'Set ' + process.env.SUPABASE_URL : 'Not Set');
 console.log('SUPABASE_KEY:', process.env.SUPABASE_KEY ? 'Set ' + process.env.SUPABASE_KEY : 'Not Set');
 console.log('DEFAULT_USER_ID:', process.env.DEFAULT_USER_ID ? 'Set ' + process.env.DEFAULT_USER_ID : 'Using fallback');
 
