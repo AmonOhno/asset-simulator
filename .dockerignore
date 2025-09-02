@@ -6,7 +6,6 @@ yarn-error.log*
 
 # ビルド出力
 apps/web/build
-apps/mobile/build
 apps/server/dist
 packages/shared/dist
 dist

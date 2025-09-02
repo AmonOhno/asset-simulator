@@ -25,20 +25,11 @@ app.get('/health', (req, res) => {
 
 // --- Static Files and Frontend Routing ---
 const webBuildPath = path.resolve(__dirname, '../../../apps/web/build');
-const mobileBuildPath = path.resolve(__dirname, '../../../apps/mobile/build');
 
-// Web版の静的ファイル配信（デフォルト）
+// Web版の静的ファイル配信
 app.use(express.static(webBuildPath));
 
-// Mobile版の静的ファイル配信（/mobile パス）
-app.use('/mobile', express.static(mobileBuildPath));
-
-// Mobile版のルーティング
-app.get('/mobile/*', (req, res) => {
-    res.sendFile(path.join(mobileBuildPath, 'index.html'));
-});
-
-// Web版のフロントエンドルーティング（その他すべて）
+// Web版のフロントエンドルーティング
 app.get('*', (req, res) => {
     res.sendFile(path.join(webBuildPath, 'index.html'));
 });
