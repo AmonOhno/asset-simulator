@@ -73,9 +73,6 @@ COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 ENV NODE_ENV=production
 ENV PORT=3001
 
-# デプロイ先で必要
-COPY /etc/secrets/envfile ./
-
 # ヘルスチェック
 HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
   CMD curl -f http://localhost:3001/health || exit 1

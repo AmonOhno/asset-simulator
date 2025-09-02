@@ -1,11 +1,20 @@
 import path from 'path';
 import dotenv from 'dotenv';
 
-const envPath = path.resolve(__dirname, '../../../../.env');
-const result = dotenv.config({ path: envPath });
+if (process.env.NODE_ENV !== 'production') {
+  const envPath = path.resolve(__dirname, '../../../../.env');
+  const result = dotenv.config({ path: envPath });
 
-if (result.error) {
-  console.warn('Warning: Could not load .env file in development');
+  if (result.error) {
+    console.warn('Warning: Could not load .env file in development');
+  }
+} else {
+  const envPath = path.resolve(__dirname, '/etc/secrets/.env');
+  const result = dotenv.config({ path: envPath });
+
+  if (result.error) {
+    console.warn('Warning: Could not load .env file in production');
+  }
 }
 
 export const supabaseUrl = 'https://dfqtsogrhkrayfixnbtz.supabase.co';
