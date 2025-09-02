@@ -5,7 +5,7 @@ import apiRouter from './routes';
 import './config/supabase'; // Supabaseクライアントの初期化（環境変数の読み込みも含む）
 
 const app = express();
-const port = process.env.PORT || 3001;
+const port = 3001;
 
 // --- Middlewares ---
 app.use(cors());

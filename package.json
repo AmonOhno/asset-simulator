@@ -9,11 +9,11 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npx turbo run dev --filter=server",
+    "dev": "npm run dev:server & npm run dev:web",
     "dev:web": "npx turbo run dev --filter=web",
     "dev:server": "npx turbo run dev --filter=server",
     "build": "npx turbo run build",
-    "start": "npx turbo run start",
+    "start": "npm run start:server & npm run start:web",
     "start:web": "npm run start --workspace=web",
     "start:server": "npm run start --workspace=server",
     "test": "npx turbo run test",
