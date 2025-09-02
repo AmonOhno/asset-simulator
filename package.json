@@ -11,13 +11,10 @@
     "dev": "npx turbo run dev --filter=server",
     "dev:web": "npx turbo run dev --filter=web",
     "dev:server": "npx turbo run dev --filter=server",
-    "dev:mobile": "npx turbo run dev --filter=mobile",
     "build": "npx turbo run build",
-    "build:prod": "npx turbo run build --filter=@asset-simulator/shared --filter=web --filter=server",
     "start": "npx turbo run start",
     "start:web": "npm run start --workspace=web",
     "start:server": "npm run start --workspace=server",
-    "start:mobile": "npm run start --workspace=mobile",
     "test": "npx turbo run test",
     "lint": "npx turbo run lint",
     "clean": "npx turbo run clean"

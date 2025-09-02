@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "PORT=3000 react-scripts start",
+    "dev": "cross-env PORT=3000 react-scripts start",
     "build": "react-scripts build",
-    "start": "PORT=3000 serve -s build",
-    "start:2": "PORT=3000 react-scripts start",
+    "start": "cross-env PORT=3000 serve -s build",
+    "start:2": "cross-env PORT=3000 react-scripts start",
     "test": "react-scripts test",
     "clean": "rm -rf build"
   },
@@ -32,6 +32,7 @@
     "@types/jest": "^27.5.2",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "cross-env": "^7.0.3",
     "react-scripts": "^5.0.1",
     "typescript": "^4.9.5"
   },

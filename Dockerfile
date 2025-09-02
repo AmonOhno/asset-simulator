@@ -21,8 +21,6 @@ COPY packages/shared/package*.json ./packages/shared/
 COPY packages/shared/tsconfig.json ./packages/shared/
 COPY apps/web/package*.json ./apps/web/
 COPY apps/web/tsconfig.json ./apps/web/
-COPY apps/mobile/package*.json ./apps/mobile/
-COPY apps/mobile/tsconfig.json ./apps/mobile/
 COPY apps/server/package*.json ./apps/server/
 COPY apps/server/tsconfig.json ./apps/server/
 
@@ -40,7 +38,7 @@ COPY packages/ ./packages/
 COPY apps/ ./apps/
 
 # ビルド
-RUN npm run build:prod
+RUN npm run build
 
 # ==================================================
 # 本番環境ステージ
