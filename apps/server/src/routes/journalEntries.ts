@@ -9,15 +9,21 @@ const router = Router();
 router.get('/', async (req, res) => {
     try {
         console.log('Fetching journal entries...');
+        console.log('Using user_id:', DEFAULT_USER_ID);
         const { data, error } = await supabase
             .from('journal_entries')
             .select(`*`)
             .eq('user_id', DEFAULT_USER_ID)
             .order('date', { ascending: false });
-        if (error) throw error;
+        if (error) {
+            console.error("Supabase error:", error);
+            throw error;
+        }
+        console.log('Journal entries fetched successfully:', data?.length || 0, 'entries');
         res.json(data);
     } catch (error: any) {
         console.error("Error fetching journal entries:", error);
+        console.error("Error details:", JSON.stringify(error, null, 2));
         res.status(500).json({ error: error.message });
     }
 });
