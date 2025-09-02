@@ -100,7 +100,8 @@ export const RecurringTransactionManager: React.FC = () => {
       endDate: editingTransaction.endDate,
       dayOfMonth: editingTransaction.dayOfMonth,
       dayOfWeek: editingTransaction.dayOfWeek,
-      isActive: editingTransaction.isActive !== false
+      isActive: editingTransaction.isActive !== false,
+      user_id: ''
     };
 
     const updated = [...recurringTransactions, newTransaction];
@@ -120,7 +121,8 @@ export const RecurringTransactionManager: React.FC = () => {
       description: transaction.description,
       debitAccountId: transaction.debitAccountId,
       creditAccountId: transaction.creditAccountId,
-      amount: transaction.amount
+      amount: transaction.amount,
+      user_id: ''
     };
 
     try {

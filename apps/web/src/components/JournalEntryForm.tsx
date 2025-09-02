@@ -26,6 +26,7 @@ export const JournalEntryForm: React.FC = () => {
       debitAccountId,
       creditAccountId,
       amount: parseFloat(amount),
+      user_id: ''
     });
 
     // フォームをリセット

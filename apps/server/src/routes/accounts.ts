@@ -1,13 +1,17 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import { supabase } from '../config/supabase';
+import { DEFAULT_USER_ID } from '../config/constants';
 
 const router = Router();
 
 // GET /api/accounts
 router.get('/', async (req, res) => {
     try {
-        const { data, error } = await supabase.from('accounts').select('*');
+        const { data, error } = await supabase
+            .from('accounts')
+            .select('*')
+            .eq('user_id', DEFAULT_USER_ID);
         if (error) throw error;
         res.json(data);
     } catch (error: any) {
@@ -23,13 +27,15 @@ router.post('/', async (req, res) => {
         return res.status(400).json({ error: "Missing required fields" });
     }
     newAccount.id = `acc_${crypto.randomUUID()}`;
+    newAccount.user_id = DEFAULT_USER_ID; // ユーザーIDを追加
     try {
         const { error } = await supabase.rpc('create_account_with_journal', {
             account_data: newAccount,
             journal_account_data: {
                 id: newAccount.id,
                 name: newAccount.name,
-                category: 'Asset'
+                category: 'Asset',
+                user_id: DEFAULT_USER_ID // ユーザーIDを追加
             }
         });
         if (error) throw error;
@@ -49,6 +55,7 @@ router.put('/:id', async (req, res) => {
             .from('accounts')
             .update(updatedAccountData)
             .eq('id', id)
+            .eq('user_id', DEFAULT_USER_ID)
             .select();
         if (error) throw error;
         if (data && data.length > 0) {

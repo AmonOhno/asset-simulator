@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import { supabase } from '../config/supabase';
+import { DEFAULT_USER_ID } from '../config/constants';
 
 const router = Router();
 
@@ -11,6 +12,7 @@ router.get('/', async (req, res) => {
         const { data, error } = await supabase
             .from('journal_entries')
             .select(`*`)
+            .eq('user_id', DEFAULT_USER_ID)
             .order('date', { ascending: false });
         if (error) throw error;
         res.json(data);
@@ -28,6 +30,7 @@ router.post('/', async (req, res) => {
     }
     newEntry.id = `entry_${crypto.randomUUID()}`;
     newEntry.amount = parseFloat(newEntry.amount);
+    newEntry.user_id = DEFAULT_USER_ID; // ユーザーIDを追加
 
     const rpcEntryData = {
         id: newEntry.id,
@@ -35,7 +38,8 @@ router.post('/', async (req, res) => {
         description: newEntry.description,
         debitAccountId: newEntry.debit_account_id,
         creditAccountId: newEntry.credit_account_id,
-        amount: newEntry.amount
+        amount: newEntry.amount,
+        user_id: DEFAULT_USER_ID // ユーザーIDを追加
     };
 
     try {
@@ -69,6 +73,7 @@ router.put('/:id', async (req, res) => {
                 amount: parseFloat(entry.amount)
             })
             .eq('id', id)
+            .eq('user_id', DEFAULT_USER_ID)
             .select();
         if (error) throw error;
         if (data && data.length > 0) {

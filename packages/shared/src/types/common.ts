@@ -15,6 +15,7 @@ export interface Account {
   type: 'savings' | 'checking' | 'investment' | 'other'; // 種別
   accountNumber: string; // 口座番号
   accountHolder: string; // 口座名義人
+  user_id: string; // ユーザーID
 }
 
 /**
@@ -27,6 +28,7 @@ export interface CreditCard {
   closingDay: number; // 締め日 (1-31)
   paymentDay: number; // 支払日 (1-31)
   linkedAccountId: string; // 引落口座のID
+  user_id: string; // ユーザーID
 }
 
 // --- 勘定科目関連 ---
@@ -45,6 +47,7 @@ export interface JournalAccount {
   name: string; 
   category: AccountCategory;
   balance: number;
+  user_id: string; // ユーザーID
 }
 
 // --- 仕訳データ定義 ---
@@ -59,6 +62,7 @@ export interface JournalEntry {
   debitAccountId: string; // 借方勘定科目のID (JournalAccount.id)
   creditAccountId: string; // 貸方勘定科目のID (JournalAccount.id)
   amount: number; // 金額
+  user_id: string; // ユーザーID
 }
 
 // --- 財務レポート ---
@@ -98,4 +102,5 @@ export interface RecurringTransaction {
   dayOfWeek?: number; // 曜日（週次の場合、0=日曜日）
   isActive: boolean; // アクティブかどうか
   lastExecuted?: string; // 最後に実行された日付
+  user_id: string; // ユーザーID
 }

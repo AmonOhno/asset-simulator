@@ -15,7 +15,8 @@ export const AccountManager: React.FC = () => {
     branchNumber: '',
     type: 'savings',
     accountNumber: '',
-    accountHolder: ''
+    accountHolder: '',
+    user_id: ''
   });
 
   const resetForm = () => {
@@ -26,7 +27,8 @@ export const AccountManager: React.FC = () => {
       branchNumber: '',
       type: 'savings',
       accountNumber: '',
-      accountHolder: ''
+      accountHolder: '',
+      user_id: ''
     });
   };
 

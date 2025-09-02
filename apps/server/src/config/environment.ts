@@ -18,10 +18,12 @@ if (process.env.NODE_ENV !== 'production') {
 
 export const supabaseUrl = process.env.SUPABASE_URL!;
 export const supabaseKey = process.env.SUPABASE_KEY!;
+export const defaultUserId = process.env.DEFAULT_USER_ID!;
 
 // 環境変数の状態をログ出力
 console.log('Environment variables status:');
 console.log('Environment:', process.env.NODE_ENV);
 console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? 'Set' : 'Not Set');
 console.log('SUPABASE_KEY:', process.env.SUPABASE_KEY ? 'Set' : 'Not Set');
+console.log('DEFAULT_USER_ID:', process.env.DEFAULT_USER_ID ? 'Set' : 'Using fallback');
 

@@ -1,13 +1,17 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import { supabase } from '../config/supabase';
+import { DEFAULT_USER_ID } from '../config/constants';
 
 const router = Router();
 
 // GET /api/journal-accounts
 router.get('/', async (req, res) => {
     try {
-        const { data, error } = await supabase.from('journal_accounts').select('*');
+        const { data, error } = await supabase
+            .from('journal_accounts')
+            .select('*')
+            .eq('user_id', DEFAULT_USER_ID);
         if (error) throw error;
         res.json(data);
     } catch (error: any) {
@@ -25,7 +29,8 @@ router.post('/', async (req, res) => {
     const newAccount = {
         id: `jacc_${crypto.randomUUID()}`,
         name,
-        category
+        category,
+        user_id: DEFAULT_USER_ID // ユーザーIDを追加
     };
     try {
         const { data, error } = await supabase
@@ -49,6 +54,7 @@ router.put('/:id', async (req, res) => {
             .from('journal_accounts')
             .update(updatedJournalAccountData)
             .eq('id', id)
+            .eq('user_id', DEFAULT_USER_ID)
             .select();
         if (error) throw error;
         if (data && data.length > 0) {

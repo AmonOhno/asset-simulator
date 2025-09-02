@@ -10,14 +10,15 @@ export const JournalAccountManager: React.FC = () => {
   const [currentAccount, setCurrentAccount] = useState<Omit<JournalAccount, 'id'> | JournalAccount>({
     name: '',
     category: 'Expense',
-    balance: 0
+    balance: 0,
+    user_id: ''
   });
 
   const isSystemAccount = (id: string) => id.startsWith('acc_') || id.startsWith('card_');
 
   const resetForm = () => {
     setIsEditing(false);
-    setCurrentAccount({ name: '', category: 'Expense', balance: 0 });
+    setCurrentAccount({ name: '', category: 'Expense', balance: 0, user_id: '' });
   };
 
   const handleEditClick = (account: JournalAccount) => {

@@ -59,6 +59,7 @@ describe('AccountManager', () => {
       institution: '楽天証券',
       type: 'investment',
       initialBalance: 50000,
+      user_id: '',
     });
   });
 });

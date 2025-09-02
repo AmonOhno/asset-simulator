@@ -13,17 +13,19 @@ export const CreditCardManager: React.FC = () => {
     name: '',
     closingDay: 25,
     paymentDay: 10,
-    linkedAccountId: ''
+    linkedAccountId: '',
+    user_id: ''
   });
 
-  const resetForm = () => {
-    setIsEditing(false);
+  const resetCard = () => {
     setCurrentCard({
       name: '',
       closingDay: 25,
       paymentDay: 10,
-      linkedAccountId: ''
+      linkedAccountId: '',
+      user_id: ''
     });
+    setIsEditing(false);
   };
 
   const handleEditClick = (card: CreditCard) => {
@@ -42,7 +44,7 @@ export const CreditCardManager: React.FC = () => {
     } else {
       addCreditCard(currentCard as Omit<CreditCard, 'id'>);
     }
-    resetForm();
+    resetCard();
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -87,7 +89,7 @@ export const CreditCardManager: React.FC = () => {
             </select>
           </div>
           <button type="submit" className="btn btn-primary">{isEditing ? '更新' : '追加'}</button>
-          {isEditing && <button type="button" className="btn btn-secondary ms-2" onClick={resetForm}>キャンセル</button>}
+          {isEditing && <button type="button" className="btn btn-secondary ms-2" onClick={resetCard}>キャンセル</button>}
         </form>
 
         <h5>登録済みカード</h5>

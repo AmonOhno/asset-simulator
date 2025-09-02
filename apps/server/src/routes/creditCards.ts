@@ -1,13 +1,17 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import { supabase } from '../config/supabase';
+import { DEFAULT_USER_ID } from '../config/constants';
 
 const router = Router();
 
 // GET /api/credit-cards
 router.get('/', async (req, res) => {
     try {
-        const { data, error } = await supabase.from('credit_cards').select('*');
+        const { data, error } = await supabase
+            .from('credit_cards')
+            .select('*')
+            .eq('user_id', DEFAULT_USER_ID);
         if (error) throw error;
         res.json(data);
     } catch (error: any) {
@@ -23,13 +27,15 @@ router.post('/', async (req, res) => {
         return res.status(400).json({ error: "Missing required fields" });
     }
     newCard.id = `card_${crypto.randomUUID()}`;
+    newCard.user_id = DEFAULT_USER_ID; // ユーザーIDを追加
     try {
         const { error } = await supabase.rpc('create_credit_card_with_journal', {
             card_data: newCard,
             journal_account_data: {
                 id: newCard.id,
                 name: newCard.name,
-                category: 'Liability'
+                category: 'Liability',
+                user_id: DEFAULT_USER_ID // ユーザーIDを追加
             }
         });
         if (error) throw error;
@@ -49,6 +55,7 @@ router.put('/:id', async (req, res) => {
             .from('credit_cards')
             .update(updatedCardData)
             .eq('id', id)
+            .eq('user_id', DEFAULT_USER_ID)
             .select();
         if (error) throw error;
         if (data && data.length > 0) {
