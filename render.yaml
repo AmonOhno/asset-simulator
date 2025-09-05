@@ -1,9 +1,16 @@
 services:
   - type: web
-    name: asset-simulator
-    runtime: docker
-    region: oregon
+    name: api
     plan: free
-    envVars:
-      - key: NODE_ENV
-        value: production
+    rootDir: ./
+    runtime: node
+    buildCommand: npm run build:server
+    startCommand: npm run start:server
+    autoDeploy: true
+
+  - type: static_site
+    name: web
+    rootDir: ./
+    buildCommand: npm run build:web
+    staticPublishPath: ./apps/web/build
+    autoDeploy: true
