@@ -5,6 +5,7 @@ import {
   CreditCard,
   JournalAccount,
   JournalEntry,
+  RecurringTransaction,
   BalanceSheet,
   ProfitAndLossStatement,
   BalanceSheetItem,
@@ -55,6 +56,9 @@ interface FinancialState {
 
   // Journal Entries
   journalEntries: JournalEntry[];
+  
+  // Regular Journal Entries
+  regularJournalEntries: RecurringTransaction[];
 
   // Actions
   fetchData: () => Promise<void>;
@@ -66,6 +70,12 @@ interface FinancialState {
   updateCreditCard: (card: CreditCard) => Promise<void>;
   updateJournalAccount: (account: JournalAccount) => Promise<void>;
   updateJournalEntry: (entry: JournalEntry) => Promise<void>;
+  
+  // Regular Journal Entry Actions
+  addRegularJournalEntry: (entry: Omit<RecurringTransaction, 'id'>) => Promise<void>;
+  updateRegularJournalEntry: (entry: RecurringTransaction) => Promise<void>;
+  deleteRegularJournalEntry: (id: number) => Promise<void>;
+  executeRegularJournalEntry: (id: number, amount?: number) => Promise<void>;
 
   // Calculation Getters
   calculateBalanceSheet: (asOfDate?: string) => BalanceSheet;
@@ -80,6 +90,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
   creditCards: [],
   journalAccounts: [],
   journalEntries: [],
+  regularJournalEntries: [],
 
   // --- ACTIONS ---
 
@@ -91,24 +102,28 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
         accountsResponse,
         creditCardsResponse,
         journalAccountsResponse,
-        journalEntriesResponse
+        journalEntriesResponse,
+        regularJournalEntriesResponse
       ] = await Promise.all([
         fetch(`${API_URL}/accounts`),
         fetch(`${API_URL}/credit-cards`),
         fetch(`${API_URL}/journal-accounts`),
-        fetch(`${API_URL}/journal-entries`)
+        fetch(`${API_URL}/journal-entries`),
+        fetch(`${API_URL}/regular-journal-entries`)
       ]);
 
       const accounts = accountsResponse.ok ? toCamelCase(await accountsResponse.json()) : [];
       const creditCards = creditCardsResponse.ok ? toCamelCase(await creditCardsResponse.json()) : [];
       const journalAccounts = journalAccountsResponse.ok ? toCamelCase(await journalAccountsResponse.json()) : [];
       const journalEntries = journalEntriesResponse.ok ? toCamelCase(await journalEntriesResponse.json()) : [];
+      const regularJournalEntries = regularJournalEntriesResponse.ok ? toCamelCase(await regularJournalEntriesResponse.json()) : [];
 
       set({
         accounts: accounts || [],
         creditCards: creditCards || [],
         journalAccounts: journalAccounts || [],
         journalEntries: journalEntries || [],
+        regularJournalEntries: regularJournalEntries || [],
       });
     } catch (error) {
       console.error("Failed to fetch data:", error);
@@ -413,6 +428,83 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
 
     pl.netIncome = totalRevenue - totalExpense;
     return pl;
+  },
+
+  // --- REGULAR JOURNAL ENTRY ACTIONS ---
+
+  addRegularJournalEntry: async (entry: Omit<RecurringTransaction, 'id'>): Promise<void> => {
+    try {
+      const response = await fetch(`${API_URL}/regular-journal-entries`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(toSnakeCase(entry)),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to add regular journal entry');
+      }
+      const newEntry = toCamelCase(await response.json());
+      set((state) => ({
+        regularJournalEntries: [...state.regularJournalEntries, newEntry],
+      }));
+    } catch (error) {
+      console.error("Failed to add regular journal entry:", error);
+    }
+  },
+
+  updateRegularJournalEntry: async (entry: RecurringTransaction): Promise<void> => {
+    try {
+      const response = await fetch(`${API_URL}/regular-journal-entries/${entry.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(toSnakeCase(entry)),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update regular journal entry');
+      }
+      const updatedEntry = toCamelCase(await response.json());
+      set((state) => ({
+        regularJournalEntries: state.regularJournalEntries.map(e => 
+          e.id === entry.id ? updatedEntry : e
+        ),
+      }));
+    } catch (error) {
+      console.error("Failed to update regular journal entry:", error);
+    }
+  },
+
+  deleteRegularJournalEntry: async (id: number): Promise<void> => {
+    try {
+      const response = await fetch(`${API_URL}/regular-journal-entries/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete regular journal entry');
+      }
+      set((state) => ({
+        regularJournalEntries: state.regularJournalEntries.filter(e => e.id !== id),
+      }));
+    } catch (error) {
+      console.error("Failed to delete regular journal entry:", error);
+    }
+  },
+
+  executeRegularJournalEntry: async (id: number, amount?: number): Promise<void> => {
+    try {
+      const response = await fetch(`${API_URL}/regular-journal-entries/${id}/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to execute regular journal entry');
+      }
+      
+      // 新しい仕訳エントリと更新された定期取引を取得するため、データを再取得
+      const { fetchData } = get();
+      await fetchData();
+    } catch (error) {
+      console.error("Failed to execute regular journal entry:", error);
+    }
   },
 });
 

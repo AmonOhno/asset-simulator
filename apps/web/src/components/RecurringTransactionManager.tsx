@@ -2,37 +2,39 @@ import React, { useState, useEffect } from 'react';
 import { useFinancialStore, RecurringTransaction, RecurrenceFrequency } from '@asset-simulator/shared';
 
 export const RecurringTransactionManager: React.FC = () => {
-  const { journalAccounts, addJournalEntry } = useFinancialStore();
-  const [recurringTransactions, setRecurringTransactions] = useState<RecurringTransaction[]>([]);
+  const { 
+    journalAccounts, 
+    regularJournalEntries,
+    addRegularJournalEntry,
+    updateRegularJournalEntry,
+    deleteRegularJournalEntry,
+    executeRegularJournalEntry,
+    fetchData
+  } = useFinancialStore();
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<Partial<RecurringTransaction>>({
+  const [editingTransaction, setEditingTransaction] = useState<Partial<RecurringTransaction> | null>(null);
+  const [dynamicAmount, setDynamicAmount] = useState<number | undefined>(undefined);
+  const [formData, setFormData] = useState<Partial<RecurringTransaction>>({
     name: '',
     description: '',
     debitAccountId: '',
     creditAccountId: '',
-    amount: 0,
+    amount: undefined,
     frequency: 'monthly',
     startDate: new Date().toISOString().split('T')[0],
     dayOfMonth: 1,
-    isActive: true
+    activeFlg: true
   });
 
-  // ローカルストレージから定期取引を読み込み
+  // データ読み込み
   useEffect(() => {
-    const saved = localStorage.getItem('recurringTransactions');
-    if (saved) {
-      setRecurringTransactions(JSON.parse(saved));
-    }
-  }, []);
-
-  // ローカルストレージに保存
-  const saveToLocalStorage = (transactions: RecurringTransaction[]) => {
-    localStorage.setItem('recurringTransactions', JSON.stringify(transactions));
-  };
+    fetchData();
+  }, [fetchData]);
 
   // 次の実行予定日を計算
   const getNextExecutionDate = (transaction: RecurringTransaction): Date => {
-    const startDate = new Date(transaction.startDate);
+    const startDate = new Date(transaction.startDate || new Date());
     const today = new Date();
     let nextDate = new Date(startDate);
 
@@ -48,16 +50,16 @@ export const RecurringTransactionManager: React.FC = () => {
         nextDate.setDate(today.getDate() + (daysUntilNext === 0 ? 7 : daysUntilNext));
         break;
       case 'monthly':
-        nextDate = new Date(today.getFullYear(), today.getMonth(), transaction.dayOfMonth || 1);
+        const dayOfMonth = transaction.dayOfMonth || 1;
+        nextDate = new Date(today.getFullYear(), today.getMonth(), dayOfMonth);
         if (nextDate <= today) {
-          nextDate = new Date(today.getFullYear(), today.getMonth() + 1, transaction.dayOfMonth || 1);
+          nextDate.setMonth(nextDate.getMonth() + 1);
         }
         break;
       case 'yearly':
-        nextDate = new Date(startDate);
-        nextDate.setFullYear(today.getFullYear());
+        nextDate = new Date(today.getFullYear(), startDate.getMonth(), startDate.getDate());
         if (nextDate <= today) {
-          nextDate.setFullYear(today.getFullYear() + 1);
+          nextDate.setFullYear(nextDate.getFullYear() + 1);
         }
         break;
     }
@@ -65,372 +67,580 @@ export const RecurringTransactionManager: React.FC = () => {
     return nextDate;
   };
 
-  // 実行予定の取引を取得（今日から7日以内）
-  const getUpcomingTransactions = () => {
+  // 実行可能な取引を取得
+  const getExecutableTransactions = (): RecurringTransaction[] => {
     const today = new Date();
-    const sevenDaysLater = new Date();
-    sevenDaysLater.setDate(today.getDate() + 7);
+    today.setHours(0, 0, 0, 0);
 
-    return recurringTransactions
-      .filter(transaction => transaction.isActive)
-      .map(transaction => ({
-        ...transaction,
-        nextExecutionDate: getNextExecutionDate(transaction)
-      }))
-      .filter(item => item.nextExecutionDate <= sevenDaysLater)
-      .sort((a, b) => a.nextExecutionDate.getTime() - b.nextExecutionDate.getTime());
+    return regularJournalEntries
+      .filter((transaction: RecurringTransaction) => transaction.activeFlg)
+      .filter((transaction: RecurringTransaction) => {
+        const nextExecution = getNextExecutionDate(transaction);
+        nextExecution.setHours(0, 0, 0, 0);
+        return nextExecution <= today;
+      });
   };
 
-  // 定期取引を追加
-  const handleAddTransaction = () => {
-    if (!editingTransaction.name || !editingTransaction.debitAccountId || !editingTransaction.creditAccountId) {
+  // 新規作成または編集開始
+  const startEdit = (transaction?: RecurringTransaction) => {
+    if (transaction) {
+      setEditingTransaction(transaction);
+      setFormData({ ...transaction });
+    } else {
+      setEditingTransaction(null);
+      setFormData({
+        name: '',
+        description: '',
+        debitAccountId: '',
+        creditAccountId: '',
+        amount: undefined,
+        frequency: 'monthly',
+        startDate: new Date().toISOString().split('T')[0],
+        dayOfMonth: 1,
+        activeFlg: true
+      });
+    }
+    setIsModalOpen(true);
+  };
+
+  // 保存
+  const handleSave = async () => {
+    if (!formData.name || !formData.debitAccountId || !formData.creditAccountId) {
       alert('必須項目を入力してください');
       return;
     }
 
-    const newTransaction: RecurringTransaction = {
-      id: `recurring_${Date.now()}`,
-      name: editingTransaction.name || '',
-      description: editingTransaction.description || '',
-      debitAccountId: editingTransaction.debitAccountId || '',
-      creditAccountId: editingTransaction.creditAccountId || '',
-      amount: editingTransaction.amount || 0,
-      frequency: editingTransaction.frequency || 'monthly',
-      startDate: editingTransaction.startDate || new Date().toISOString().split('T')[0],
-      endDate: editingTransaction.endDate,
-      dayOfMonth: editingTransaction.dayOfMonth,
-      dayOfWeek: editingTransaction.dayOfWeek,
-      isActive: editingTransaction.isActive !== false,
-      user_id: ''
-    };
-
-    const updated = [...recurringTransactions, newTransaction];
-    setRecurringTransactions(updated);
-    saveToLocalStorage(updated);
-    setIsModalOpen(false);
-    resetForm();
-  };
-
-  // 定期取引を実行（仕訳を作成）
-  const executeTransaction = async (transaction: RecurringTransaction) => {
-    const today = new Date().toISOString().split('T')[0];
-    
-    const journalEntry = {
-      id: `entry_${Date.now()}`,
-      date: today,
-      description: transaction.description,
-      debitAccountId: transaction.debitAccountId,
-      creditAccountId: transaction.creditAccountId,
-      amount: transaction.amount,
-      user_id: ''
-    };
-
     try {
-      await addJournalEntry(journalEntry);
-      
-      // 最後に実行された日付を更新
-      const updated = recurringTransactions.map(t => 
-        t.id === transaction.id 
-          ? { ...t, lastExecuted: today }
-          : t
-      );
-      setRecurringTransactions(updated);
-      saveToLocalStorage(updated);
-      
-      alert(`「${transaction.name}」の仕訳を作成しました`);
+      if (editingTransaction) {
+        // 更新
+        await updateRegularJournalEntry({
+          ...editingTransaction,
+          ...formData
+        } as RecurringTransaction);
+      } else {
+        // 新規作成
+        await addRegularJournalEntry(formData as Omit<RecurringTransaction, 'id'>);
+      }
+      setIsModalOpen(false);
+      setEditingTransaction(null);
     } catch (error) {
-      alert('仕訳の作成に失敗しました');
+      console.error('定期取引の保存に失敗しました:', error);
+      alert('保存に失敗しました');
     }
   };
 
-  // フォームリセット
-  const resetForm = () => {
-    setEditingTransaction({
-      name: '',
-      description: '',
-      debitAccountId: '',
-      creditAccountId: '',
-      amount: 0,
-      frequency: 'monthly',
-      startDate: new Date().toISOString().split('T')[0],
-      dayOfMonth: 1,
-      isActive: true
-    });
+  // 削除
+  const handleDelete = async (id: number) => {
+    if (window.confirm('この定期取引を削除しますか？')) {
+      try {
+        await deleteRegularJournalEntry(id);
+      } catch (error) {
+        console.error('定期取引の削除に失敗しました:', error);
+        alert('削除に失敗しました');
+      }
+    }
   };
 
-  // 勘定科目名を取得
-  const getAccountName = (accountId: string) => {
-    const account = journalAccounts.find(acc => acc.id === accountId);
-    return account?.name || '不明';
+  // 実行
+  const executeTransaction = async (transaction: RecurringTransaction, amount?: number) => {
+    try {
+      await executeRegularJournalEntry(transaction.id, amount);
+      alert('定期取引を実行しました');
+    } catch (error) {
+      console.error('定期取引の実行に失敗しました:', error);
+      alert('実行に失敗しました');
+    }
   };
-
-  const upcomingTransactions = getUpcomingTransactions();
 
   return (
-    <div className="card">
-      <div className="card-header">
-        <div className="d-flex justify-content-between align-items-center">
-          <h5 className="mb-0">定期取引リマインド</h5>
-          <button 
-            className="btn btn-primary btn-sm"
-            onClick={() => setIsModalOpen(true)}
-          >
-            新規追加
-          </button>
-        </div>
+    <div className="recurring-transaction-manager" style={{
+      padding: '20px'
+    }}>
+      <h2>定期取引管理</h2>
+      
+      <div style={{ marginBottom: '20px' }}>
+        <button 
+          onClick={() => startEdit()} 
+          style={{
+            padding: '8px 16px',
+            backgroundColor: '#2563eb',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          新規定期取引
+        </button>
       </div>
-      <div className="card-body">
-        {/* 実行予定の取引 */}
-        {upcomingTransactions.length > 0 && (
-          <div className="alert alert-info">
-            <h6 className="alert-heading">今後7日間の実行予定</h6>
-            {upcomingTransactions.map(item => (
-              <div key={item.id} className="d-flex justify-content-between align-items-center mb-2">
-                <div>
-                  <strong>{item.name}</strong>
-                  <br />
-                  <small className="text-muted">
-                    {item.nextExecutionDate.toLocaleDateString('ja-JP')} | 
-                    {getAccountName(item.debitAccountId)} → {getAccountName(item.creditAccountId)} | 
-                    ¥{item.amount.toLocaleString()}
-                  </small>
+
+      {/* 実行可能な取引 */}
+      <div style={{
+        marginBottom: '30px',
+        padding: '15px',
+        border: '1px solid #ddd',
+        borderRadius: '8px',
+        backgroundColor: '#f9f9f9'
+      }}>
+        <h3>実行可能な取引</h3>
+        {getExecutableTransactions().length === 0 ? (
+          <p>実行可能な定期取引はありません</p>
+        ) : (
+          <div>
+            {getExecutableTransactions().map((transaction: RecurringTransaction) => (
+              <div key={transaction.id} style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '10px',
+                marginBottom: '10px',
+                background: 'white',
+                borderRadius: '4px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+              }}>
+                <div style={{ flex: 1 }}>
+                  <strong style={{ display: 'block', marginBottom: '4px' }}>
+                    {transaction.name}
+                  </strong>
+                  <span style={{ color: '#666', fontSize: '0.9em', display: 'block', marginBottom: '4px' }}>
+                    {transaction.description}
+                  </span>
+                  <span style={{ fontWeight: 'bold', color: '#2563eb' }}>
+                    {transaction.amount ? `¥${transaction.amount?.toLocaleString()}` : '金額未設定'}
+                  </span>
                 </div>
-                <button 
-                  className="btn btn-success btn-sm"
-                  onClick={() => executeTransaction(item)}
-                >
-                  実行
-                </button>
+                <div>
+                  {!transaction.amount ? (
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <input
+                        type="number"
+                        value={dynamicAmount || ''}
+                        onChange={(e) => setDynamicAmount(Number(e.target.value))}
+                        placeholder="金額を入力"
+                        style={{
+                          width: '120px',
+                          padding: '5px',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px'
+                        }}
+                      />
+                      <button 
+                        onClick={() => executeTransaction(transaction, dynamicAmount)}
+                        disabled={!dynamicAmount}
+                        style={{
+                          padding: '8px 16px',
+                          backgroundColor: dynamicAmount ? '#16a34a' : '#ccc',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: dynamicAmount ? 'pointer' : 'not-allowed'
+                        }}
+                      >
+                        実行
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => executeTransaction(transaction)}
+                      style={{
+                        padding: '8px 16px',
+                        backgroundColor: '#16a34a',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      実行
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
         )}
-
-        {/* 定期取引一覧 */}
-        <table className="table table-sm">
-          <thead>
-            <tr>
-              <th>取引名</th>
-              <th>頻度</th>
-              <th>金額</th>
-              <th>状態</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {recurringTransactions.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="text-center text-muted">
-                  定期取引が登録されていません
-                </td>
-              </tr>
-            ) : (
-              recurringTransactions.map(transaction => (
-                <tr key={transaction.id}>
-                  <td>
-                    <strong>{transaction.name}</strong>
-                    <br />
-                    <small className="text-muted">{transaction.description}</small>
-                  </td>
-                  <td>
-                    {transaction.frequency === 'daily' && '毎日'}
-                    {transaction.frequency === 'weekly' && '毎週'}
-                    {transaction.frequency === 'monthly' && `毎月${transaction.dayOfMonth}日`}
-                    {transaction.frequency === 'yearly' && '毎年'}
-                  </td>
-                  <td>¥{transaction.amount.toLocaleString()}</td>
-                  <td>
-                    <span className={`badge ${transaction.isActive ? 'bg-success' : 'bg-secondary'}`}>
-                      {transaction.isActive ? 'アクティブ' : '停止中'}
-                    </span>
-                  </td>
-                  <td>
-                    <button 
-                      className="btn btn-outline-primary btn-sm me-1"
-                      onClick={() => executeTransaction(transaction)}
-                      disabled={!transaction.isActive}
-                    >
-                      実行
-                    </button>
-                    <button 
-                      className="btn btn-outline-secondary btn-sm"
-                      onClick={() => {
-                        const updated = recurringTransactions.map(t => 
-                          t.id === transaction.id 
-                            ? { ...t, isActive: !t.isActive }
-                            : t
-                        );
-                        setRecurringTransactions(updated);
-                        saveToLocalStorage(updated);
-                      }}
-                    >
-                      {transaction.isActive ? '停止' : '開始'}
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
       </div>
 
-      {/* 新規追加モーダル */}
-      {isModalOpen && (
-        <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <div className="modal-dialog modal-lg">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">定期取引の追加</h5>
-                <button 
-                  type="button" 
-                  className="btn-close" 
-                  onClick={() => setIsModalOpen(false)}
-                ></button>
-              </div>
-              <div className="modal-body">
-                <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label">取引名</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={editingTransaction.name}
-                      onChange={(e) => setEditingTransaction({...editingTransaction, name: e.target.value})}
-                      placeholder="例：家賃支払い"
-                    />
-                  </div>
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label">摘要</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={editingTransaction.description}
-                      onChange={(e) => setEditingTransaction({...editingTransaction, description: e.target.value})}
-                      placeholder="例：事務所家賃"
-                    />
-                  </div>
-                </div>
-                
-                <div className="row">
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label">借方勘定科目</label>
-                    <select
-                      className="form-select"
-                      value={editingTransaction.debitAccountId}
-                      onChange={(e) => setEditingTransaction({...editingTransaction, debitAccountId: e.target.value})}
-                    >
-                      <option value="">選択してください</option>
-                      {journalAccounts.map(account => (
-                        <option key={account.id} value={account.id}>
-                          {account.name} ({account.category})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="col-md-6 mb-3">
-                    <label className="form-label">貸方勘定科目</label>
-                    <select
-                      className="form-select"
-                      value={editingTransaction.creditAccountId}
-                      onChange={(e) => setEditingTransaction({...editingTransaction, creditAccountId: e.target.value})}
-                    >
-                      <option value="">選択してください</option>
-                      {journalAccounts.map(account => (
-                        <option key={account.id} value={account.id}>
-                          {account.name} ({account.category})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+      {/* 全定期取引一覧 */}
+      <div>
+        <h3>定期取引一覧</h3>
+        {regularJournalEntries.length === 0 ? (
+          <p>定期取引が登録されていません</p>
+        ) : (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+            gap: '20px'
+          }}>
+            {regularJournalEntries.map((transaction: RecurringTransaction) => {
+              const debitAccount = journalAccounts.find(acc => acc.id === transaction.debitAccountId);
+              const creditAccount = journalAccounts.find(acc => acc.id === transaction.creditAccountId);
+              const nextExecution = getNextExecutionDate(transaction);
 
-                <div className="row">
-                  <div className="col-md-4 mb-3">
-                    <label className="form-label">金額</label>
-                    <input
-                      type="number"
-                      className="form-control"
-                      value={editingTransaction.amount}
-                      onChange={(e) => setEditingTransaction({...editingTransaction, amount: parseFloat(e.target.value) || 0})}
-                    />
-                  </div>
-                  <div className="col-md-4 mb-3">
-                    <label className="form-label">頻度</label>
-                    <select
-                      className="form-select"
-                      value={editingTransaction.frequency}
-                      onChange={(e) => setEditingTransaction({...editingTransaction, frequency: e.target.value as RecurrenceFrequency})}
-                    >
-                      <option value="daily">毎日</option>
-                      <option value="weekly">毎週</option>
-                      <option value="monthly">毎月</option>
-                      <option value="yearly">毎年</option>
-                    </select>
-                  </div>
-                  <div className="col-md-4 mb-3">
-                    <label className="form-label">開始日</label>
-                    <input
-                      type="date"
-                      className="form-control"
-                      value={editingTransaction.startDate}
-                      onChange={(e) => setEditingTransaction({...editingTransaction, startDate: e.target.value})}
-                    />
-                  </div>
-                </div>
-
-                {editingTransaction.frequency === 'monthly' && (
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">実行日（月の何日）</label>
-                      <input
-                        type="number"
-                        className="form-control"
-                        min="1"
-                        max="31"
-                        value={editingTransaction.dayOfMonth}
-                        onChange={(e) => setEditingTransaction({...editingTransaction, dayOfMonth: parseInt(e.target.value)})}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {editingTransaction.frequency === 'weekly' && (
-                  <div className="row">
-                    <div className="col-md-6 mb-3">
-                      <label className="form-label">曜日</label>
-                      <select
-                        className="form-select"
-                        value={editingTransaction.dayOfWeek}
-                        onChange={(e) => setEditingTransaction({...editingTransaction, dayOfWeek: parseInt(e.target.value)})}
+              return (
+                <div key={transaction.id} style={{
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  padding: '15px',
+                  background: 'white'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    marginBottom: '15px'
+                  }}>
+                    <h4 style={{ margin: 0, flex: 1 }}>{transaction.name}</h4>
+                    <div style={{ display: 'flex', gap: '5px' }}>
+                      <button 
+                        onClick={() => startEdit(transaction)}
+                        style={{
+                          backgroundColor: '#f59e0b',
+                          color: 'white',
+                          padding: '4px 8px',
+                          fontSize: '12px',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer'
+                        }}
                       >
-                        <option value={0}>日曜日</option>
-                        <option value={1}>月曜日</option>
-                        <option value={2}>火曜日</option>
-                        <option value={3}>水曜日</option>
-                        <option value={4}>木曜日</option>
-                        <option value={5}>金曜日</option>
-                        <option value={6}>土曜日</option>
-                      </select>
+                        編集
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(transaction.id)}
+                        style={{
+                          backgroundColor: '#dc2626',
+                          color: 'white',
+                          padding: '4px 8px',
+                          fontSize: '12px',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        削除
+                      </button>
                     </div>
                   </div>
-                )}
+                  
+                  <div>
+                    <p style={{ color: '#666', marginBottom: '10px' }}>{transaction.description}</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ fontWeight: 'bold', color: '#555' }}>借方:</span>
+                        <span>{debitAccount?.name}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ fontWeight: 'bold', color: '#555' }}>貸方:</span>
+                        <span>{creditAccount?.name}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ fontWeight: 'bold', color: '#555' }}>金額:</span>
+                        <span>
+                          {transaction.amount ? `¥${transaction.amount.toLocaleString()}` : '動的金額'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ fontWeight: 'bold', color: '#555' }}>頻度:</span>
+                        <span>{transaction.frequency}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ fontWeight: 'bold', color: '#555' }}>次回実行:</span>
+                        <span>{nextExecution.toLocaleDateString()}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ fontWeight: 'bold', color: '#555' }}>ステータス:</span>
+                        <span style={{
+                          color: transaction.activeFlg ? '#16a34a' : '#dc2626',
+                          fontWeight: 'bold'
+                        }}>
+                          {transaction.activeFlg ? 'アクティブ' : '非アクティブ'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* モーダル */}
+      {isModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '8px',
+            width: '500px',
+            maxHeight: '80vh',
+            overflowY: 'auto'
+          }}>
+            <h3>{editingTransaction ? '定期取引編集' : '新規定期取引'}</h3>
+            
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                取引名 *
+              </label>
+              <input
+                type="text"
+                value={formData.name || ''}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="取引名を入力"
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                説明
+              </label>
+              <textarea
+                value={formData.description || ''}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="説明を入力"
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  boxSizing: 'border-box',
+                  height: '80px',
+                  resize: 'vertical'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                借方勘定 *
+              </label>
+              <select
+                value={formData.debitAccountId || ''}
+                onChange={(e) => setFormData({ ...formData, debitAccountId: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  boxSizing: 'border-box'
+                }}
+              >
+                <option value="">選択してください</option>
+                {journalAccounts.map(account => (
+                  <option key={account.id} value={account.id}>
+                    {account.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                貸方勘定 *
+              </label>
+              <select
+                value={formData.creditAccountId || ''}
+                onChange={(e) => setFormData({ ...formData, creditAccountId: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  boxSizing: 'border-box'
+                }}
+              >
+                <option value="">選択してください</option>
+                {journalAccounts.map(account => (
+                  <option key={account.id} value={account.id}>
+                    {account.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                金額 (0または空白で動的金額)
+              </label>
+              <input
+                type="number"
+                value={formData.amount || ''}
+                onChange={(e) => setFormData({ 
+                  ...formData, 
+                  amount: e.target.value ? Number(e.target.value) : undefined 
+                })}
+                placeholder="金額を入力（0で動的金額）"
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                頻度
+              </label>
+              <select
+                value={formData.frequency || 'monthly'}
+                onChange={(e) => setFormData({ 
+                  ...formData, 
+                  frequency: e.target.value as RecurrenceFrequency 
+                })}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  boxSizing: 'border-box'
+                }}
+              >
+                <option value="daily">毎日</option>
+                <option value="weekly">毎週</option>
+                <option value="monthly">毎月</option>
+                <option value="yearly">毎年</option>
+              </select>
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                開始日
+              </label>
+              <input
+                type="date"
+                value={formData.startDate || ''}
+                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            {formData.frequency === 'monthly' && (
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                  実行日
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="31"
+                  value={formData.dayOfMonth || 1}
+                  onChange={(e) => setFormData({ 
+                    ...formData, 
+                    dayOfMonth: Number(e.target.value) 
+                  })}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    boxSizing: 'border-box'
+                  }}
+                />
               </div>
-              <div className="modal-footer">
-                <button 
-                  type="button" 
-                  className="btn btn-secondary" 
-                  onClick={() => setIsModalOpen(false)}
+            )}
+
+            {formData.frequency === 'weekly' && (
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                  曜日
+                </label>
+                <select
+                  value={formData.dayOfWeek || 0}
+                  onChange={(e) => setFormData({ 
+                    ...formData, 
+                    dayOfWeek: Number(e.target.value) 
+                  })}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    boxSizing: 'border-box'
+                  }}
                 >
-                  キャンセル
-                </button>
-                <button 
-                  type="button" 
-                  className="btn btn-primary" 
-                  onClick={handleAddTransaction}
-                >
-                  追加
-                </button>
+                  <option value={0}>日曜日</option>
+                  <option value={1}>月曜日</option>
+                  <option value={2}>火曜日</option>
+                  <option value={3}>水曜日</option>
+                  <option value={4}>木曜日</option>
+                  <option value={5}>金曜日</option>
+                  <option value={6}>土曜日</option>
+                </select>
               </div>
+            )}
+
+            <div style={{ marginBottom: '15px' }}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={formData.activeFlg !== false}
+                  onChange={(e) => setFormData({ ...formData, activeFlg: e.target.checked })}
+                  style={{ marginRight: '8px' }}
+                />
+                アクティブ
+              </label>
+            </div>
+
+            <div style={{
+              display: 'flex',
+              gap: '10px',
+              justifyContent: 'flex-end',
+              marginTop: '20px'
+            }}>
+              <button 
+                onClick={handleSave}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#2563eb',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                保存
+              </button>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#6b7280',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                キャンセル
+              </button>
             </div>
           </div>
         </div>
@@ -438,3 +648,5 @@ export const RecurringTransactionManager: React.FC = () => {
     </div>
   );
 };
+
+export default RecurringTransactionManager;
