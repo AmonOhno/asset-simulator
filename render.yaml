@@ -1,23 +1,16 @@
 services:
   - type: web
-    name: asset-simulator
+    name: api
     plan: free
-    rootDir: apps/server
+    rootDir: ./
     runtime: node
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
+    buildCommand: npm run build:server
+    startCommand: npm run start:server
     autoDeploy: true
-    buildFilter:
-      paths:
-        - apps/api/**
 
-  - type: web
-    name: asset-simulator-web
-    rootDir: apps/web
-    buildCommand: npm install && npm run build
-    staticPublishPath: build
+  - type: static_site
+    name: web
+    rootDir: ./
+    buildCommand: npm run build:web
+    staticPublishPath: ./apps/web/build
     autoDeploy: true
-    buildFilter:
-      paths:
-        - apps/web/**
-        - packages/shared/**
