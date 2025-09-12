@@ -1,16 +1,17 @@
 services:
   - type: web
-    name: api
+    name: asset-simulator2
     plan: free
     rootDir: ./
     runtime: node
-    buildCommand: npm run build:server
-    startCommand: npm run start:server
+    buildCommand: npm run build
+    startCommand: npm run start
     autoDeploy: true
-
-  - type: static_site
-    name: web
-    rootDir: ./
-    buildCommand: npm run build:web
-    staticPublishPath: ./apps/web/build
-    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: '10001'
+      - key: SUPABASE_KEY
+        value: ${SUPABASE_KEY}
+        
