@@ -5,8 +5,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # ビルド出力
-apps/web/build
-apps/server/dist
+web/build
+server/dist
 packages/shared/dist
 dist
 build
