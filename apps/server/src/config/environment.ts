@@ -2,7 +2,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 
 if (process.env.NODE_ENV !== 'production') {
-  const envPath = path.resolve(__dirname, '../../../.env');
+  const envPath = path.resolve(__dirname, '../../../../.env');
   const result = dotenv.config({ path: envPath });
 
   if (result.error) {
