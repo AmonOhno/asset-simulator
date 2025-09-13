@@ -7,7 +7,6 @@ import {
   JournalEntry,
   BalanceSheet,
   ProfitAndLossStatement,
-  BalanceSheetItem,
 } from './types';
 
 // 開発環境と本番環境で異なるAPI URLを使用

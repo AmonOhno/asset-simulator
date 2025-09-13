@@ -48,11 +48,17 @@ router.post('/', async (req, res) => {
 // PUT /api/journal-accounts/:id
 router.put('/:id', async (req, res) => {
     const { id } = req.params;
-    const updatedJournalAccountData = req.body;
+    const { name, category } = req.body;
+    if (!name || !category) {
+        return res.status(400).json({ error: "Missing required fields" });
+    }
     try {
         const { data, error } = await supabase
             .from('journal_accounts')
-            .update(updatedJournalAccountData)
+            .update({
+                name: name,
+                category: category
+            })
             .eq('id', id)
             .eq('user_id', DEFAULT_USER_ID)
             .select();
