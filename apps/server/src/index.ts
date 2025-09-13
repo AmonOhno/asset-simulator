@@ -23,17 +23,6 @@ app.get('/health', (req, res) => {
     });
 });
 
-// --- Static Files and Frontend Routing ---
-const webBuildPath = path.resolve(__dirname, '../../../apps/web/build');
-
-// Web版の静的ファイル配信
-app.use(express.static(webBuildPath));
-
-// Web版のフロントエンドルーティング
-app.get('*', (req, res) => {
-    res.sendFile(path.join(webBuildPath, 'index.html'));
-});
-
 // --- Server Startup ---
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
