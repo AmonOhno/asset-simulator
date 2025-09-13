@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import path from 'path';
 import apiRouter from './routes';
 import './config/supabase'; // Supabaseクライアントの初期化（環境変数の読み込みも含む）
 

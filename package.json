@@ -4,9 +4,9 @@
   "private": true,
   "packageManager": "npm@10.9.0",
   "workspaces": [
-    "apps/web",
-    "apps/server",
-    "packages/*"
+    "web",
+    "server",
+    "packages"
   ],
   "scripts": {
     "dev": "npm run dev:server & npm run dev:web",
