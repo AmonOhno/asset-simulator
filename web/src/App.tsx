@@ -16,7 +16,7 @@ import { useFinancialStore } from '@asset-simulator/shared';
 type Tab = 'dashboard' | 'transactions' | 'calendar' | 'masters' | 'recurring';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<Tab>('masters');
+  const [activeTab, setActiveTab] = useState<Tab>('transactions');
   const fetchData = useFinancialStore((state) => state.fetchData);
 
   useEffect(() => {
@@ -75,19 +75,19 @@ function App() {
 
       <ul className="nav nav-tabs mb-3">
         <li className="nav-item">
-          <button className={`nav-link ${activeTab === 'masters' ? 'active' : ''}`} onClick={() => setActiveTab('masters')}>マスタ管理</button>
-        </li>
-        <li className="nav-item">
           <button className={`nav-link ${activeTab === 'transactions' ? 'active' : ''}`} onClick={() => setActiveTab('transactions')}>取引入力</button>
         </li>
         <li className="nav-item">
-          <button className={`nav-link ${activeTab === 'calendar' ? 'active' : ''}`} onClick={() => setActiveTab('calendar')}>仕訳カレンダー</button>
+          <button className={`nav-link ${activeTab === 'calendar' ? 'active' : ''}`} onClick={() => setActiveTab('calendar')}>カレンダー</button>
+        </li>
+        <li className="nav-item">
+          <button className={`nav-link ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>ダッシュボード</button>
         </li>
         <li className="nav-item">
           <button className={`nav-link ${activeTab === 'recurring' ? 'active' : ''}`} onClick={() => setActiveTab('recurring')}>定期取引</button>
         </li>
         <li className="nav-item">
-          <button className={`nav-link ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>ダッシュボード</button>
+          <button className={`nav-link ${activeTab === 'masters' ? 'active' : ''}`} onClick={() => setActiveTab('masters')}>マスタ管理</button>
         </li>
       </ul>
 
