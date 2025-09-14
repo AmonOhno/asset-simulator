@@ -17,9 +17,6 @@ packages/*/node_modules
 /build
 **/build
 **/dist
-apps/*/build
-apps/*/dist
-packages/*/dist
 
 # environment variables
 .env

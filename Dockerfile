@@ -19,10 +19,10 @@ COPY tsconfig.json ./
 # ワークスペースの設定ファイルをコピー
 COPY packages/shared/package*.json ./packages/shared/
 COPY packages/shared/tsconfig.json ./packages/shared/
-COPY apps/web/package*.json ./apps/web/
-COPY apps/web/tsconfig.json ./apps/web/
-COPY apps/server/package*.json ./apps/server/
-COPY apps/server/tsconfig.json ./apps/server/
+COPY web/package*.json ./web/
+COPY web/tsconfig.json ./web/
+COPY server/package*.json ./server/
+COPY server/tsconfig.json ./server/
 
 # 依存関係のインストール
 RUN npm ci
@@ -56,17 +56,17 @@ COPY turbo.json ./
 COPY tsconfig.json ./
 COPY packages/shared/package*.json ./packages/shared/
 COPY packages/shared/tsconfig.json ./packages/shared/
-COPY apps/server/package*.json ./apps/server/
-COPY apps/server/tsconfig.json ./apps/server/
-COPY apps/web/package*.json ./apps/web/
-COPY apps/web/tsconfig.json ./apps/web/
+COPY server/package*.json ./server/
+COPY server/tsconfig.json ./server/
+COPY web/package*.json ./web/
+COPY web/tsconfig.json ./web/
 
 # 本番環境用の依存関係をインストール
 RUN npm ci --omit=dev
 
 # ビルド済みファイルをコピー
-COPY --from=builder /app/apps/server/dist ./apps/server/dist
-COPY --from=builder /app/apps/web/build ./apps/web/build
+COPY --from=builder /app/server/dist ./server/dist
+COPY --from=builder /app/web/build ./web/build
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 
 # 基本的な環境変数の設定
