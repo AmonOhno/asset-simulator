@@ -1,15 +1,16 @@
 // src/App.tsx
 
 import React, { useState, useEffect } from 'react';
-import { AccountManager } from './components/AccountManager';
-import { CreditCardManager } from './components/CreditCardManager';
+import './App.css';
+import { AccountManager } from './components/journal/AccountManager';
+import { CreditCardManager } from './components/journal/CreditCardManager';
 
-import { JournalAccountManager } from './components/JournalAccountManager';
-import { JournalEntryForm } from './components/JournalEntryForm';
-import { JournalEntryList } from './components/JournalEntryList';
-import { JournalCalendar } from './components/JournalCalendar';
-import { Dashboard } from './components/Dashboard';
-import { RecurringTransactionManager } from './components/RecurringTransactionManager';
+import { JournalAccountManager } from './components/journal/JournalAccountManager';
+import { JournalEntryForm } from './components/journal/JournalEntryForm';
+import { JournalEntryList } from './components/journal/JournalEntryList';
+import { JournalCalendar } from './components/journal/JournalCalendar';
+import { Dashboard } from './components/journal/Dashboard';
+import { RecurringTransactionManager } from './components/journal/RecurringTransactionManager';
 
 import { useFinancialStore } from '@asset-simulator/shared';
 

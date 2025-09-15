@@ -2,8 +2,10 @@
 import React, { useState } from 'react';
 import { useFinancialStore } from '@asset-simulator/shared';
 import { JournalAccount } from '@asset-simulator/shared';
+import { useScrollToTop } from '../../hooks/useScrollToTop';
 
 export const JournalAccountManager: React.FC = () => {
+  const scrollToTop = useScrollToTop('.card-body');
   const { journalAccounts, addJournalAccount, updateJournalAccount } = useFinancialStore();
   
   const [isEditing, setIsEditing] = useState(false);
@@ -24,6 +26,7 @@ export const JournalAccountManager: React.FC = () => {
   const handleEditClick = (account: JournalAccount) => {
     setIsEditing(true);
     setCurrentAccount(account);
+    scrollToTop();
   };
 
   const handleSubmit = (e: React.FormEvent) => {

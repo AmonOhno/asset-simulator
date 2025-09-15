@@ -96,7 +96,7 @@ export const JournalEntryList: React.FC = () => {
   };
 
   return (
-    <div className="card mt-4">
+    <div className="card">
       <div className="card-header">
         <div className="d-flex justify-content-between align-items-center">
           <span>仕訳帳</span>
@@ -126,7 +126,7 @@ export const JournalEntryList: React.FC = () => {
           </div>
         </div>
       </div>
-      <div className="card-body">
+      <div className="card-body card-body-scrollable">
         {/* フィルタ設定 */}
         <div className="mb-3">
           <div className="row">

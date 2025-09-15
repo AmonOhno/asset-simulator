@@ -4,8 +4,10 @@
 import React, { useState } from 'react';
 import { useFinancialStore } from '@asset-simulator/shared';
 import { Account } from '@asset-simulator/shared';
+import { useScrollToTop } from '../../hooks/useScrollToTop';
 
 export const AccountManager: React.FC = () => {
+  const scrollToTop = useScrollToTop('.card-body');
   const { accounts, addAccount, updateAccount } = useFinancialStore();
   
   const [isEditing, setIsEditing] = useState(false);
@@ -35,6 +37,7 @@ export const AccountManager: React.FC = () => {
   const handleEditClick = (account: Account) => {
     setIsEditing(true);
     setCurrentAccount(account);
+    scrollToTop();
   };
 
   const handleSubmit = (e: React.FormEvent) => {

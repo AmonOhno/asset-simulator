@@ -417,8 +417,8 @@ export const JournalCalendar: React.FC = () => {
       `}</style>
       
       <div className="calendar-header">
-        <h2>📅 仕訳カレンダー</h2>
-        <p>カレンダーから日付を選択して、その日の仕訳データを確認できます。</p>
+        <h2>📅 カレンダー</h2>
+        <p>カレンダーから日付を選択して、その日のスケジュール及び仕訳データを確認できます。</p>
       </div>
       
       <div className="calendar-wrapper">
@@ -440,12 +440,12 @@ export const JournalCalendar: React.FC = () => {
                 month: 'long',
                 day: 'numeric',
                 weekday: 'long'
-              })} の仕訳
+              })} 
             </div>
             
             {selectedDateEntries.length === 0 ? (
               <div className="no-entries">
-                この日は仕訳データがありません
+                この日はスケジュール／仕訳データがありません
               </div>
             ) : (
               <div className="entries-list">

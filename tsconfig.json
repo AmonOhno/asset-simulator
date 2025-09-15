@@ -22,7 +22,7 @@
   "include": [
     "**/*.ts",
     "**/*.tsx"
-  ],
+, "web/src/components/hooks/useScrollToTop"  ],
   "exclude": [
     "node_modules",
     "dist",
