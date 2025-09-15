@@ -54,7 +54,7 @@ export const BalanceSheetDisplay: React.FC = () => {
           </div>
         </div>
       </div>
-      <div className="card-body">
+      <div className="card-body card-body-scrollable">
         <table className="table table-sm">
           <tbody>
             {renderSection('資産', bs.assets)}

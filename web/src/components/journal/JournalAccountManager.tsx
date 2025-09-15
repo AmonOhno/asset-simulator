@@ -5,7 +5,7 @@ import { JournalAccount } from '@asset-simulator/shared';
 import { useScrollToTop } from '../../hooks/useScrollToTop';
 
 export const JournalAccountManager: React.FC = () => {
-  const scrollToTop = useScrollToTop('.card-body');
+  const scrollToTop = useScrollToTop('journal-account-manager');
   const { journalAccounts, addJournalAccount, updateJournalAccount } = useFinancialStore();
   
   const [isEditing, setIsEditing] = useState(false);
@@ -45,9 +45,9 @@ export const JournalAccountManager: React.FC = () => {
   };
 
   return (
-    <div className="card">
+    <div id="journal-account-manager" className="card">
       <div className="card-header">勘定科目マスタ管理</div>
-      <div className="card-body">
+      <div className="card-body card-body-scrollable">
         <h5>{isEditing ? '勘定科目を編集' : '新しい勘定科目を追加'}</h5>
         <form onSubmit={handleSubmit} className="mb-4">
           <div className="mb-3">
