@@ -142,3 +142,6 @@ local/
 *.bat
 *.cmd
 *.sh
+
+# Libruary files
+docs/lib

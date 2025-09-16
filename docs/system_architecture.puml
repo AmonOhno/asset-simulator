@@ -1,0 +1,145 @@
+@startuml System Architecture
+!theme plain
+
+title Asset Simulator - System Architecture Overview
+
+' --- Frontend Layer ---
+package "Frontend Layer" {
+  component [Web Application] as WebApp
+  
+  package "UI Components" {
+    component [App] as MainApp
+    component [Dashboard] as DashComp
+    component [Account Manager] as AccMgr
+    component [Credit Card Manager] as CCMgr
+    component [Journal Entry Form] as JEForm
+    component [Journal Entry List] as JEList
+    component [Calendar View] as CalView
+    component [Reports] as Reports
+  }
+}
+
+' --- State Management ---
+package "State Management" {
+  component [Zustand Store] as Store
+}
+
+' --- Shared Package ---
+package "Shared Package" {
+  component [Type Definitions] as Types
+  component [Financial Store] as FinStore
+}
+
+' --- API Layer ---
+package "API Layer" {
+  component [Main API Server] as APIMain
+  
+  package "Route Handlers" {
+    component [accounts] as AccAPI
+    component [credit-cards] as CCAPI
+    component [journal-accounts] as JAAPI
+    component [journal-entries] as JEAPI
+    component [regular-journal-entries] as RJEAPI
+  }
+  
+  package "Configuration" {
+    component [Supabase Client] as SupaClient
+    component [Environment Variables] as EnvVars
+    component [Constants] as Consts
+  }
+}
+
+' --- Database Layer ---
+package "Database Layer" {
+  database "PostgreSQL" {
+    folder "Tables" {
+      [accounts] as AccTable
+      [credit_cards] as CCTable
+      [journal_accounts] as JATable
+      [journal_entries] as JETable
+      [regular_journal_entries] as RJETable
+    }
+  }
+  
+  component [Row Level Security] as RLS
+  component [Database Functions] as DBFuncs
+}
+
+' --- External Services ---
+cloud "Cloudflare Workers" as CFWorkers
+cloud "Supabase Cloud" as SupaCloud
+
+' --- Relationships ---
+' Frontend connections
+WebApp --> Store
+MainApp --> AccMgr
+MainApp --> CCMgr
+MainApp --> JEForm
+MainApp --> JEList
+MainApp --> DashComp
+MainApp --> CalView
+MainApp --> Reports
+
+' Store connections
+Store --> FinStore
+FinStore --> Types
+FinStore --> APIMain
+
+' API connections
+APIMain --> AccAPI
+APIMain --> CCAPI
+APIMain --> JAAPI
+APIMain --> JEAPI
+APIMain --> RJEAPI
+
+AccAPI --> SupaClient
+CCAPI --> SupaClient
+JAAPI --> SupaClient
+JEAPI --> SupaClient
+RJEAPI --> SupaClient
+
+SupaClient --> EnvVars
+SupaClient --> Consts
+
+' Database connections
+SupaClient --> AccTable
+SupaClient --> CCTable
+SupaClient --> JATable
+SupaClient --> JETable
+SupaClient --> RJETable
+
+AccTable --> RLS
+CCTable --> RLS
+JATable --> RLS
+JETable --> RLS
+RJETable --> RLS
+
+' Infrastructure
+APIMain --> CFWorkers
+SupaClient --> SupaCloud
+
+note top of WebApp
+  React + TypeScript
+  Bootstrap CSS
+  Responsive Design
+end note
+
+note top of Store
+  Zustand Store
+  Global State Management
+  API Integration
+end note
+
+note top of APIMain
+  Hono Framework
+  Cloudflare Workers
+  RESTful API
+end note
+
+note top of AccTable
+  Multi-tenant Design
+  user_id filtering
+  Data Integrity
+end note
+
+@enduml

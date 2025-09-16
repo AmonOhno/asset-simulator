@@ -1,0 +1,164 @@
+@startuml Database ER Diagram
+!theme plain
+
+title Asset Simulator - Database Entity Relationship Diagram
+
+' --- Entities ---
+entity "accounts" as accounts {
+  * id : string <<PK>>
+  --
+  * name : string
+  * institution : string
+  * branch_number : string
+  * type : string
+  * account_number : string
+  * account_holder : string
+  * user_id : string <<FK>>
+  --
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+entity "credit_cards" as credit_cards {
+  * id : string <<PK>>
+  --
+  * name : string
+  * closing_day : integer
+  * payment_day : integer
+  * linked_account_id : string <<FK>>
+  * user_id : string <<FK>>
+  --
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+entity "journal_accounts" as journal_accounts {
+  * id : string <<PK>>
+  --
+  * name : string
+  * category : string
+  * balance : numeric
+  * user_id : string <<FK>>
+  --
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+entity "journal_entries" as journal_entries {
+  * id : string <<PK>>
+  --
+  * date : date
+  * description : string
+  * debit_account_id : string <<FK>>
+  * credit_account_id : string <<FK>>
+  * amount : numeric
+  * user_id : string <<FK>>
+  --
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+entity "regular_journal_entries" as regular_journal_entries {
+  * id : bigint <<PK>>
+  --
+  * name : string
+  description : string
+  * debit_account_id : string <<FK>>
+  * credit_account_id : string <<FK>>
+  amount : numeric
+  * frequency : string
+  start_date : date
+  end_date : date
+  day_of_month : integer
+  day_of_week : integer
+  active_flg : boolean
+  last_exec_date : date
+  * user_id : string <<FK>>
+  --
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+entity "users" as users {
+  * id : string <<PK>>
+  --
+  * email : string
+  * name : string
+  --
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+' --- Relationships ---
+users ||--o{ accounts : "user_id"
+users ||--o{ credit_cards : "user_id"
+users ||--o{ journal_accounts : "user_id"
+users ||--o{ journal_entries : "user_id"
+users ||--o{ regular_journal_entries : "user_id"
+
+accounts ||--o| credit_cards : "linked_account_id"
+
+journal_accounts ||--o{ journal_entries : "debit_account_id"
+journal_accounts ||--o{ journal_entries : "credit_account_id"
+
+journal_accounts ||--o{ regular_journal_entries : "debit_account_id"
+journal_accounts ||--o{ regular_journal_entries : "credit_account_id"
+
+' --- Notes ---
+note top of users
+  User table manages
+  multi-tenancy.
+  All other tables
+  include user_id for
+  row-level security.
+end note
+
+note right of journal_entries
+  Core transaction table.
+  Each entry has both
+  debit and credit sides
+  following double-entry
+  bookkeeping principles.
+end note
+
+note bottom of regular_journal_entries
+  Template for recurring
+  transactions like rent,
+  salary, subscriptions.
+  Can be executed to create
+  journal_entries.
+end note
+
+note left of journal_accounts
+  Chart of accounts.
+  Categories: Asset,
+  Liability, Equity,
+  Revenue, Expense.
+  Balance is calculated
+  from journal_entries.
+end note
+
+' --- Categories ---
+package "Account Categories" {
+  enum AccountCategory {
+    Asset
+    Liability
+    Equity
+    Revenue
+    Expense
+  }
+}
+
+package "Frequency Types" {
+  enum RecurrenceFrequency {
+    daily
+    weekly
+    monthly
+    yearly
+  }
+}
+
+journal_accounts --> AccountCategory
+regular_journal_entries --> RecurrenceFrequency
+
+@enduml
