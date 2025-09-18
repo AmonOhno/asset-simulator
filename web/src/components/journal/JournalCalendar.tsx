@@ -8,13 +8,13 @@ import type { JournalEntry } from '@asset-simulator/shared';
 type CalendarTileProps = TileArgs;
 
 export const JournalCalendar: React.FC = () => {
-  const { journalEntries, journalAccounts, fetchData } = useFinancialStore();
+  const { journalEntries, journalAccounts, fetchFinancial } = useFinancialStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedDateEntries, setSelectedDateEntries] = useState<JournalEntry[]>([]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchFinancial();
+  }, [fetchFinancial]);
 
   // 日付を文字列形式に変換（YYYY-MM-DD）- 時差問題を回避
   const formatDateToString = (date: Date): string => {

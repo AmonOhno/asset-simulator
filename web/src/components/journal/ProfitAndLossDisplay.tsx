@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import { useFinancialStore } from '@asset-simulator/shared';
-import { DateRangePicker, DateRange } from './DateRangePicker';
+import { DateRangePicker, DateRange } from '../common/DateRangePicker';
 
 export const ProfitAndLossDisplay: React.FC = () => {
   const { calculateProfitAndLossStatement } = useFinancialStore();

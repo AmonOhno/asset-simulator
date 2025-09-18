@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useFinancialStore } from '@asset-simulator/shared';
-import { DateRangePicker, DateRange } from './DateRangePicker';
+import { DateRangePicker, DateRange } from '../common/DateRangePicker';
 
 export const Dashboard: React.FC = () => {
   const { calculateBalanceSheet, calculateProfitAndLossStatement } = useFinancialStore();

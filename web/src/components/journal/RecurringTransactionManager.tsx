@@ -9,7 +9,7 @@ export const RecurringTransactionManager: React.FC = () => {
     updateRegularJournalEntry,
     deleteRegularJournalEntry,
     executeRegularJournalEntry,
-    fetchData
+    fetchFinancial
   } = useFinancialStore();
   
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -29,8 +29,8 @@ export const RecurringTransactionManager: React.FC = () => {
 
   // データ読み込み
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchFinancial();
+  }, [fetchFinancial]);
 
   // 次の実行予定日を計算
   const getNextExecutionDate = (transaction: RecurringTransaction): Date => {

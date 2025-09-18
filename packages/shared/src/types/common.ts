@@ -1,6 +1,43 @@
 
 // src/types/common.ts
 
+// APIのベースURL設定
+export const API_URL: string =
+  process.env.NODE_ENV !== 'production'
+    ? 'http://localhost:3001/api'
+    : 'https://asset-simulator-server.onrender.com/api';
+
+// ヘルパー関数：キャメルケースからスネークケースへ変換
+export const toSnakeCase = (obj: any): any => {
+  if (Array.isArray(obj)) {
+    return obj.map(v => toSnakeCase(v));
+  } else if (obj !== null && typeof obj === 'object') {
+    return Object.keys(obj).reduce((acc: { [key: string]: any }, key: string) => {
+      const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+      acc[snakeKey] = toSnakeCase(obj[key]);
+      return acc;
+    }, {});
+  } else {
+    return obj;
+  }
+};
+
+// ヘルパー関数：スネークケースからキャメルケースへ変換
+export const toCamelCase = (obj: any): any => {
+  if (Array.isArray(obj)) {
+    return obj.map(v => toCamelCase(v));
+  } else if (obj !== null && typeof obj === 'object') {
+    return Object.keys(obj).reduce((acc: { [key: string]: any }, key: string) => {
+      const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+      acc[camelKey] = toCamelCase(obj[key]);
+      return acc;
+    }, {});
+  } else {
+    return obj;
+  }
+};
+
+
 // --- マスタデータ定義 ---
 
 /**
@@ -103,4 +140,18 @@ export interface RecurringTransaction {
   activeFlg?: boolean; // アクティブかどうか
   lastExecDate?: string; // 最後に実行された日付
   user_id: string; // ユーザーID
+}
+
+// --- スケジュールイベント ---
+export interface ScheduleEvent {
+  eventId: string; // 一意のID
+  title: string; // イベントタイトル
+  allDayFlg: boolean; // 終日フラグ
+  startDate: string; // 開始日 (YYYY-MM-DD)
+  startTime?: string | null; // 開始時間 (HH:MM) - 終日の場合はnull
+  endDate: string; // 終了日 (YYYY-MM-DD)
+  endTime?: string | null; // 終了時間 (HH:MM) - 終日の場合はnull
+  description?: string; // イベント説明
+  createdAt: string; // 作成日時 (ISO 8601)
+  userId: string; // ユーザーID
 }

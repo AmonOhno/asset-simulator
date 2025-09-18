@@ -2,27 +2,34 @@
 
 import React, { useState, useEffect } from 'react';
 import './App.css';
+
 import { AccountManager } from './components/journal/AccountManager';
 import { CreditCardManager } from './components/journal/CreditCardManager';
-
 import { JournalAccountManager } from './components/journal/JournalAccountManager';
 import { JournalEntryForm } from './components/journal/JournalEntryForm';
 import { JournalEntryList } from './components/journal/JournalEntryList';
 import { JournalCalendar } from './components/journal/JournalCalendar';
 import { Dashboard } from './components/journal/Dashboard';
 import { RecurringTransactionManager } from './components/journal/RecurringTransactionManager';
-
 import { useFinancialStore } from '@asset-simulator/shared';
 
-type Tab = 'dashboard' | 'transactions' | 'calendar' | 'masters' | 'recurring';
+import { EventScheduleForm } from './components/event/EventScheduleForm';
+import { useEventsStore } from '@asset-simulator/shared';
+
+
+type Tab = 'dashboard' | 'transactions' | 'calendar' | 'masters' | 'recurring' | 'events';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('transactions');
-  const fetchData = useFinancialStore((state) => state.fetchData);
+  const fetchFinancial = useFinancialStore((state) => state.fetchFinancial);
+  const fetchEvents = useEventsStore((state) => state.fetchEvents);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchEvents();
+  }, [fetchEvents]);
+  useEffect(() => {
+    fetchFinancial();
+  }, [fetchFinancial]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -63,6 +70,8 @@ function App() {
             </div>
           </div>
         );
+      case 'events':
+        return <EventScheduleForm />;
       default:
         return null;
     }
@@ -89,6 +98,9 @@ function App() {
         </li>
         <li className="nav-item">
           <button className={`nav-link ${activeTab === 'masters' ? 'active' : ''}`} onClick={() => setActiveTab('masters')}>マスタ管理</button>
+        </li>
+        <li className="nav-item">
+          <button className={`nav-link ${activeTab === 'events' ? 'active' : ''}`} onClick={() => setActiveTab('events')}>スケジュールイベント</button>
         </li>
       </ul>
 
