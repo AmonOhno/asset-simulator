@@ -70,15 +70,27 @@ const eventsStore: StateCreator<EventsState> = (set, get) => ({
   // イベントの削除
   deleteEvent: async (eventId) => {
     try {
+      console.log('削除API呼び出し:', `${API_URL}/schedule-events/${eventId}`);
       const response = await fetch(`${API_URL}/schedule-events/${eventId}`, {
         method: 'DELETE'
       });
-      if (!response.ok) throw new Error('Failed to delete schedule event');
+      console.log('削除APIレスポンス:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('削除APIエラー:', errorText);
+        throw new Error(`Failed to delete schedule event: ${response.status} ${errorText}`);
+      }
+      
+      const result = await response.json();
+      console.log('削除API結果:', result);
+      
       set((state) => ({
         events: state.events.filter(event => event.eventId !== eventId)
       }));
     } catch (error) {
       console.error("Error deleting schedule event:", error);
+      throw error; // エラーを再スローして上位でキャッチできるようにする
     }
   }
 });

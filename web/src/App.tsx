@@ -14,6 +14,7 @@ import { RecurringTransactionManager } from './components/journal/RecurringTrans
 import { useFinancialStore } from '@asset-simulator/shared';
 
 import { EventScheduleForm } from './components/event/EventScheduleForm';
+import { EventScheduleManager } from './components/event/EventScheduleManager';
 import { useEventsStore } from '@asset-simulator/shared';
 
 
@@ -71,7 +72,16 @@ function App() {
           </div>
         );
       case 'events':
-        return <EventScheduleForm />;
+        return (
+          <div className="row">
+            <div className="col-lg-4">
+              <EventScheduleForm />
+            </div>
+            <div className="col-lg-8">
+              <EventScheduleManager />
+            </div>
+          </div>
+        );
       default:
         return null;
     }

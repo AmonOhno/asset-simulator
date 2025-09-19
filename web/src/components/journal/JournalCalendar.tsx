@@ -1,20 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import Calendar, { TileArgs } from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import { useFinancialStore } from '@asset-simulator/shared';
-import type { JournalEntry } from '@asset-simulator/shared';
+import { useFinancialStore, useEventsStore } from '@asset-simulator/shared';
+import type { JournalEntry, ScheduleEvent } from '@asset-simulator/shared';
 
 // カスタムCSS用のインターface
 type CalendarTileProps = TileArgs;
 
 export const JournalCalendar: React.FC = () => {
   const { journalEntries, journalAccounts, fetchFinancial } = useFinancialStore();
+  const { events, fetchEvents } = useEventsStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedDateEntries, setSelectedDateEntries] = useState<JournalEntry[]>([]);
+  const [selectedDateEvents, setSelectedDateEvents] = useState<ScheduleEvent[]>([]);
 
   useEffect(() => {
     fetchFinancial();
-  }, [fetchFinancial]);
+    fetchEvents();
+    
+    // 初期選択日のデータを設定
+    const initialEntries = getEntriesForDate(selectedDate);
+    setSelectedDateEntries(initialEntries);
+    const initialEvents = getEventsForDate(selectedDate);
+    setSelectedDateEvents(initialEvents);
+  }, [fetchFinancial, fetchEvents]);
 
   // 日付を文字列形式に変換（YYYY-MM-DD）- 時差問題を回避
   const formatDateToString = (date: Date): string => {
@@ -28,6 +37,12 @@ export const JournalCalendar: React.FC = () => {
   const getEntriesForDate = (date: Date): JournalEntry[] => {
     const dateString = formatDateToString(date);
     return journalEntries.filter(entry => entry.date === dateString);
+  };
+
+  // 指定した日付のイベントデータを取得
+  const getEventsForDate = (date: Date): ScheduleEvent[] => {
+    const dateString = formatDateToString(date);
+    return events.filter(event => event.startDate === dateString);
   };
 
   // 勘定科目名を取得する関数
@@ -79,6 +94,8 @@ export const JournalCalendar: React.FC = () => {
       setSelectedDate(value);
       const entries = getEntriesForDate(value);
       setSelectedDateEntries(entries);
+      const events = getEventsForDate(value);
+      setSelectedDateEvents(events);
     }
   };
 
@@ -86,12 +103,14 @@ export const JournalCalendar: React.FC = () => {
   const tileContent = ({ date, view }: CalendarTileProps) => {
     if (view === 'month') {
       const entries = getEntriesForDate(date);
+      const events = getEventsForDate(date);
       const { expenses, revenues } = calculateDayFinancials(date);
       
-      if (entries.length > 0) {
+      if (entries.length > 0 || events.length > 0) {
         return (
           <div className="journal-tile-indicator">
-            <div className="entry-count">{entries.length}</div>
+            {entries.length > 0 && <div className="entry-count">{entries.length}</div>}
+            {events.length > 0 && <div className="event-count" style={{fontSize: '10px', color: '#007bff'}}>📅{events.length}</div>}
             <div className="entry-financial">
               {expenses > 0 && <div className="expense-amount">支出: ¥{expenses.toLocaleString()}</div>}
               {revenues > 0 && <div className="revenue-amount">収益: ¥{revenues.toLocaleString()}</div>}
@@ -107,15 +126,27 @@ export const JournalCalendar: React.FC = () => {
   const tileClassName = ({ date, view }: CalendarTileProps) => {
     if (view === 'month') {
       const entries = getEntriesForDate(date);
-      if (entries.length > 0) {
-        const { expenses, revenues } = calculateDayFinancials(date);
-        if (expenses > revenues) {
-          return 'has-entries expense-dominant';
-        } else if (revenues > expenses) {
-          return 'has-entries revenue-dominant';
-        } else {
-          return 'has-entries balanced';
+      const events = getEventsForDate(date);
+      
+      if (entries.length > 0 || events.length > 0) {
+        let className = 'has-entries';
+        
+        if (entries.length > 0) {
+          const { expenses, revenues } = calculateDayFinancials(date);
+          if (expenses > revenues) {
+            className += ' expense-dominant';
+          } else if (revenues > expenses) {
+            className += ' revenue-dominant';
+          } else {
+            className += ' balanced';
+          }
         }
+        
+        if (events.length > 0) {
+          className += ' has-events';
+        }
+        
+        return className;
       }
     }
     return '';
@@ -219,6 +250,15 @@ export const JournalCalendar: React.FC = () => {
         
         .react-calendar__tile.balanced:hover {
           background-color: #e1bee7 !important;
+        }
+        
+        .react-calendar__tile.has-events {
+          border-left: 3px solid #007bff;
+        }
+        
+        .react-calendar__tile.has-events.has-entries {
+          border-left: 3px solid #007bff;
+          border-right: 3px solid #007bff;
         }
         
         .journal-tile-indicator {
@@ -443,12 +483,39 @@ export const JournalCalendar: React.FC = () => {
               })} 
             </div>
             
-            {selectedDateEntries.length === 0 ? (
+            {selectedDateEntries.length === 0 && selectedDateEvents.length === 0 ? (
               <div className="no-entries">
                 この日はスケジュール／仕訳データがありません
               </div>
             ) : (
               <div className="entries-list">
+                {/* イベント表示 */}
+                {selectedDateEvents.length > 0 && (
+                  <div className="events-section mb-3">
+                    <h5 className="text-primary">📅 スケジュール ({selectedDateEvents.length}件)</h5>
+                    {selectedDateEvents.map((event) => (
+                      <div key={event.eventId} className="card mb-2" style={{backgroundColor: '#f8f9fa'}}>
+                        <div className="card-body py-2">
+                          <div className="d-flex justify-content-between align-items-center">
+                            <div>
+                              <strong>{event.title}</strong>
+                              <div className="text-muted small">
+                                {event.startTime} - {event.endTime}
+                              </div>
+                              {event.description && (
+                                <div className="small">{event.description}</div>
+                              )}
+                            </div>
+                            <div className="badge bg-primary">
+                              {event.allDayFlg ? '終日' : '時間指定'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
                 {/* 費用・収益サマリー */}
                 {(() => {
                   const { expenses, revenues } = calculateDayFinancials(selectedDate);
@@ -511,6 +578,7 @@ export const JournalCalendar: React.FC = () => {
                 <div className="daily-summary">
                   <strong>
                     仕訳件数: {selectedDateEntries.length}件
+                    {selectedDateEvents.length > 0 && ` / イベント: ${selectedDateEvents.length}件`}
                   </strong>
                 </div>
               </div>

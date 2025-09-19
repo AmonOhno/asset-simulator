@@ -66,76 +66,90 @@ export const EventScheduleForm: React.FC = () => {
           <form onSubmit={handleSubmit}>
             <div className="mb-3">
               <label className="form-label">イベント名:</label>
-              <input 
-                type="text"
-                className="form-control"
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-                maxLength={100} required
-              />
+              <div className="col-md-8">
+                <input 
+                  type="text"
+                  className="form-control"
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  maxLength={100} required
+                />
+              </div>
             </div>
-            <div>
+            <div className="mb-3">
               <label className="form-label">終日:</label>
-              <input 
-                type="checkbox"
-                className="form-check-input"
-                checked={allDayFlg}
-                onChange={e => setAllDay(e.target.checked)}
-              />
+              <div className="col-md-4">
+                <input 
+                  type="checkbox"
+                  className="form-check-input"
+                  checked={allDayFlg}
+                  onChange={e => setAllDay(e.target.checked)}
+                />
+              </div>
             </div>
-            <div>
+            <div className="mb-3">
                 <label className="form-label">開始日:</label>
+                <div className="col-md-6">
+                  <input
+                    type="date"
+                    className="form-control"
+                    value={startDate}
+                    onChange={e => setStartDate(e.target.value)}
+                    required
+                  />
+                </div>
+            </div>
+            <div className="mb-3">
+              <label className="form-label">終了日:</label>
+              <div className="col-md-6">
                 <input
                   type="date"
                   className="form-control"
-                  value={startDate}
-                  onChange={e => setStartDate(e.target.value)}
-                  required
-                />
-            </div>
-            <div>
-              <label className="form-label">終了日:</label>
-              <input
-                type="date"
-                className="form-control"
                 value={endDate}
                 onChange={e => setEndDate(e.target.value)}
                 required
-              />
+                  />
+                </div>
             </div>
             {!allDayFlg && (
-              <div className="row">
+              <div className="mb-3">
                 <label className="form-label">開始時間:</label>
-                <input
-                  type="time"
-                  className="form-control"
-                  value={startTime}
-                  onChange={e => setStartTime(e.target.value)}
-                  required
-                />
+                <div className="col-md-4">
+                  <input
+                    type="time"
+                    className="form-control"
+                    value={startTime}
+                    onChange={e => setStartTime(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
             )}
             {!allDayFlg && (
-              <div className="row">
+              <div className="mb-3">
                 <label className="form-label">終了時間:</label>
-                <input
-                  type="time"
-                  className="form-control"
-                  value={endTime}
-                  onChange={e => setEndTime(e.target.value)}
-                  required
-                />
+                <div className="col-md-4">
+                  <input
+                    type="time"
+                    className="form-control"
+                    value={endTime}
+                    onChange={e => setEndTime(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
             )}
-            <div>
+            <div className="mb-3">
               <label className="form-label">説明:</label>
-              <input
-                type="textarea"
-                className="form-control"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-            />
-          </div>
+              <div className="col-md-8">
+                <textarea
+                  className="form-control"
+                  rows={3}
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                />
+              </div>
+            </div>
           <button type="submit" className='btn btn-primary'>登録</button>
         </form>
       </div>

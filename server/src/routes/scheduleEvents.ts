@@ -100,17 +100,23 @@ router.put('/:id', async (req, res) => {
 // DELETE /api/schedule-events/:id
 router.delete('/:id', async (req, res) => {
     const { id } = req.params;
+    console.log('削除リクエスト受信:', id);
     try {
         const { data, error } = await supabase
             .from('schedule_events')
             .delete()
-            .eq('id', id)
+            .eq('event_id', id) // event_idカラムで検索
             .eq('user_id', DEFAULT_USER_ID)
             .select();
-        if (error) throw error;
+        if (error) {
+            console.error('削除エラー:', error);
+            throw error;
+        }
+        console.log('削除結果:', data);
         if (data && data.length > 0) {
-            res.json({ message: "Event deleted" });
+            res.json({ message: "Event deleted", deletedEvent: data[0] });
         } else {
+            console.log('イベントが見つかりません:', id);
             res.status(404).json({ error: "Event not found" });
         }
     } catch (error: any) {
