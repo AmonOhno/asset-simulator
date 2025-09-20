@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Calendar, { TileArgs } from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { useFinancialStore, useEventsStore } from '@asset-simulator/shared';
 import type { JournalEntry, ScheduleEvent } from '@asset-simulator/shared';
 
-// カスタムCSS用のインターface
 type CalendarTileProps = TileArgs;
 
 export const JournalCalendar: React.FC = () => {
@@ -14,38 +13,47 @@ export const JournalCalendar: React.FC = () => {
   const [selectedDateEntries, setSelectedDateEntries] = useState<JournalEntry[]>([]);
   const [selectedDateEvents, setSelectedDateEvents] = useState<ScheduleEvent[]>([]);
 
-  useEffect(() => {
-    fetchFinancial();
-    fetchEvents();
-    
-    // 初期選択日のデータを設定
-    const initialEntries = getEntriesForDate(selectedDate);
-    setSelectedDateEntries(initialEntries);
-    const initialEvents = getEventsForDate(selectedDate);
-    setSelectedDateEvents(initialEvents);
-  }, [fetchFinancial, fetchEvents, selectedDate, journalEntries, events]);
-
-  // 日付を文字列形式に変換（YYYY-MM-DD）- 時差問題を回避
-  const formatDateToString = (date: Date): string => {
+  // 日付を文字列形式に変換（YYYY-MM-DD）
+  const formatDateToString = useCallback((date: Date): string => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
-  };
+  }, []);
 
-  // 指定した日付の仕訳データを取得
-  const getEntriesForDate = (date: Date): JournalEntry[] => {
+useEffect(() => {
+  // 初回マウント時にデータ取得
+  fetchFinancial();
+  fetchEvents();
+}, [fetchFinancial, fetchEvents]); // ← ここはOK、Zustandの関数は通常安定参照
+
+// --- useCallbackで関数を安定化 ---
+const getEntriesForDate = useCallback(
+  (date: Date): JournalEntry[] => {
     const dateString = formatDateToString(date);
-    return journalEntries.filter(entry => entry.date === dateString);
-  };
+    return journalEntries.filter((entry) => entry.date === dateString);
+  },
+  [journalEntries, formatDateToString] // journalEntries が変わったときだけ再生成
+);
 
-  // 指定した日付のイベントデータを取得
-  const getEventsForDate = (date: Date): ScheduleEvent[] => {
+const getEventsForDate = useCallback(
+  (date: Date): ScheduleEvent[] => {
     const dateString = formatDateToString(date);
-    return events.filter(event => event.startDate === dateString);
-  };
+    return events.filter((event) => event.startDate === dateString);
+  },
+  [events, formatDateToString] // events が変わったときだけ再生成
+);
 
-  // 勘定科目名を取得する関数
+// 選択日が変わったら、その日の仕訳/イベントを更新
+useEffect(() => {
+  const entries = getEntriesForDate(selectedDate);
+  setSelectedDateEntries(entries);
+
+  const eventsForDate = getEventsForDate(selectedDate);
+  setSelectedDateEvents(eventsForDate);
+}, [selectedDate, getEntriesForDate, getEventsForDate]);
+
+// 勘定科目名を取得する関数
   const getAccountName = (accountId: string): string => {
     const account = journalAccounts.find(acc => acc.id === accountId);
     return account?.name || '不明';
