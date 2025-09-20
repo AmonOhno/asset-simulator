@@ -23,7 +23,7 @@ export const JournalCalendar: React.FC = () => {
     setSelectedDateEntries(initialEntries);
     const initialEvents = getEventsForDate(selectedDate);
     setSelectedDateEvents(initialEvents);
-  }, [fetchFinancial, fetchEvents]);
+  }, [fetchFinancial, fetchEvents, selectedDate, journalEntries, events]);
 
   // 日付を文字列形式に変換（YYYY-MM-DD）- 時差問題を回避
   const formatDateToString = (date: Date): string => {
