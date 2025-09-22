@@ -37,8 +37,9 @@ router.post('/', async (req, res) => {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
-        // user_idを追加
+        // id系を追加
         regularEntry.user_id = DEFAULT_USER_ID;
+        regularEntry.id = `reg_${crypto.randomUUID()}`;
         
         const { data, error } = await supabase
             .from('regular_journal_entries')
