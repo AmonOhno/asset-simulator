@@ -47,6 +47,7 @@ interface FinancialState {
   updateRegularJournalEntry: (entry: RecurringTransaction) => Promise<void>;
   deleteRegularJournalEntry: (id: number) => Promise<void>;
   executeRegularJournalEntry: (id: number, amount?: number) => Promise<void>;
+  executeDueRegularJournalEntries: () => Promise<{executed: number, details: any[]}>;
 
   // Calculation Getters
   calculateBalanceSheet: (asOfDate?: string) => BalanceSheet;
@@ -474,6 +475,32 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
       await fetchFinancial();
     } catch (error) {
       console.error("Failed to execute regular journal entry:", error);
+    }
+  },
+
+  executeDueRegularJournalEntries: async (): Promise<{executed: number, details: any[]}> => {
+    try {
+      const response = await fetch(`${API_URL}/regular-journal-entries/execute-due`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to execute due regular journal entries');
+      }
+      
+      const result = await response.json();
+      
+      // データを再取得して表示を更新
+      const { fetchFinancial } = get();
+      await fetchFinancial();
+      
+      return {
+        executed: result.executed,
+        details: result.details || []
+      };
+    } catch (error) {
+      console.error("Failed to execute due regular journal entries:", error);
+      throw error;
     }
   },
 });

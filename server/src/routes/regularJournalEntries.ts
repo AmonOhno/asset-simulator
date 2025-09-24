@@ -163,4 +163,98 @@ router.post('/:id/execute', async (req, res) => {
     }
 });
 
+// POST /api/regular-journal-entries/execute-due
+// 実行期日が来た定期取引を自動実行
+router.post('/execute-due', async (req, res) => {
+    try {
+        console.log('定期取引の自動実行を開始...');
+        const today = new Date().toISOString().split('T')[0];
+        
+        // アクティブな定期取引を取得
+        const { data: regularEntries, error: fetchError } = await supabase
+            .from('regular_journal_entries')
+            .select('*')
+            .eq('user_id', DEFAULT_USER_ID)
+            .eq('active_flg', true);
+            
+        if (fetchError) throw fetchError;
+        
+        const executed = [];
+        
+        for (const entry of regularEntries || []) {
+            // 次回実行日を計算
+            let shouldExecute = false;
+            const startDate = new Date(entry.start_date);
+            const todayDate = new Date(today);
+            
+            if (startDate <= todayDate) {
+                switch (entry.frequency) {
+                    case 'daily':
+                        shouldExecute = true;
+                        break;
+                    case 'weekly':
+                        const dayOfWeek = entry.day_of_week || 0;
+                        shouldExecute = todayDate.getDay() === dayOfWeek;
+                        break;
+                    case 'monthly':
+                        const dayOfMonth = entry.day_of_month || 1;
+                        shouldExecute = todayDate.getDate() === dayOfMonth;
+                        break;
+                }
+            }
+            
+            if (shouldExecute) {
+                // 今日既に実行されているかチェック
+                const { data: existingEntries } = await supabase
+                    .from('journal_entries')
+                    .select('id')
+                    .eq('user_id', DEFAULT_USER_ID)
+                    .eq('regular_journal_entry_id', entry.id)
+                    .eq('date', today);
+                    
+                if (!existingEntries || existingEntries.length === 0) {
+                    // 仕訳を実行
+                    const entryId = crypto.randomUUID();
+                    const { data: journalEntry, error: insertError } = await supabase
+                        .from('journal_entries')
+                        .insert({
+                            id: entryId,
+                            date: today,
+                            description: `[定期] ${entry.description}`,
+                            debit_account_id: entry.debit_account_id,
+                            credit_account_id: entry.credit_account_id,
+                            amount: entry.amount,
+                            regular_journal_entry_id: entry.id,
+                            user_id: DEFAULT_USER_ID,
+                            created_at: new Date().toISOString()
+                        })
+                        .select()
+                        .single();
+                        
+                    if (insertError) {
+                        console.error(`定期取引 ${entry.id} の実行に失敗:`, insertError);
+                    } else {
+                        executed.push({ regularEntry: entry, journalEntry });
+                        console.log(`定期取引 ${entry.id} を実行しました`);
+                    }
+                }
+            }
+        }
+        
+        res.json({ 
+            message: `${executed.length}件の定期取引を実行しました`,
+            executed: executed.length,
+            details: executed.map(e => ({
+                name: e.regularEntry.name,
+                amount: e.regularEntry.amount,
+                journalEntryId: e.journalEntry.id
+            }))
+        });
+        
+    } catch (error: any) {
+        console.error("Error executing due regular journal entries:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 export default router;

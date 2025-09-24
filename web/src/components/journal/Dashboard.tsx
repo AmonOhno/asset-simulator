@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFinancialStore } from '@asset-simulator/shared';
 import { DateRangePicker, DateRange } from '../common/DateRangePicker';
 
@@ -12,12 +12,35 @@ export const Dashboard: React.FC = () => {
   const defaultStartDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
   const defaultEndDate = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0];
   
-  const [dateRange, setDateRange] = useState<DateRange>({
-    startDate: defaultStartDate,
-    endDate: defaultEndDate
-  });
+  // 前回設定した日付範囲を取得または初期値を使用
+  const getStoredDateRange = (): DateRange => {
+    const stored = localStorage.getItem('dashboard-date-range');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch {
+        return { startDate: defaultStartDate, endDate: defaultEndDate };
+      }
+    }
+    return { startDate: defaultStartDate, endDate: defaultEndDate };
+  };
+
+  const getStoredBsAsOfDate = (): string => {
+    return localStorage.getItem('dashboard-bs-as-of-date') || defaultEndDate;
+  };
   
-  const [bsAsOfDate, setBsAsOfDate] = useState<string>(defaultEndDate);
+  const [dateRange, setDateRange] = useState<DateRange>(getStoredDateRange());
+  const [bsAsOfDate, setBsAsOfDate] = useState<string>(getStoredBsAsOfDate());
+
+  // 日付範囲が変更された時にlocalStorageに保存
+  useEffect(() => {
+    localStorage.setItem('dashboard-date-range', JSON.stringify(dateRange));
+  }, [dateRange]);
+
+  // 貸借対照表基準日が変更された時にlocalStorageに保存
+  useEffect(() => {
+    localStorage.setItem('dashboard-bs-as-of-date', bsAsOfDate);
+  }, [bsAsOfDate]);
   
   const bs = calculateBalanceSheet(bsAsOfDate);
   const pl = calculateProfitAndLossStatement(dateRange.startDate, dateRange.endDate);
