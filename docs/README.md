@@ -4,7 +4,7 @@
 
 ## 📊 図表一覧
 
-### 1. コンポーネント・エンティティ図 (Component Entity Diagram)
+### 1. コンポーネント・エンティティ図 (Component Entity Diagram) ※現在調整中
 - **ファイル**: `component_entity_diagram.puml` / `component_entity_diagram.svg`
 - **内容**: システム全体のコンポーネント構成とデータエンティティの関係
 - **含まれる要素**:

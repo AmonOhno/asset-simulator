@@ -8,27 +8,53 @@ export const JournalEntryList: React.FC = () => {
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // 期間フィルタの状態
+  // 期間フィルタの状態（前回設定を localStorage に保持）
+  const LOCAL_STORAGE_KEY = 'journalEntryDateRange';
   const today = new Date();
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth();
   const defaultStartDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
   const defaultEndDate = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0];
-  
-  const [dateRange, setDateRange] = useState<DateRange>({
-    startDate: defaultStartDate,
-    endDate: defaultEndDate
-  });
+
+  const loadInitialDateRange = (): DateRange => {
+    try {
+      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.startDate && parsed.endDate) {
+          return parsed;
+        }
+      }
+    } catch (_) {
+      // ignore parse error
+    }
+    return { startDate: defaultStartDate, endDate: defaultEndDate };
+  };
+
+  const [dateRange, setDateRange] = useState<DateRange>(loadInitialDateRange);
+
+  // 日付範囲変更時に保存
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dateRange));
+    } catch (_) {
+      // 保存失敗時は無視
+    }
+  }, [dateRange]);
 
   // 勘定科目フィルタの状態
   const [debitAccountFilter, setDebitAccountFilter] = useState<string>('');
   const [creditAccountFilter, setCreditAccountFilter] = useState<string>('');
   const [filterMode, setFilterMode] = useState<'AND' | 'OR'>('AND'); // フィルタモード
+  // 摘要フィルタ
+  const [descriptionFilter, setDescriptionFilter] = useState<string>('');
 
   // フィルタリングされた仕訳エントリ
   const filteredEntries = journalEntries.filter(entry => {
     // 期間フィルタ
     const dateMatch = entry.date >= dateRange.startDate && entry.date <= dateRange.endDate;
+    // 摘要フィルタ（部分一致・大文字小文字区別なし）
+    const descriptionMatch = !descriptionFilter || entry.description.toLowerCase().includes(descriptionFilter.toLowerCase());
     
     // 勘定科目フィルタ
     if (!debitAccountFilter && !creditAccountFilter) {
@@ -51,7 +77,7 @@ export const JournalEntryList: React.FC = () => {
       }
     }
     
-    return dateMatch && accountMatch;
+    return dateMatch && accountMatch && descriptionMatch;
   });
 
   useEffect(() => {
@@ -104,7 +130,7 @@ export const JournalEntryList: React.FC = () => {
             <small className="text-muted">
               {filteredEntries.length} / {journalEntries.length} 件
             </small>
-            {(debitAccountFilter || creditAccountFilter) && (
+            {(debitAccountFilter || creditAccountFilter || descriptionFilter) && (
               <div className="mt-1">
                 {debitAccountFilter && (
                   <span className="badge bg-primary me-1">
@@ -119,6 +145,11 @@ export const JournalEntryList: React.FC = () => {
                 {creditAccountFilter && (
                   <span className="badge bg-success">
                     貸方: {getAccountName(creditAccountFilter)}
+                  </span>
+                )}
+                {descriptionFilter && (
+                  <span className="badge bg-info ms-1">
+                    摘要: {descriptionFilter}
                   </span>
                 )}
               </div>
@@ -139,7 +170,7 @@ export const JournalEntryList: React.FC = () => {
             </div>
           </div>
           <div className="row">
-            <div className="col-md-4 mb-2">
+            <div className="col-md-3 mb-2">
               <label className="form-label">借方勘定科目</label>
               <select
                 className="form-select form-select-sm"
@@ -154,7 +185,7 @@ export const JournalEntryList: React.FC = () => {
                 ))}
               </select>
             </div>
-            <div className="col-md-4 mb-2">
+            <div className="col-md-3 mb-2">
               <label className="form-label">貸方勘定科目</label>
               <select
                 className="form-select form-select-sm"
@@ -169,13 +200,24 @@ export const JournalEntryList: React.FC = () => {
                 ))}
               </select>
             </div>
-            <div className="col-md-4 mb-2 d-flex align-items-end">
+            <div className="col-md-3 mb-2">
+              <label className="form-label">摘要（部分一致）</label>
+              <input
+                type="text"
+                className="form-control form-control-sm"
+                value={descriptionFilter}
+                placeholder="例: 家賃"
+                onChange={(e) => setDescriptionFilter(e.target.value)}
+              />
+            </div>
+            <div className="col-md-3 mb-2 d-flex align-items-end">
               <div className="d-flex gap-2">
                 <button 
                   className="btn btn-outline-secondary btn-sm"
                   onClick={() => {
                     setDebitAccountFilter('');
                     setCreditAccountFilter('');
+                    setDescriptionFilter('');
                   }}
                 >
                   フィルタクリア
