@@ -12,17 +12,19 @@
   },
   "dependencies": {
     "@asset-simulator/shared": "*",
+    "@supabase/auth-ui-react": "^0.4.7",
+    "@supabase/auth-ui-shared": "^0.1.8",
     "@supabase/supabase-js": "^2.52.0",
     "@types/react-calendar": "^3.9.0",
     "bootstrap": "^5.3.7",
-    "serve": "^14.2.1",
     "chart.js": "^4.5.0",
     "cross-env": "^7.0.3",
-    "react": "^19.1.0",
-    "react-scripts": "^5.0.1",
+    "react": "^18.2.0",
     "react-calendar": "^6.0.0",
     "react-chartjs-2": "^5.3.0",
-    "react-dom": "^19.1.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1",
+    "serve": "^14.2.1",
     "web-vitals": "^2.1.4"
   },
   "devDependencies": {
@@ -31,9 +33,8 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
     "@types/jest": "^27.5.2",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
-    "react-scripts": "^5.0.1",
+        "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
     "typescript": "^4.9.5"
   },
   "eslintConfig": {

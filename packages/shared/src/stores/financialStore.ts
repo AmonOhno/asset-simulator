@@ -11,6 +11,7 @@ import {
   ProfitAndLossStatement,
   BalanceSheetItem,
 } from '../types/common';
+import { useAuthStore } from './authStore';
 
 
 // --- ストアの型定義 ---
@@ -65,10 +66,14 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
 
   // --- ACTIONS ---
 
-// ...existing code...
-
   fetchFinancial: async (): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
     try {
+      const headers = {
+        'Authorization': `Bearer ${session.access_token}`,
+      };
       const [
         accountsResponse,
         creditCardsResponse,
@@ -76,11 +81,11 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
         journalEntriesResponse,
         regularJournalEntriesResponse
       ] = await Promise.all([
-        fetch(`${API_URL}/accounts`),
-        fetch(`${API_URL}/credit-cards`),
-        fetch(`${API_URL}/journal-accounts`),
-        fetch(`${API_URL}/journal-entries`),
-        fetch(`${API_URL}/regular-journal-entries`)
+        fetch(`${API_URL}/accounts`, { headers }),
+        fetch(`${API_URL}/credit-cards`, { headers }),
+        fetch(`${API_URL}/journal-accounts`, { headers }),
+        fetch(`${API_URL}/journal-entries`, { headers }),
+        fetch(`${API_URL}/regular-journal-entries`, { headers })
       ]);
 
       const accounts = accountsResponse.ok ? toCamelCase(await accountsResponse.json()) : [];
@@ -102,10 +107,16 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
   },
 
   addAccount: async (account: Omit<Account, 'id'>): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
     try {
       const response = await fetch(`${API_URL}/accounts`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify(toSnakeCase(account)),
       });
       if (!response.ok) {
@@ -122,10 +133,16 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
   },
 
   updateAccount: async (account: Account): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
     try {
       const response = await fetch(`${API_URL}/accounts/${account.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify(toSnakeCase(account)),
       });
       if (!response.ok) {
@@ -142,10 +159,16 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
   },
 
   addCreditCard: async (card: Omit<CreditCard, 'id'>): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
     try {
       const response = await fetch(`${API_URL}/credit-cards`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify(toSnakeCase(card)),
       });
       if (!response.ok) {
@@ -162,10 +185,16 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
   },
 
   updateCreditCard: async (card: CreditCard): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
     try {
       const response = await fetch(`${API_URL}/credit-cards/${card.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify(toSnakeCase(card)),
       });
       if (!response.ok) {
@@ -182,11 +211,17 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
   },
 
   addJournalAccount: async (account: Omit<JournalAccount, 'id'>): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
     try {
       const response = await fetch(`${API_URL}/journal-accounts`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(account),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(toSnakeCase(account)),
       });
       if (!response.ok) {
         throw new Error('Failed to add journal account');
@@ -199,11 +234,17 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
   },
 
   updateJournalAccount: async (account: JournalAccount): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
     try {
       const response = await fetch(`${API_URL}/journal-accounts/${account.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(account),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(toSnakeCase(account)),
       });
       if (!response.ok) {
         throw new Error('Failed to update journal account');
@@ -217,12 +258,18 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
     }
   },
 
-  addJournalEntry: async (journalEntry: Omit<JournalEntry, 'id'>): Promise<void> => {
+  addJournalEntry: async (entry: Omit<JournalEntry, 'id'>): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
     try {
       const response = await fetch(`${API_URL}/journal-entries`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(toSnakeCase(journalEntry)),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(toSnakeCase(entry)),
       });
       if (!response.ok) {
         throw new Error('Failed to add journal entry');
@@ -236,12 +283,18 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
     }
   },
 
-  updateJournalEntry: async (journalEntry: JournalEntry): Promise<void> => {
+  updateJournalEntry: async (entry: JournalEntry): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
     try {
-      const response = await fetch(`${API_URL}/journal-entries/${journalEntry.id}`, {
+      const response = await fetch(`${API_URL}/journal-entries/${entry.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(toSnakeCase(journalEntry)),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(toSnakeCase(entry)),
       });
       if (!response.ok) {
         throw new Error('Failed to update journal entry');
@@ -404,10 +457,16 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
   // --- REGULAR JOURNAL ENTRY ACTIONS ---
 
   addRegularJournalEntry: async (entry: Omit<RecurringTransaction, 'id'>): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
     try {
       const response = await fetch(`${API_URL}/regular-journal-entries`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify(toSnakeCase(entry)),
       });
       if (!response.ok) {
@@ -423,10 +482,16 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
   },
 
   updateRegularJournalEntry: async (entry: RecurringTransaction): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
     try {
       const response = await fetch(`${API_URL}/regular-journal-entries/${entry.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify(toSnakeCase(entry)),
       });
       if (!response.ok) {
@@ -444,9 +509,15 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
   },
 
   deleteRegularJournalEntry: async (id: number): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
     try {
       const response = await fetch(`${API_URL}/regular-journal-entries/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
       });
       if (!response.ok) {
         throw new Error('Failed to delete regular journal entry');
@@ -460,10 +531,16 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
   },
 
   executeRegularJournalEntry: async (id: number, amount?: number): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
     try {
-      const response = await fetch(`${API_URL}/regular-journal-entries/${id}/execute`, {
+      const response = await fetch(`${API_URL}/regular-journal-entries/execute/${id}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({ amount }),
       });
       if (!response.ok) {
@@ -479,10 +556,15 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
   },
 
   executeDueRegularJournalEntries: async (): Promise<{executed: number, details: any[]}> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return { executed: 0, details: [] };
+
     try {
       const response = await fetch(`${API_URL}/regular-journal-entries/execute-due`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
       });
       if (!response.ok) {
         throw new Error('Failed to execute due regular journal entries');

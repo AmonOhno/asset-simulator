@@ -1,4 +1,5 @@
 export * from './stores/financialStore';
+export * from './stores/authStore';
 export * from './stores/eventsStore';
 export type {
     Account,
