@@ -159,7 +159,17 @@ function App() {
       </main>
 
       <footer className="mt-4 text-center text-muted">
-        <button onClick={() => supabase.auth.signOut()} className="btn btn-outline-secondary">
+        <button
+          onClick={async () => {
+            try {
+              await supabase.auth.signOut();
+              setSession(null);
+            } catch (err) {
+              console.error('Sign out failed:', err);
+            }
+          }}
+          className="btn btn-outline-secondary"
+        >
           ログアウト
         </button>
       </footer>
