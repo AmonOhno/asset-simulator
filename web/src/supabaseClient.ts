@@ -1,28 +1,22 @@
 import { createClient } from '@supabase/supabase-js';
-import path from 'path';
-import dotenv from 'dotenv';
 
-if (process.env.NODE_ENV !== 'production') {
-  const envPath = path.resolve(__dirname, '../../../.env');
-  const result = dotenv.config({ path: envPath });
+// In the browser (CRA) we should rely on build-time environment variables.
+// Do not import `path` or `dotenv` here — those are server/node-only.
 
-  if (result.error) {
-    console.warn('Warning: Could not load .env file in development');
-  }
-} else {
-  const envPath = path.resolve(__dirname, '/etc/secrets/.env');
-  const result = dotenv.config({ path: envPath });
-
-  if (result.error) {
-    console.warn('Warning: Could not load .env file in production');
-  }
-}
-
-const supabaseUrl = 'https://dfqtsogrhkrayfixnbtz.supabase.co';
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://dfqtsogrhkrayfixnbtz.supabase.co';
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Supabase URL and Anon Key must be provided in environment variables.');
+  // Keep a runtime-safe check; builds in CI should ensure these are set.
+  // Use console.error instead of throwing to avoid breaking certain bundlers during static analysis,
+  // but throw in development to make missing config obvious.
+  const msg = 'Supabase URL and/or Anon Key are missing. Please set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY.';
+  if (process.env.NODE_ENV === 'development') {
+    // Fail fast in dev so the developer notices configuration issues.
+    throw new Error(msg);
+  } else {
+    console.error(msg);
+  }
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey as string);
