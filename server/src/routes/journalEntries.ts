@@ -1,19 +1,20 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import { supabase } from '../config/supabase';
-import { DEFAULT_USER_ID } from '../config/constants';
+import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
 
 // GET /api/journal-entries
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
     try {
+        const user_id = req.user?.id;
         console.log('Fetching journal entries...');
-        console.log('Using user_id:', DEFAULT_USER_ID);
+        console.log('Using user_id:', user_id);
         const { data, error } = await supabase
             .from('journal_entries')
             .select(`*`)
-            .eq('user_id', DEFAULT_USER_ID)
+            .eq('user_id', user_id)
             .order('date', { ascending: false });
         if (error) {
             console.error("Supabase error:", error);
@@ -29,14 +30,14 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/journal-entries
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
+    const user_id = req.user?.id;
     const newEntry = req.body;
     if (!newEntry.date || !newEntry.description || !newEntry.debit_account_id || !newEntry.credit_account_id || !newEntry.amount) {
         return res.status(400).json({ error: "Missing required fields" });
     }
     newEntry.id = `entry_${crypto.randomUUID()}`;
     newEntry.amount = parseFloat(newEntry.amount);
-    newEntry.user_id = DEFAULT_USER_ID; // ユーザーIDを追加
 
     const rpcEntryData = {
         id: newEntry.id,
@@ -45,7 +46,7 @@ router.post('/', async (req, res) => {
         debitAccountId: newEntry.debit_account_id,
         creditAccountId: newEntry.credit_account_id,
         amount: newEntry.amount,
-        user_id: DEFAULT_USER_ID // ユーザーIDを追加
+        user_id: user_id 
     };
 
     try {
@@ -62,7 +63,8 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /api/journal-entries/:id
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
+    const user_id = req.user?.id;
     const { id } = req.params;
     const entry = req.body;
     if (!entry.date || !entry.description || !entry.debit_account_id || !entry.credit_account_id || !entry.amount) {
@@ -79,7 +81,7 @@ router.put('/:id', async (req, res) => {
                 amount: parseFloat(entry.amount)
             })
             .eq('id', id)
-            .eq('user_id', DEFAULT_USER_ID)
+            .eq('user_id', user_id)
             .select();
         if (error) throw error;
         if (data && data.length > 0) {

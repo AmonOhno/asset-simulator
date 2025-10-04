@@ -1,27 +1,27 @@
-import { Request, Response, NextFunction } from 'express';
-import { supabase } from '../config/supabase';
+import { Request, Response, NextFunction } from "express";
+import { supabase } from "../config/supabase";
 
 export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-  const token = req.headers.authorization?.split(' ')[1];
+  const authHeader = req.headers['authorization'];
 
-  if (!token) {
-    return res.status(401).json({ error: 'Authentication token not found.' });
+  if (!authHeader?.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Invalid authorization header format." });
   }
 
+  const token = authHeader.substring(7); // "Bearer " の部分を削除
+
   try {
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    const { data, error } = await supabase.auth.getUser(token);
 
-    if (error) {
-      return res.status(401).json({ error: 'Invalid token.' });
+    if (error || !data?.user) {
+      return res.status(401).json({ error: "Unauthorized." });
     }
 
-    if (!user) {
-      return res.status(401).json({ error: 'User not found.' });
-    }
-
-    (req as any).user = user;
+    req.user = data.user;
     next();
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error during authentication.' });
+    
+  } catch (err) {
+    console.error("Auth middleware error:", err);
+    res.status(500).json({ error: "Internal server error." });
   }
 };
