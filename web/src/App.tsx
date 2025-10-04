@@ -2,6 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import './App.css';
+import { Auth } from '@supabase/auth-ui-react';
+import { ThemeSupa } from '@supabase/auth-ui-shared';
+import { supabase } from './supabaseClient';
+import { useAuthStore } from '@asset-simulator/shared';
 
 import { AccountManager } from './components/journal/AccountManager';
 import { CreditCardManager } from './components/journal/CreditCardManager';
@@ -24,13 +28,33 @@ function App() {
   const [activeTab, setActiveTab] = useState<Tab>('transactions');
   const fetchFinancial = useFinancialStore((state) => state.fetchFinancial);
   const fetchEvents = useEventsStore((state) => state.fetchEvents);
+  const { session, setSession } = useAuthStore();
 
   useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [setSession]);
+
   useEffect(() => {
-    fetchFinancial();
-  }, [fetchFinancial]);
+    if (session) {
+      fetchEvents();
+    }
+  }, [session, fetchEvents]);
+
+  useEffect(() => {
+    if (session) {
+      fetchFinancial();
+    }
+  }, [session, fetchFinancial]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -87,6 +111,22 @@ function App() {
     }
   };
 
+  if (!session) {
+    return (
+      <div className="container" style={{ paddingTop: '100px' }}>
+        <div className="row justify-content-center">
+          <div className="col-md-6">
+            <Auth
+              supabaseClient={supabase}
+              appearance={{ theme: ThemeSupa }}
+              providers={['google', 'github']}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container-fluid p-4">
       <header className="mb-4">
@@ -110,13 +150,19 @@ function App() {
           <button className={`nav-link ${activeTab === 'masters' ? 'active' : ''}`} onClick={() => setActiveTab('masters')}>マスタ管理</button>
         </li>
         <li className="nav-item">
-          <button className={`nav-link ${activeTab === 'events' ? 'active' : ''}`} onClick={() => setActiveTab('events')}>スケジュールイベント</button>
+          <button className={`nav-link ${activeTab === 'events' ? 'active' : ''}`} onClick={() => setActiveTab('events')}>イベント</button>
         </li>
       </ul>
 
       <main>
         {renderContent()}
       </main>
+
+      <footer className="mt-4 text-center text-muted">
+        <button onClick={() => supabase.auth.signOut()} className="btn btn-outline-secondary">
+          ログアウト
+        </button>
+      </footer>
     </div>
   );
 }

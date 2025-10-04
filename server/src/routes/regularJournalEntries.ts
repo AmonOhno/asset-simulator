@@ -1,18 +1,19 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import { supabase } from '../config/supabase';
-import { DEFAULT_USER_ID } from '../config/constants';
+import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
 
 // GET /api/regular-journal-entries
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
     try {
+        const user_id = req.user?.id;
         console.log('Fetching regular journal entries...');
         const { data, error } = await supabase
             .from('regular_journal_entries')
             .select('*')
-            .eq('user_id', DEFAULT_USER_ID)
+            .eq('user_id', user_id)
             .order('start_date', { ascending: false });
         
         if (error) {
@@ -29,16 +30,16 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/regular-journal-entries
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
     try {
         const regularEntry = req.body;
-        
+        const user_id = req.user?.id;
         if (!regularEntry.name || !regularEntry.debit_account_id || !regularEntry.credit_account_id || !regularEntry.frequency) {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
         // id系を追加
-        regularEntry.user_id = DEFAULT_USER_ID;
+        regularEntry.user_id = user_id;
         regularEntry.id = `reg_${crypto.randomUUID()}`;
         
         const { data, error } = await supabase
@@ -57,16 +58,17 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /api/regular-journal-entries/:id
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware,async (req, res) => {
     try {
         const { id } = req.params;
+        const user_id = req.user?.id;
         const updatedEntry = req.body;
         
         const { data, error } = await supabase
             .from('regular_journal_entries')
             .update(updatedEntry)
             .eq('id', id)
-            .eq('user_id', DEFAULT_USER_ID)
+            .eq('user_id', user_id)
             .select()
             .single();
 
@@ -84,15 +86,15 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /api/regular-journal-entries/:id
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
-        
+        const user_id = req.user?.id;
         const { data, error } = await supabase
             .from('regular_journal_entries')
             .delete()
             .eq('id', id)
-            .eq('user_id', DEFAULT_USER_ID)
+            .eq('user_id', user_id)
             .select()
             .single();
 
@@ -110,17 +112,17 @@ router.delete('/:id', async (req, res) => {
 });
 
 // POST /api/regular-journal-entries/:id/execute
-router.post('/:id/execute', async (req, res) => {
+router.post('/:id/execute', authMiddleware, async (req, res) => {
     try {
+        const user_id = req.user?.id;
         const { id } = req.params;
         const { amount } = req.body; // 金額が0円の場合に入力された金額
-        
         // 定期取引を取得
         const { data: regularEntry, error: fetchError } = await supabase
             .from('regular_journal_entries')
             .select('*')
             .eq('id', id)
-            .eq('user_id', DEFAULT_USER_ID)
+            .eq('user_id', user_id)
             .single();
 
         if (fetchError) throw fetchError;
@@ -138,7 +140,7 @@ router.post('/:id/execute', async (req, res) => {
             debit_account_id: regularEntry.debit_account_id,
             credit_account_id: regularEntry.credit_account_id,
             amount: amount || regularEntry.amount || 0,
-            user_id: DEFAULT_USER_ID
+            user_id: user_id,
         };
 
         const { error: journalError } = await supabase
@@ -152,7 +154,7 @@ router.post('/:id/execute', async (req, res) => {
             .from('regular_journal_entries')
             .update({ last_exec_date: today })
             .eq('id', id)
-            .eq('user_id', DEFAULT_USER_ID);
+            .eq('user_id', user_id);
 
         if (updateError) throw updateError;
 
@@ -165,16 +167,16 @@ router.post('/:id/execute', async (req, res) => {
 
 // POST /api/regular-journal-entries/execute-due
 // 実行期日が来た定期取引を自動実行
-router.post('/execute-due', async (req, res) => {
+router.post('/execute-due', authMiddleware, async (req, res) => {
     try {
         console.log('定期取引の自動実行を開始...');
         const today = new Date().toISOString().split('T')[0];
-        
+        const user_id = req.user?.id;
         // アクティブな定期取引を取得
         const { data: regularEntries, error: fetchError } = await supabase
             .from('regular_journal_entries')
             .select('*')
-            .eq('user_id', DEFAULT_USER_ID)
+            .eq('user_id', user_id)
             .eq('active_flg', true);
             
         if (fetchError) throw fetchError;
@@ -208,7 +210,7 @@ router.post('/execute-due', async (req, res) => {
                 const { data: existingEntries } = await supabase
                     .from('journal_entries')
                     .select('id')
-                    .eq('user_id', DEFAULT_USER_ID)
+                    .eq('user_id', user_id)
                     .eq('regular_journal_entry_id', entry.id)
                     .eq('date', today);
                     
@@ -225,7 +227,7 @@ router.post('/execute-due', async (req, res) => {
                             credit_account_id: entry.credit_account_id,
                             amount: entry.amount,
                             regular_journal_entry_id: entry.id,
-                            user_id: DEFAULT_USER_ID,
+                            user_id: user_id,
                             created_at: new Date().toISOString()
                         })
                         .select()

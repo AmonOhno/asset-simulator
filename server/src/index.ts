@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import apiRouter from './routes';
 import './config/supabase'; // Supabaseクライアントの初期化（環境変数の読み込みも含む）
+import { authMiddleware } from './middleware/auth';
 
 const app = express();
 const port = 3001;
@@ -11,7 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 // --- API Routes ---
-app.use('/api', apiRouter);
+app.use('/api', authMiddleware, apiRouter);
 
 // --- Health Check ---
 app.get('/health', (req, res) => {

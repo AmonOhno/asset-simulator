@@ -1,17 +1,18 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import { supabase } from '../config/supabase';
-import { DEFAULT_USER_ID } from '../config/constants';
+import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
 
 // GET /api/journal-accounts
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
     try {
+        const user_id = req.user?.id;
         const { data, error } = await supabase
             .from('journal_accounts')
             .select('*')
-            .eq('user_id', DEFAULT_USER_ID);
+            .eq('user_id', user_id);
         if (error) throw error;
         res.json(data);
     } catch (error: any) {
@@ -21,8 +22,9 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/journal-accounts
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
     const { name, category } = req.body;
+    const user_id = req.user?.id;
     if (!name || !category) {
         return res.status(400).json({ error: "Missing required fields" });
     }
@@ -30,7 +32,7 @@ router.post('/', async (req, res) => {
         id: `jacc_${crypto.randomUUID()}`,
         name,
         category,
-        user_id: DEFAULT_USER_ID // ユーザーIDを追加
+        user_id: user_id
     };
     try {
         const { data, error } = await supabase
@@ -46,8 +48,9 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /api/journal-accounts/:id
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
     const { id } = req.params;
+    const user_id = req.user?.id;
     const { name, category } = req.body;
     if (!name || !category) {
         return res.status(400).json({ error: "Missing required fields" });
@@ -60,7 +63,7 @@ router.put('/:id', async (req, res) => {
                 category: category
             })
             .eq('id', id)
-            .eq('user_id', DEFAULT_USER_ID)
+            .eq('user_id', user_id)
             .select();
         if (error) throw error;
         if (data && data.length > 0) {

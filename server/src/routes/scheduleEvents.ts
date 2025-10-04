@@ -1,17 +1,18 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import { supabase } from '../config/supabase';
-import { DEFAULT_USER_ID } from '../config/constants';
+import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
 
 // GET /api/schedule-events
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
     try {
+        const user_id = req.user?.id;
         const { data, error } = await supabase
             .from('schedule_events')   
             .select('*')
-            .eq('user_id', DEFAULT_USER_ID);
+            .eq('user_id', user_id);
         if (error) throw error;
         res.json(data);
     } catch (error: any) {
@@ -21,12 +22,13 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/schedule-events
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
     const { title, start_date, start_time, end_date, end_time, all_day_flg, description } = req.body;
+    const user_id = req.user?.id;
     // DB挿入
     const newEvent = {
         event_id: `event_${crypto.randomUUID()}`,
-        user_id: DEFAULT_USER_ID,
+        user_id: user_id,
         title: title,
         all_day_flg: all_day_flg,
         start_date: start_date,
@@ -50,8 +52,9 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /api/schedule-events/:id
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
     const { id } = req.params;
+    const user_id = req.user?.id;
     const { title, start_date, start_time, end_date, end_time, all_day_flg, description } = req.body;
     // バリデーション
     if (!title || !start_date || !end_date) {
@@ -83,7 +86,7 @@ router.put('/:id', async (req, res) => {
                 description: description || ''
             })
             .eq('id', id)
-            .eq('user_id', DEFAULT_USER_ID)
+            .eq('user_id', user_id)
             .select();
         if (error) throw error;
         if (data && data.length > 0) {
@@ -98,15 +101,16 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /api/schedule-events/:id
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
     const { id } = req.params;
+    const user_id = req.user?.id;
     console.log('削除リクエスト受信:', id);
     try {
         const { data, error } = await supabase
             .from('schedule_events')
             .delete()
             .eq('event_id', id) // event_idカラムで検索
-            .eq('user_id', DEFAULT_USER_ID)
+            .eq('user_id', user_id)
             .select();
         if (error) {
             console.error('削除エラー:', error);

@@ -4,6 +4,7 @@ import { API_URL, toCamelCase, toSnakeCase } from '../types/common';
 import {
   ScheduleEvent
 } from '../types/common';
+import { useAuthStore } from './authStore';
 
 interface EventsState {
   events: ScheduleEvent[];
@@ -21,8 +22,15 @@ const eventsStore: StateCreator<EventsState> = (set, get) => ({
 
   // イベント一覧の取得
   fetchEvents: async () => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
     try {
-      const response = await fetch(`${API_URL}/schedule-events`);
+      const response = await fetch(`${API_URL}/schedule-events`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
       if (!response.ok) throw new Error('Failed to fetch schedule events');
       const data = await response.json();
       set({ events: data.map(toCamelCase) });
@@ -33,10 +41,16 @@ const eventsStore: StateCreator<EventsState> = (set, get) => ({
 
   // イベントの追加
   addEvent: async (event: Omit<ScheduleEvent, 'eventId' | 'createdAt'>) => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
     try {
       const response = await fetch(`${API_URL}/schedule-events`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify(toSnakeCase(event))
       });
       if (!response.ok) throw new Error('Failed to add schedule event');
@@ -49,10 +63,16 @@ const eventsStore: StateCreator<EventsState> = (set, get) => ({
 
   // イベントの更新
   updateEvent: async (event: ScheduleEvent) => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
     try {
       const response = await fetch(`${API_URL}/schedule-events/${event.eventId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify(toSnakeCase(event))
       });
       if (!response.ok) throw new Error('Failed to update schedule event');
@@ -69,10 +89,16 @@ const eventsStore: StateCreator<EventsState> = (set, get) => ({
 
   // イベントの削除
   deleteEvent: async (eventId) => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
     try {
       console.log('削除API呼び出し:', `${API_URL}/schedule-events/${eventId}`);
       const response = await fetch(`${API_URL}/schedule-events/${eventId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
       });
       console.log('削除APIレスポンス:', response.status, response.statusText);
       

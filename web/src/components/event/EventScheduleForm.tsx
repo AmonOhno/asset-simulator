@@ -1,4 +1,4 @@
-import React, {  useState } from 'react';
+import React, { useState } from 'react';
 import { useEventsStore } from '@asset-simulator/shared';
 
 export const EventScheduleForm: React.FC = () => {

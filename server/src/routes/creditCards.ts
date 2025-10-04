@@ -1,17 +1,18 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import { supabase } from '../config/supabase';
-import { DEFAULT_USER_ID } from '../config/constants';
+import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
 
 // GET /api/credit-cards
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
     try {
+        const user_id = req.user?.id;
         const { data, error } = await supabase
             .from('credit_cards')
             .select('*')
-            .eq('user_id', DEFAULT_USER_ID);
+            .eq('user_id', user_id);
         if (error) throw error;
         res.json(data);
     } catch (error: any) {
@@ -21,13 +22,14 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/credit-cards
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
     const newCard = req.body;
+    const user_id = req.user?.id;
     if (!newCard.name || !newCard.closing_day || !newCard.payment_day || !newCard.linked_account_id) {
         return res.status(400).json({ error: "Missing required fields" });
     }
     newCard.id = `card_${crypto.randomUUID()}`;
-    newCard.user_id = DEFAULT_USER_ID; // ユーザーIDを追加
+    newCard.user_id = user_id;
     try {
         const { error } = await supabase.rpc('create_credit_card_with_journal', {
             card_data: newCard,
@@ -35,7 +37,7 @@ router.post('/', async (req, res) => {
                 id: newCard.id,
                 name: newCard.name,
                 category: 'Liability',
-                user_id: DEFAULT_USER_ID // ユーザーIDを追加
+                user_id: user_id
             }
         });
         if (error) throw error;
@@ -47,15 +49,16 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /api/credit-cards/:id
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
     const { id } = req.params;
+    const user_id = req.user?.id;
     const updatedCardData = req.body;
     try {
         const { data, error } = await supabase
             .from('credit_cards')
             .update(updatedCardData)
             .eq('id', id)
-            .eq('user_id', DEFAULT_USER_ID)
+            .eq('user_id', user_id)
             .select();
         if (error) throw error;
         if (data && data.length > 0) {
