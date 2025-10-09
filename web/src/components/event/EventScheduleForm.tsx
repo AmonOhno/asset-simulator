@@ -1,7 +1,17 @@
-import React, { useState } from 'react';
-import { useEventsStore } from '@asset-simulator/shared';
+import React, { useState, useEffect } from 'react';
+import { useEventsStore, ScheduleEvent } from '@asset-simulator/shared';
 
-export const EventScheduleForm: React.FC = () => {
+interface EventScheduleFormProps {
+  editingEvent?: ScheduleEvent;
+  onSave?: (event: ScheduleEvent) => void;
+  onCancel?: () => void;
+}
+
+export const EventScheduleForm: React.FC<EventScheduleFormProps> = ({
+  editingEvent,
+  onSave,
+  onCancel
+}) => {
   const { addEvent } = useEventsStore();
   const [title, setTitle] = useState('');
   const [allDayFlg, setAllDay] = useState(false);
@@ -10,6 +20,20 @@ export const EventScheduleForm: React.FC = () => {
   const [endDate, setEndDate] = useState('');
   const [endTime, setEndTime] = useState('');
   const [description, setDescription] = useState('');
+
+  useEffect(() => {
+    if (editingEvent) {
+      setTitle(editingEvent.title);
+      setAllDay(editingEvent.allDayFlg);
+      setStartDate(editingEvent.startDate);
+      setStartTime(editingEvent.startTime || '');
+      setEndDate(editingEvent.endDate);
+      setEndTime(editingEvent.endTime || '');
+      setDescription(editingEvent.description || '');
+    } else {
+      resetForm();
+    }
+  }, [editingEvent]);
 
   const resetForm = () => {
     setTitle('');
@@ -25,7 +49,7 @@ export const EventScheduleForm: React.FC = () => {
     e.preventDefault();
      // バリデーション
     if (!title || !startDate || !endDate) {
-      alert('`必須項目を入力してください。');
+      alert('必須項目を入力してください。');
       return;
     }
     if (new Date(startDate) > new Date(endDate)) {
@@ -55,8 +79,20 @@ export const EventScheduleForm: React.FC = () => {
       description,
       userId: ''
     };
-    addEvent(event);
-    resetForm();
+    if (editingEvent && onSave) {
+      onSave({ ...editingEvent, ...event });
+    } else {
+      addEvent(event);
+      resetForm();
+    }
+  };
+
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
+    } else {
+      resetForm();
+    }
   };
 
   return (
@@ -150,9 +186,18 @@ export const EventScheduleForm: React.FC = () => {
                 />
               </div>
             </div>
-          <button type="submit" className='btn btn-primary'>登録</button>
-        </form>
+            <div className="d-flex gap-2">
+              <button type="submit" className='btn btn-primary'>
+                {editingEvent ? '保存' : '登録'}
+              </button>
+              {onCancel && (
+                <button type="button" className='btn btn-secondary' onClick={handleCancel}>
+                  キャンセル
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
   );
 };
