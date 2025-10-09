@@ -1,15 +1,31 @@
 
 // src/components/BalanceSheetDisplay.tsx
 
-import React, { useState } from 'react';
-import { useFinancialStore } from '@asset-simulator/shared';
+import React, { useState, useEffect } from 'react';
+import { useFinancialStore, useAuthStore } from '@asset-simulator/shared';
 
 export const BalanceSheetDisplay: React.FC = () => {
   const { calculateBalanceSheet } = useFinancialStore();
+  const { userId } = useAuthStore();
   
   // デフォルトは今日の日付
   const today = new Date().toISOString().split('T')[0];
-  const [asOfDate, setAsOfDate] = useState<string>(today);
+  
+  const getStoredAsOfDate = (): string => {
+    if (!userId) return today;
+    const key = `balanceSheet-asOfDate_${userId}`;
+    return localStorage.getItem(key) || today;
+  };
+  
+  const [asOfDate, setAsOfDate] = useState<string>(getStoredAsOfDate);
+  
+  // 基準日が変更された時にlocalStorageに保存
+  useEffect(() => {
+    if (userId) {
+      const key = `balanceSheet-asOfDate_${userId}`;
+      localStorage.setItem(key, asOfDate);
+    }
+  }, [asOfDate, userId]);
   
   const bs = calculateBalanceSheet(asOfDate);
 

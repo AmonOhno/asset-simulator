@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useFinancialStore } from '@asset-simulator/shared';
+import { useFinancialStore, useAuthStore } from '@asset-simulator/shared';
 import { DateRangePicker, DateRange } from '../common/DateRangePicker';
 
 export const Dashboard: React.FC = () => {
   const { calculateBalanceSheet, calculateProfitAndLossStatement } = useFinancialStore();
+  const { userId } = useAuthStore();
   
   // デフォルトは今月
   const today = new Date();
@@ -14,7 +15,9 @@ export const Dashboard: React.FC = () => {
   
   // 前回設定した日付範囲を取得または初期値を使用
   const getStoredDateRange = (): DateRange => {
-    const stored = localStorage.getItem('dashboard-date-range');
+    if (!userId) return { startDate: defaultStartDate, endDate: defaultEndDate };
+    const key = `dashboard-date-range_${userId}`;
+    const stored = localStorage.getItem(key);
     if (stored) {
       try {
         return JSON.parse(stored);
@@ -26,7 +29,9 @@ export const Dashboard: React.FC = () => {
   };
 
   const getStoredBsAsOfDate = (): string => {
-    return localStorage.getItem('dashboard-bs-as-of-date') || defaultEndDate;
+    if (!userId) return defaultEndDate;
+    const key = `dashboard-bs-as-of-date_${userId}`;
+    return localStorage.getItem(key) || defaultEndDate;
   };
   
   const [dateRange, setDateRange] = useState<DateRange>(getStoredDateRange());
@@ -34,13 +39,19 @@ export const Dashboard: React.FC = () => {
 
   // 日付範囲が変更された時にlocalStorageに保存
   useEffect(() => {
-    localStorage.setItem('dashboard-date-range', JSON.stringify(dateRange));
-  }, [dateRange]);
+    if (userId) {
+      const key = `dashboard-date-range_${userId}`;
+      localStorage.setItem(key, JSON.stringify(dateRange));
+    }
+  }, [dateRange, userId]);
 
   // 貸借対照表基準日が変更された時にlocalStorageに保存
   useEffect(() => {
-    localStorage.setItem('dashboard-bs-as-of-date', bsAsOfDate);
-  }, [bsAsOfDate]);
+    if (userId) {
+      const key = `dashboard-bs-as-of-date_${userId}`;
+      localStorage.setItem(key, bsAsOfDate);
+    }
+  }, [bsAsOfDate, userId]);
   
   const bs = calculateBalanceSheet(bsAsOfDate);
   const pl = calculateProfitAndLossStatement(dateRange.startDate, dateRange.endDate);
