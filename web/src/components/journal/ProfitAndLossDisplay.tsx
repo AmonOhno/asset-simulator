@@ -1,12 +1,13 @@
 
 // src/components/ProfitAndLossDisplay.tsx
 
-import React, { useState } from 'react';
-import { useFinancialStore } from '@asset-simulator/shared';
+import React, { useState, useEffect } from 'react';
+import { useFinancialStore, useAuthStore } from '@asset-simulator/shared';
 import { DateRangePicker, DateRange } from '../common/DateRangePicker';
 
 export const ProfitAndLossDisplay: React.FC = () => {
   const { calculateProfitAndLossStatement } = useFinancialStore();
+  const { userId } = useAuthStore();
   
   // デフォルトは今月
   const today = new Date();
@@ -15,10 +16,29 @@ export const ProfitAndLossDisplay: React.FC = () => {
   const defaultStartDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
   const defaultEndDate = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0];
   
-  const [dateRange, setDateRange] = useState<DateRange>({
-    startDate: defaultStartDate,
-    endDate: defaultEndDate
-  });
+  const getStoredDateRange = (): DateRange => {
+    if (!userId) return { startDate: defaultStartDate, endDate: defaultEndDate };
+    const key = `profitAndLoss-dateRange_${userId}`;
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch {
+        return { startDate: defaultStartDate, endDate: defaultEndDate };
+      }
+    }
+    return { startDate: defaultStartDate, endDate: defaultEndDate };
+  };
+  
+  const [dateRange, setDateRange] = useState<DateRange>(getStoredDateRange);
+  
+  // 日付範囲が変更された時にlocalStorageに保存
+  useEffect(() => {
+    if (userId) {
+      const key = `profitAndLoss-dateRange_${userId}`;
+      localStorage.setItem(key, JSON.stringify(dateRange));
+    }
+  }, [dateRange, userId]);
   
   const pl = calculateProfitAndLossStatement(dateRange.startDate, dateRange.endDate);
 

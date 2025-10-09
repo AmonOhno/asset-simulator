@@ -1,24 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import { useFinancialStore } from '@asset-simulator/shared';
+import { useFinancialStore, useAuthStore } from '@asset-simulator/shared';
 import { JournalEntry } from '@asset-simulator/shared';
 import { DateRangePicker, DateRange } from '../common/DateRangePicker';
 
 export const JournalEntryList: React.FC = () => {
   const { journalEntries, journalAccounts, updateJournalEntry, fetchFinancial } = useFinancialStore();
+  const { userId } = useAuthStore();
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // 期間フィルタの状態（前回設定を localStorage に保持）
-  const LOCAL_STORAGE_KEY = 'journalEntryDateRange';
   const today = new Date();
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth();
   const defaultStartDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
   const defaultEndDate = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0];
 
+  const getLocalStorageKey = (suffix: string) => userId ? `journalEntry-${suffix}_${userId}` : `journalEntry-${suffix}`;
+
   const loadInitialDateRange = (): DateRange => {
     try {
-      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+      const key = getLocalStorageKey('dateRange');
+      const saved = localStorage.getItem(key);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.startDate && parsed.endDate) {
@@ -31,23 +34,56 @@ export const JournalEntryList: React.FC = () => {
     return { startDate: defaultStartDate, endDate: defaultEndDate };
   };
 
+  const loadInitialFilters = () => {
+    const key = getLocalStorageKey('filters');
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (_) {
+      // ignore parse error
+    }
+    return {
+      debitAccountFilter: '',
+      creditAccountFilter: '',
+      filterMode: 'AND' as 'AND' | 'OR',
+      descriptionFilter: ''
+    };
+  };
+
   const [dateRange, setDateRange] = useState<DateRange>(loadInitialDateRange);
+  const initialFilters = loadInitialFilters();
+  const [debitAccountFilter, setDebitAccountFilter] = useState<string>(initialFilters.debitAccountFilter);
+  const [creditAccountFilter, setCreditAccountFilter] = useState<string>(initialFilters.creditAccountFilter);
+  const [filterMode, setFilterMode] = useState<'AND' | 'OR'>(initialFilters.filterMode);
+  const [descriptionFilter, setDescriptionFilter] = useState<string>(initialFilters.descriptionFilter);
 
   // 日付範囲変更時に保存
   useEffect(() => {
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dateRange));
+      const key = getLocalStorageKey('dateRange');
+      localStorage.setItem(key, JSON.stringify(dateRange));
     } catch (_) {
       // 保存失敗時は無視
     }
-  }, [dateRange]);
+  }, [dateRange, userId]);
 
-  // 勘定科目フィルタの状態
-  const [debitAccountFilter, setDebitAccountFilter] = useState<string>('');
-  const [creditAccountFilter, setCreditAccountFilter] = useState<string>('');
-  const [filterMode, setFilterMode] = useState<'AND' | 'OR'>('AND'); // フィルタモード
-  // 摘要フィルタ
-  const [descriptionFilter, setDescriptionFilter] = useState<string>('');
+  // フィルタ変更時に保存
+  useEffect(() => {
+    try {
+      const key = getLocalStorageKey('filters');
+      const filters = {
+        debitAccountFilter,
+        creditAccountFilter,
+        filterMode,
+        descriptionFilter
+      };
+      localStorage.setItem(key, JSON.stringify(filters));
+    } catch (_) {
+      // 保存失敗時は無視
+    }
+  }, [debitAccountFilter, creditAccountFilter, filterMode, descriptionFilter, userId]);
 
   // フィルタリングされた仕訳エントリ
   const filteredEntries = journalEntries.filter(entry => {
