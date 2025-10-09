@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useEventsStore, ScheduleEvent } from '@asset-simulator/shared';
+import { EventScheduleForm } from './EventScheduleForm';
 
 export const EventScheduleManager: React.FC = () => {
   const { events, fetchEvents, updateEvent, deleteEvent } = useEventsStore();
@@ -30,14 +31,6 @@ export const EventScheduleManager: React.FC = () => {
         console.error('削除に失敗しました:', error);
         alert(`削除に失敗しました: ${error}`);
       }
-    }
-  };
-
-  const handleSave = async () => {
-    if (editingEvent) {
-      await updateEvent(editingEvent);
-      setIsModalOpen(false);
-      setEditingEvent(null);
     }
   };
 
@@ -202,103 +195,19 @@ export const EventScheduleManager: React.FC = () => {
                 ></button>
               </div>
               <div className="modal-body">
-                <form>
-                  <div className="mb-3">
-                    <label className="form-label">タイトル</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={editingEvent.title}
-                      onChange={(e) => setEditingEvent({...editingEvent, title: e.target.value})}
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <div className="form-check">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        checked={editingEvent.allDayFlg}
-                        onChange={(e) => setEditingEvent({...editingEvent, allDayFlg: e.target.checked})}
-                      />
-                      <label className="form-check-label">終日</label>
-                    </div>
-                  </div>
-                  <div className="row">
-                    <div className="col-md-6">
-                      <div className="mb-3">
-                        <label className="form-label">開始日</label>
-                        <input
-                          type="date"
-                          className="form-control"
-                          value={editingEvent.startDate}
-                          onChange={(e) => setEditingEvent({...editingEvent, startDate: e.target.value})}
-                        />
-                      </div>
-                    </div>
-                    <div className="col-md-6">
-                      <div className="mb-3">
-                        <label className="form-label">終了日</label>
-                        <input
-                          type="date"
-                          className="form-control"
-                          value={editingEvent.endDate}
-                          onChange={(e) => setEditingEvent({...editingEvent, endDate: e.target.value})}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  {!editingEvent.allDayFlg && (
-                    <div className="row">
-                      <div className="col-md-6">
-                        <div className="mb-3">
-                          <label className="form-label">開始時間</label>
-                          <input
-                            type="time"
-                            className="form-control"
-                            value={editingEvent.startTime || ''}
-                            onChange={(e) => setEditingEvent({...editingEvent, startTime: e.target.value})}
-                          />
-                        </div>
-                      </div>
-                      <div className="col-md-6">
-                        <div className="mb-3">
-                          <label className="form-label">終了時間</label>
-                          <input
-                            type="time"
-                            className="form-control"
-                            value={editingEvent.endTime || ''}
-                            onChange={(e) => setEditingEvent({...editingEvent, endTime: e.target.value})}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <div className="mb-3">
-                    <label className="form-label">説明</label>
-                    <textarea
-                      className="form-control"
-                      rows={3}
-                      value={editingEvent.description || ''}
-                      onChange={(e) => setEditingEvent({...editingEvent, description: e.target.value})}
-                    />
-                  </div>
-                </form>
-              </div>
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setIsModalOpen(false)}
-                >
-                  キャンセル
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={handleSave}
-                >
-                  保存
-                </button>
+                <EventScheduleForm
+                  editingEvent={editingEvent}
+                  onSave={async (updatedEvent) => {
+                    await updateEvent(updatedEvent);
+                    setIsModalOpen(false);
+                    setEditingEvent(null);
+                    await fetchEvents();
+                  }}
+                  onCancel={() => {
+                    setIsModalOpen(false);
+                    setEditingEvent(null);
+                  }}
+                />
               </div>
             </div>
           </div>

@@ -85,7 +85,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
                 end_time: end_time || null,
                 description: description || ''
             })
-            .eq('id', id)
+            .eq('event_id', id)
             .eq('user_id', user_id)
             .select();
         if (error) throw error;
