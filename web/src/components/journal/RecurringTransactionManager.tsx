@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useFinancialStore, RecurringTransaction, RecurrenceFrequency } from '@asset-simulator/shared';
+import { useFinancialStore, RecurringTransaction, RecurrenceFrequency, JournalEntry, HolidayDivOfMonth } from '@asset-simulator/shared';
 
 export const RecurringTransactionManager: React.FC = () => {
   const { 
@@ -8,24 +8,13 @@ export const RecurringTransactionManager: React.FC = () => {
     addRegularJournalEntry,
     updateRegularJournalEntry,
     deleteRegularJournalEntry,
-    executeRegularJournalEntry,
+    addJournalEntry, // Added for execution
     fetchFinancial
   } = useFinancialStore();
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Partial<RecurringTransaction> | null>(null);
-  const [dynamicAmount, setDynamicAmount] = useState<number | undefined>(undefined);
-  const [formData, setFormData] = useState<Partial<RecurringTransaction>>({
-    name: '',
-    description: '',
-    debitAccountId: '',
-    creditAccountId: '',
-    amount: undefined,
-    frequency: 'monthly',
-    startDate: new Date().toISOString().split('T')[0],
-    dayOfMonth: 1,
-    activeFlg: true
-  });
+  const [formData, setFormData] = useState<Partial<RecurringTransaction>>({});
 
   // データ読み込み
   useEffect(() => {
@@ -33,31 +22,45 @@ export const RecurringTransactionManager: React.FC = () => {
   }, [fetchFinancial]);
 
   // 次の実行予定日を計算
-  const getNextExecutionDate = (transaction: RecurringTransaction): Date => {
+  const getNextExecutionDate = (transaction: RecurringTransaction): Date | undefined => {
     const startDate = new Date(transaction.startDate || new Date());
+    const endDate = new Date(transaction.endDate || new Date());
     const today = new Date();
+    if (endDate && today > endDate) {
+      // 終了日を過ぎている場合は次の実行日を計算しない
+      return undefined;
+    }
     let nextDate = new Date(startDate);
 
     switch (transaction.frequency) {
-      case 'daily':
-        nextDate = new Date(today);
-        nextDate.setDate(today.getDate() + 1);
-        break;
       case 'weekly':
-        nextDate = new Date(today);
-        const dayOfWeek = transaction.dayOfWeek || 0;
-        const daysUntilNext = (dayOfWeek - today.getDay() + 7) % 7;
-        nextDate.setDate(today.getDate() + (daysUntilNext === 0 ? 7 : daysUntilNext));
+        const daysOfWeek = [
+          transaction.sunFlgOfWeek,
+          transaction.monFlgOfWeek,
+          transaction.tueFlgOfWeek,
+          transaction.wedFlgOfWeek,
+          transaction.thuFlgOfWeek,
+          transaction.friFlgOfWeek,
+          transaction.satFlgOfWeek
+        ];
+        const todayIndex = today.getDay();
+        const nextDayIndex = daysOfWeek.findIndex((flag, index) => flag && index > todayIndex);
+        if (nextDayIndex === -1) {
+          nextDate.setDate(today.getDate() + 7 - todayIndex + daysOfWeek.findIndex(flag => flag));
+        } else {
+          nextDate.setDate(today.getDate() + (nextDayIndex - todayIndex));
+        }
         break;
       case 'monthly':
-        const dayOfMonth = transaction.dayOfMonth || 1;
-        nextDate = new Date(today.getFullYear(), today.getMonth(), dayOfMonth);
+        const dateOfMonth = transaction.dateOfMonth || 1;
+        nextDate = new Date(today.getFullYear(), today.getMonth(), dateOfMonth);
         if (nextDate <= today) {
           nextDate.setMonth(nextDate.getMonth() + 1);
         }
         break;
       case 'yearly':
-        nextDate = new Date(today.getFullYear(), startDate.getMonth(), startDate.getDate());
+        const [month, day] = transaction.dateOfYear.split('-').map(Number);
+        nextDate = new Date(today.getFullYear(), month - 1, day);
         if (nextDate <= today) {
           nextDate.setFullYear(nextDate.getFullYear() + 1);
         }
@@ -65,20 +68,6 @@ export const RecurringTransactionManager: React.FC = () => {
     }
 
     return nextDate;
-  };
-
-  // 実行可能な取引を取得
-  const getExecutableTransactions = (): RecurringTransaction[] => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    return regularJournalEntries
-      .filter((transaction: RecurringTransaction) => transaction.activeFlg)
-      .filter((transaction: RecurringTransaction) => {
-        const nextExecution = getNextExecutionDate(transaction);
-        nextExecution.setHours(0, 0, 0, 0);
-        return nextExecution <= today;
-      });
   };
 
   // 新規作成または編集開始
@@ -94,10 +83,20 @@ export const RecurringTransactionManager: React.FC = () => {
         debitAccountId: '',
         creditAccountId: '',
         amount: undefined,
-        frequency: 'monthly',
+        frequency: 'weekly',
         startDate: new Date().toISOString().split('T')[0],
-        dayOfMonth: 1,
-        activeFlg: true
+        endDate: new Date().toISOString().split('T')[0],
+        dateOfMonth: 1,
+        dateOfYear: new Date().toISOString().split('T')[0], // Added for yearly transactions
+        holidayDivOfMonth: 'none', // Added for monthly transactions
+        monFlgOfWeek: false, // Added for weekly transactions
+        tueFlgOfWeek: false,
+        wedFlgOfWeek: false,
+        thuFlgOfWeek: false,
+        friFlgOfWeek: false,
+        satFlgOfWeek: false,
+        sunFlgOfWeek: false,
+        publicHolidayExFlgOfWeek: false,
       });
     }
     setIsModalOpen(true);
@@ -142,14 +141,84 @@ export const RecurringTransactionManager: React.FC = () => {
   };
 
   // 実行
-  const executeTransaction = async (transaction: RecurringTransaction, amount?: number) => {
-    try {
-      await executeRegularJournalEntry(transaction.id, amount);
-      alert('定期取引を実行しました');
-    } catch (error) {
-      console.error('定期取引の実行に失敗しました:', error);
-      alert('実行に失敗しました');
+  const executeTransaction = async (transaction: RecurringTransaction) => {
+    const startDate = new Date(transaction.startDate || new Date());
+    const endDate = new Date(transaction.endDate || new Date());
+    const executionDates: Date[] = [];
+
+    // 実行日リストを作成
+    let currentDate = new Date(startDate);
+    while (currentDate <= endDate) {
+      switch (transaction.frequency) {
+        case 'weekly':
+          if (currentDate.getDay() === 0 && transaction.sunFlgOfWeek) {
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+          if (currentDate.getDay() === 1 && transaction.monFlgOfWeek) {
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+          if (currentDate.getDay() === 2 && transaction.tueFlgOfWeek) {
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+          if (currentDate.getDay() === 3 && transaction.wedFlgOfWeek) {
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+          if (currentDate.getDay() === 4 && transaction.thuFlgOfWeek) {
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+          if (currentDate.getDay() === 5 && transaction.friFlgOfWeek) {
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+          if (currentDate.getDay() === 6 && transaction.satFlgOfWeek) {
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+          executionDates.push(new Date(currentDate));
+          break;
+        case 'monthly':
+          currentDate.setDate(transaction.dateOfMonth);
+          if (transaction.holidayDivOfMonth === 'before') {
+            if (currentDate.getDay() === 0) { // 日曜日
+                currentDate.setDate(currentDate.getDate() - 2);
+            } else if (currentDate.getDay() === 6) { // 土曜日
+              currentDate.setDate(currentDate.getDate() - 1);
+            }
+          } else if (transaction.holidayDivOfMonth === 'after') {
+            if (currentDate.getDay() === 0) { // 日曜日
+              currentDate.setDate(currentDate.getDate() + 1);
+            } else if (currentDate.getDay() === 6) { // 土曜日
+              currentDate.setDate(currentDate.getDate() + 2);
+            }
+          }
+          executionDates.push(new Date(currentDate));
+          currentDate.setMonth(currentDate.getMonth() + 1);
+          break;
+        case 'yearly':
+          currentDate.setFullYear(currentDate.getFullYear() + 1);
+          executionDates.push(new Date(currentDate));
+          break;
+      }
     }
+
+    // 各実行日に対して取引を実行
+    for (const date of executionDates) {
+      const journalEntryData: Omit<JournalEntry, 'id'> = {
+        date: date.toISOString().split('T')[0], // 取引日 (YYYY-MM-DD)
+        description: transaction.description,
+        debitAccountId: transaction.debitAccountId,
+        creditAccountId: transaction.creditAccountId,
+        amount: transaction.amount,
+        user_id: ''
+      };
+
+      try {
+        await addJournalEntry(journalEntryData);
+      } catch (error) {
+        console.error('定期取引の実行に失敗しました:', error);
+        alert('一部の取引実行に失敗しました');
+      }
+    }
+
+    alert('定期取引をすべて実行しました');
   };
 
   return (
@@ -172,93 +241,6 @@ export const RecurringTransactionManager: React.FC = () => {
         >
           新規定期取引
         </button>
-      </div>
-
-      {/* 実行可能な取引 */}
-      <div style={{
-        marginBottom: '30px',
-        padding: '15px',
-        border: '1px solid #ddd',
-        borderRadius: '8px',
-        backgroundColor: '#f9f9f9'
-      }}>
-        <h3>実行可能な取引</h3>
-        {getExecutableTransactions().length === 0 ? (
-          <p>実行可能な定期取引はありません</p>
-        ) : (
-          <div>
-            {getExecutableTransactions().map((transaction: RecurringTransaction) => (
-              <div key={transaction.id} style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '10px',
-                marginBottom: '10px',
-                background: 'white',
-                borderRadius: '4px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-              }}>
-                <div style={{ flex: 1 }}>
-                  <strong style={{ display: 'block', marginBottom: '4px' }}>
-                    {transaction.name}
-                  </strong>
-                  <span style={{ color: '#666', fontSize: '0.9em', display: 'block', marginBottom: '4px' }}>
-                    {transaction.description}
-                  </span>
-                  <span style={{ fontWeight: 'bold', color: '#2563eb' }}>
-                    {transaction.amount ? `¥${transaction.amount?.toLocaleString()}` : '金額未設定'}
-                  </span>
-                </div>
-                <div>
-                  {!transaction.amount ? (
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                      <input
-                        type="number"
-                        value={dynamicAmount || ''}
-                        onChange={(e) => setDynamicAmount(Number(e.target.value))}
-                        placeholder="金額を入力"
-                        style={{
-                          width: '120px',
-                          padding: '5px',
-                          border: '1px solid #ddd',
-                          borderRadius: '4px'
-                        }}
-                      />
-                      <button 
-                        onClick={() => executeTransaction(transaction, dynamicAmount)}
-                        disabled={!dynamicAmount}
-                        style={{
-                          padding: '8px 16px',
-                          backgroundColor: dynamicAmount ? '#16a34a' : '#ccc',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: dynamicAmount ? 'pointer' : 'not-allowed'
-                        }}
-                      >
-                        実行
-                      </button>
-                    </div>
-                  ) : (
-                    <button 
-                      onClick={() => executeTransaction(transaction)}
-                      style={{
-                        padding: '8px 16px',
-                        backgroundColor: '#16a34a',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      実行
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* 全定期取引一覧 */}
@@ -292,6 +274,20 @@ export const RecurringTransactionManager: React.FC = () => {
                   }}>
                     <h4 style={{ margin: 0, flex: 1 }}>{transaction.name}</h4>
                     <div style={{ display: 'flex', gap: '5px' }}>
+                      <button 
+                        onClick={() => executeTransaction(transaction)}
+                        style={{
+                          backgroundColor: '#16a34a',
+                          color: 'white',
+                          padding: '4px 8px',
+                          fontSize: '12px',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        実行
+                      </button>
                       <button 
                         onClick={() => startEdit(transaction)}
                         style={{
@@ -346,16 +342,7 @@ export const RecurringTransactionManager: React.FC = () => {
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span style={{ fontWeight: 'bold', color: '#555' }}>次回実行:</span>
-                        <span>{nextExecution.toLocaleDateString()}</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ fontWeight: 'bold', color: '#555' }}>ステータス:</span>
-                        <span style={{
-                          color: transaction.activeFlg ? '#16a34a' : '#dc2626',
-                          fontWeight: 'bold'
-                        }}>
-                          {transaction.activeFlg ? 'アクティブ' : '非アクティブ'}
-                        </span>
+                        <span>{nextExecution?.toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>
@@ -479,7 +466,7 @@ export const RecurringTransactionManager: React.FC = () => {
 
             <div style={{ marginBottom: '15px' }}>
               <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                金額 (0または空白で動的金額)
+                金額
               </label>
               <input
                 type="number"
@@ -489,6 +476,41 @@ export const RecurringTransactionManager: React.FC = () => {
                   amount: e.target.value ? Number(e.target.value) : undefined 
                 })}
                 placeholder="金額を入力（0で動的金額）"
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                開始日
+              </label>
+              <input
+                type="date"
+                value={formData.startDate || ''}
+                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                終了日
+              </label>
+              <input
+                type="date"
+                value={formData.endDate || ''}
+                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                 style={{
                   width: '100%',
                   padding: '8px',
@@ -517,30 +539,18 @@ export const RecurringTransactionManager: React.FC = () => {
                   boxSizing: 'border-box'
                 }}
               >
-                <option value="daily">毎日</option>
                 <option value="weekly">毎週</option>
                 <option value="monthly">毎月</option>
                 <option value="yearly">毎年</option>
+                <option value="free">適宜</option>
               </select>
             </div>
 
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                開始日
-              </label>
-              <input
-                type="date"
-                value={formData.startDate || ''}
-                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  boxSizing: 'border-box'
-                }}
-              />
-            </div>
+            {formData.frequency === 'free' && (
+              <div style={{ marginBottom: '15px', color: '#666' }}>
+                <em>自由形式の定期取引は次回実行日が自動計算されません。手動で実行してください。</em>
+              </div>
+            )}
 
             {formData.frequency === 'monthly' && (
               <div style={{ marginBottom: '15px' }}>
@@ -551,10 +561,10 @@ export const RecurringTransactionManager: React.FC = () => {
                   type="number"
                   min="1"
                   max="31"
-                  value={formData.dayOfMonth || 1}
+                  value={formData.dateOfMonth || 1}
                   onChange={(e) => setFormData({ 
                     ...formData, 
-                    dayOfMonth: Number(e.target.value) 
+                    dateOfMonth: Number(e.target.value) 
                   })}
                   style={{
                     width: '100%',
@@ -564,20 +574,12 @@ export const RecurringTransactionManager: React.FC = () => {
                     boxSizing: 'border-box'
                   }}
                 />
-              </div>
-            )}
-
-            {formData.frequency === 'weekly' && (
-              <div style={{ marginBottom: '15px' }}>
                 <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                  曜日
+                  休日調整
                 </label>
                 <select
-                  value={formData.dayOfWeek || 0}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    dayOfWeek: Number(e.target.value) 
-                  })}
+                  value={formData.holidayDivOfMonth || 'none'}
+                  onChange={(e) => setFormData({ ...formData, holidayDivOfMonth: e.target.value as HolidayDivOfMonth })}
                   style={{
                     width: '100%',
                     padding: '8px',
@@ -586,28 +588,89 @@ export const RecurringTransactionManager: React.FC = () => {
                     boxSizing: 'border-box'
                   }}
                 >
-                  <option value={0}>日曜日</option>
-                  <option value={1}>月曜日</option>
-                  <option value={2}>火曜日</option>
-                  <option value={3}>水曜日</option>
-                  <option value={4}>木曜日</option>
-                  <option value={5}>金曜日</option>
-                  <option value={6}>土曜日</option>
+                  <option value="none" defaultChecked>なし</option>
+                  <option value="before">前倒し</option>
+                  <option value="after">後ろ倒し</option>
                 </select>
               </div>
             )}
 
-            <div style={{ marginBottom: '15px' }}>
-              <label>
+            {formData.frequency === 'weekly' && (
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                  曜日
+                </label>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={formData.monFlgOfWeek || false}
+                      onChange={(e) => setFormData({ ...formData, monFlgOfWeek: e.target.checked })}
+                    /> 月
+                  </label>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={formData.tueFlgOfWeek || false}
+                      onChange={(e) => setFormData({ ...formData, tueFlgOfWeek: e.target.checked })}
+                    /> 火
+                  </label>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={formData.wedFlgOfWeek || false}
+                      onChange={(e) => setFormData({ ...formData, wedFlgOfWeek: e.target.checked })}
+                    /> 水
+                  </label>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={formData.thuFlgOfWeek || false}
+                      onChange={(e) => setFormData({ ...formData, thuFlgOfWeek: e.target.checked })}
+                    /> 木
+                  </label>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={formData.friFlgOfWeek || false}
+                      onChange={(e) => setFormData({ ...formData, friFlgOfWeek: e.target.checked })}
+                    /> 金
+                  </label>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={formData.satFlgOfWeek || false}
+                      onChange={(e) => setFormData({ ...formData, satFlgOfWeek: e.target.checked })}
+                    /> 土
+                  </label>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={formData.sunFlgOfWeek || false}
+                      onChange={(e) => setFormData({ ...formData, sunFlgOfWeek: e.target.checked })}
+                    /> 日
+                  </label> 
+                </div>
+              </div>
+            )}
+
+            {formData.frequency === 'yearly' && (
+              <div style={{ marginBottom: '15px' }}>
+                <label>年次取引日 (YYYY-MM-DD)</label>
                 <input
-                  type="checkbox"
-                  checked={formData.activeFlg !== false}
-                  onChange={(e) => setFormData({ ...formData, activeFlg: e.target.checked })}
-                  style={{ marginRight: '8px' }}
+                  type="date"
+                  value={formData.dateOfYear || ''}
+                  onChange={(e) => setFormData({ ...formData, dateOfYear: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  boxSizing: 'border-box'
+                }}
                 />
-                アクティブ
-              </label>
-            </div>
+              </div>
+            )}
 
             <div style={{
               display: 'flex',

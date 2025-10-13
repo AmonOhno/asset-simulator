@@ -17,3 +17,4 @@ export * from './stores/eventsStore';
 export type { 
     ScheduleEvent,
 } from './types/common';
+export type { HolidayDivOfMonth } from './types/common';

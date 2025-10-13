@@ -59,21 +59,28 @@ entity "journal_entries" as journal_entries {
 }
 
 entity "regular_journal_entries" as regular_journal_entries {
-  * id : bigint <<PK>>
-  --
+  * user_id : string <<PK>>
+  * id : string <<PK>>  
   * name : string
   description : string
   * debit_account_id : string <<FK>>
   * credit_account_id : string <<FK>>
   amount : numeric
-  * frequency : string
   start_date : date
   end_date : date
-  day_of_month : integer
-  day_of_week : integer
-  active_flg : boolean
-  last_exec_date : date
-  * user_id : string <<FK>>
+  * frequency : string
+  date_of_year : date(mm/dd)
+  date_of_month : integer
+  holiday_div_of_month : boolean
+  date_of_week : integer
+  mon_flg_of_week : boolean
+  tue_flg_of_week : boolean
+  wed_flg_of_week : boolean
+  thr_flg_of_week : boolean
+  fri_flg_of_week : boolean
+  sat_flg_of_week : boolean
+  sun_flg_of_week : boolean
+  public_holiiday_ex_flg_week : boolean
   --
   created_at : timestamp
   updated_at : timestamp
