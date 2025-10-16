@@ -210,12 +210,7 @@ export const RecurringTransactionManager: React.FC = () => {
         break;
         
       case 'monthly':
-        const dateOfMonth = transaction.dateOfMonth || 1;
-        if (dateOfMonth < today.getDate()) {
-          nextDate = new Date(today.getFullYear(), today.getMonth() + 1, dateOfMonth);
-        } else {
-          nextDate = new Date(today.getFullYear(), today.getMonth(), dateOfMonth);
-        }
+        nextDate = new Date(today.getFullYear(), today.getMonth(), transaction.dateOfMonth || 1);
         // 休日調整
         if (transaction.holidayDivOfMonth === 'before') {
           if (nextDate.getDay() === 0) { // 日曜日
@@ -229,6 +224,10 @@ export const RecurringTransactionManager: React.FC = () => {
           } else if (nextDate.getDay() === 6) { // 土曜日
             nextDate.setDate(nextDate.getDate() + 2);
           }
+        }
+        // 今月の該当日が過ぎている場合は来月を設定
+        if (nextDate < today) {
+          nextDate.setMonth(nextDate.getMonth() + 1);
         }
         break;
         
