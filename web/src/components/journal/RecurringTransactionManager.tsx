@@ -211,8 +211,11 @@ export const RecurringTransactionManager: React.FC = () => {
         
       case 'monthly':
         const dateOfMonth = transaction.dateOfMonth || 1;
-        nextDate = new Date(today.getFullYear(), today.getMonth() + 1, dateOfMonth);
-        
+        if (dateOfMonth > today.getDate()) {
+          nextDate = new Date(today.getFullYear(), today.getMonth() + 1, dateOfMonth);
+        } else {
+          nextDate = new Date(today.getFullYear(), today.getMonth(), dateOfMonth);
+        }
         // 休日調整
         if (transaction.holidayDivOfMonth === 'before') {
           if (nextDate.getDay() === 0) { // 日曜日
