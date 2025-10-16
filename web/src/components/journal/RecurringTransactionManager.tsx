@@ -45,21 +45,6 @@ export const RecurringTransactionManager: React.FC = () => {
     return () => clearInterval(interval);
   }, [executeDueRegularJournalEntries]);
 
-  // 期限到来分の定期取引を手動実行
-  const executeDueTransactions = async () => {
-    try {
-      const result = await executeDueRegularJournalEntries();
-      if (result.executed > 0) {
-        alert(`${result.executed}件の定期取引を実行しました。`);
-      } else {
-        alert('実行対象の定期取引はありませんでした。');
-      }
-    } catch (error) {
-      console.error('定期取引の手動実行に失敗しました:', error);
-      alert('定期取引の実行に失敗しました。');
-    }
-  };
-
   // 本日が実行日かどうかを判定
   const isTodayExecutionDate = (transaction: RecurringTransaction): boolean => {
     const today = new Date();

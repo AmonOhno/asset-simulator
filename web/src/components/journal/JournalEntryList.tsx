@@ -67,7 +67,7 @@ export const JournalEntryList: React.FC = () => {
     } catch (_) {
       // 保存失敗時は無視
     }
-  }, [dateRange, userId]);
+  },);
 
   // フィルタ変更時に保存
   useEffect(() => {
@@ -83,7 +83,7 @@ export const JournalEntryList: React.FC = () => {
     } catch (_) {
       // 保存失敗時は無視
     }
-  }, [debitAccountFilter, creditAccountFilter, filterMode, descriptionFilter, userId]);
+  }, );
 
   // フィルタリングされた仕訳エントリ
   const filteredEntries = journalEntries.filter(entry => {
