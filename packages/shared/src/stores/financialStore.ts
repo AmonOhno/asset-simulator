@@ -15,44 +15,42 @@ import { useAuthStore } from './authStore';
 
 
 // --- ストアの型定義 ---
-
 interface FinancialState {
   // Master Data
   accounts: Account[];
   creditCards: CreditCard[];
   journalAccounts: JournalAccount[]; // 勘定科目リスト
-
-  // Journal Entries
   journalEntries: JournalEntry[];
-  
-  // Regular Journal Entries
   regularJournalEntries: RecurringTransaction[];
 
   // Actions
-  fetchFinancial: () => Promise<void>;
+  fetchFinancial: () => Promise<void>; // 全データを取得
+  calculateBalanceSheet: (asOfDate?: string) => BalanceSheet; //貸借対照表（BS）を計算
+  calculateProfitAndLossStatement: (startDate?: string, endDate?: string) => ProfitAndLossStatement; //損益計算書（PL）を計算
 
+  // CRUD Actions
+  getAccounts: () => Promise<Account[]>;
+  getCreditCards: () => Promise<CreditCard[]>;
+  getJournalAccounts: () => Promise<JournalAccount[]>;
+  getJournalEntries: () => Promise<JournalEntry[]>;
+  getRegularJournalEntries: () => Promise<RecurringTransaction[]>;
   addAccount: (account: Omit<Account, 'id'>) => Promise<void>;
-  updateAccount: (account: Account) => Promise<void>;
-
   addCreditCard: (card: Omit<CreditCard, 'id'>) => Promise<void>;
-  updateCreditCard: (card: CreditCard) => Promise<void>;
-
   addJournalAccount: (account: Omit<JournalAccount, 'id'>) => Promise<void>;
-  updateJournalAccount: (account: JournalAccount) => Promise<void>;
-
   addJournalEntry: (entry: Omit<JournalEntry, 'id'>) => Promise<void>;
-  updateJournalEntry: (entry: JournalEntry) => Promise<void>;
-  
-  // Regular Journal Entry Actions
   addRegularJournalEntry: (entry: Omit<RecurringTransaction, 'id'>) => Promise<void>;
+  updateAccount: (account: Account) => Promise<void>;
+  updateCreditCard: (card: CreditCard) => Promise<void>;
+  updateJournalAccount: (account: JournalAccount) => Promise<void>;
+  updateJournalEntry: (entry: JournalEntry) => Promise<void>;
   updateRegularJournalEntry: (entry: RecurringTransaction) => Promise<void>;
-  deleteRegularJournalEntry: (id: number) => Promise<void>;
-  executeRegularJournalEntry: (id: number, amount?: number) => Promise<void>;
-  executeDueRegularJournalEntries: () => Promise<{executed: number, details: any[]}>;
-
-  // Calculation Getters
-  calculateBalanceSheet: (asOfDate?: string) => BalanceSheet;
-  calculateProfitAndLossStatement: (startDate?: string, endDate?: string) => ProfitAndLossStatement;
+  deleteAccount: (account: Account) => Promise<void>;
+  deleteCreditCard: (card: CreditCard) => Promise<void>;
+  deleteJournalAccount: (account: JournalAccount) => Promise<void>;
+  deleteJournalEntry: (entry: JournalEntry) => Promise<void>;
+  deleteRegularJournalEntry: (entry: RecurringTransaction) => Promise<void>;
+  executeRegularJournalEntry: (entry: RecurringTransaction) => Promise<void>; // 個別実行
+  executeDueRegularJournalEntries: () => Promise<{executed: number, details: any[]}>; // 期限が来ている定期取引を実行
 }
 
 // --- Zustandストアの作成 ---
@@ -64,256 +62,15 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
   journalEntries: [],
   regularJournalEntries: [],
 
-  // --- ACTIONS ---
-
+  // --- Actions ---
   fetchFinancial: async (): Promise<void> => {
-    const { session } = useAuthStore.getState();
-    if (!session) return;
-
-    try {
-      const headers = {
-        'Authorization': `Bearer ${session.access_token}`,
-      };
-      const [
-        accountsResponse,
-        creditCardsResponse,
-        journalAccountsResponse,
-        journalEntriesResponse,
-        regularJournalEntriesResponse
-      ] = await Promise.all([
-        fetch(`${API_URL}/accounts`, { headers }),
-        fetch(`${API_URL}/credit-cards`, { headers }),
-        fetch(`${API_URL}/journal-accounts`, { headers }),
-        fetch(`${API_URL}/journal-entries`, { headers }),
-        fetch(`${API_URL}/regular-journal-entries`, { headers })
-      ]);
-
-      const accounts = accountsResponse.ok ? toCamelCase(await accountsResponse.json()) : [];
-      const creditCards = creditCardsResponse.ok ? toCamelCase(await creditCardsResponse.json()) : [];
-      const journalAccounts = journalAccountsResponse.ok ? toCamelCase(await journalAccountsResponse.json()) : [];
-      const journalEntries = journalEntriesResponse.ok ? toCamelCase(await journalEntriesResponse.json()) : [];
-      const regularJournalEntries = regularJournalEntriesResponse.ok ? toCamelCase(await regularJournalEntriesResponse.json()) : [];
-
-      set({
-        accounts: accounts || [],
-        creditCards: creditCards || [],
-        journalAccounts: journalAccounts || [],
-        journalEntries: journalEntries || [],
-        regularJournalEntries: regularJournalEntries || [],
-      });
-    } catch (error) {
-      console.error("Failed to fetch data:", error);
-    }
+    get().getAccounts();
+    get().getCreditCards();
+    get().getJournalAccounts();
+    get().getJournalEntries();
+    get().getRegularJournalEntries();
   },
 
-  addAccount: async (account: Omit<Account, 'id'>): Promise<void> => {
-    const { session } = useAuthStore.getState();
-    if (!session) return;
-
-    try {
-      const response = await fetch(`${API_URL}/accounts`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(toSnakeCase(account)),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to add account');
-      }
-      const newAccount = toCamelCase(await response.json());
-      set((state: FinancialState) => ({
-        accounts: [...state.accounts, newAccount],
-        journalAccounts: [...state.journalAccounts, { ...newAccount, category: 'Asset' }],
-      }));
-    } catch (error) {
-      console.error("Failed to add account:", error);
-    }
-  },
-
-  updateAccount: async (account: Account): Promise<void> => {
-    const { session } = useAuthStore.getState();
-    if (!session) return;
-
-    try {
-      const response = await fetch(`${API_URL}/accounts/${account.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(toSnakeCase(account)),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to update account');
-      }
-      const updatedAccount = toCamelCase(await response.json());
-      set((state) => ({
-        accounts: state.accounts.map((a) => (a.id === updatedAccount.id ? updatedAccount : a)),
-        journalAccounts: state.journalAccounts.map((ja) => (ja.id === updatedAccount.id ? { ...ja, name: updatedAccount.name } : ja)),
-      }));
-    } catch (error) {
-      console.error("Failed to update account:", error);
-    }
-  },
-
-  addCreditCard: async (card: Omit<CreditCard, 'id'>): Promise<void> => {
-    const { session } = useAuthStore.getState();
-    if (!session) return;
-
-    try {
-      const response = await fetch(`${API_URL}/credit-cards`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(toSnakeCase(card)),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to add credit card');
-      }
-      const newCard = toCamelCase(await response.json());
-      set((state) => ({
-        creditCards: [...state.creditCards, newCard],
-        journalAccounts: [...state.journalAccounts, { ...newCard, category: 'Liability' }],
-      }));
-    } catch (error) {
-      console.error("Failed to add credit card:", error);
-    }
-  },
-
-  updateCreditCard: async (card: CreditCard): Promise<void> => {
-    const { session } = useAuthStore.getState();
-    if (!session) return;
-
-    try {
-      const response = await fetch(`${API_URL}/credit-cards/${card.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(toSnakeCase(card)),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to update credit card');
-      }
-      const updatedCard = toCamelCase(await response.json());
-      set((state) => ({
-        creditCards: state.creditCards.map((c) => (c.id === updatedCard.id ? updatedCard : c)),
-        journalAccounts: state.journalAccounts.map((ja) => (ja.id === updatedCard.id ? { ...ja, name: updatedCard.name } : ja)),
-      }));
-    } catch (error) {
-      console.error("Failed to update credit card:", error);
-    }
-  },
-
-  addJournalAccount: async (account: Omit<JournalAccount, 'id'>): Promise<void> => {
-    const { session } = useAuthStore.getState();
-    if (!session) return;
-
-    try {
-      const response = await fetch(`${API_URL}/journal-accounts`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(toSnakeCase(account)),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to add journal account');
-      }
-      const newAccount = await response.json();
-      set((state) => ({ journalAccounts: [...state.journalAccounts, newAccount] }));
-    } catch (error) {
-      console.error("Failed to add journal account:", error);
-    }
-  },
-
-  updateJournalAccount: async (account: JournalAccount): Promise<void> => {
-    const { session } = useAuthStore.getState();
-    if (!session) return;
-
-    try {
-      const response = await fetch(`${API_URL}/journal-accounts/${account.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(toSnakeCase(account)),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to update journal account');
-      }
-      const updatedAccount = await response.json();
-      set((state) => ({
-        journalAccounts: state.journalAccounts.map((a) => (a.id === updatedAccount.id ? updatedAccount : a)),
-      }));
-    } catch (error) {
-      console.error("Failed to update journal account:", error);
-    }
-  },
-
-  addJournalEntry: async (entry: Omit<JournalEntry, 'id'>): Promise<void> => {
-    const { session } = useAuthStore.getState();
-    if (!session) return;
-
-    try {
-      const response = await fetch(`${API_URL}/journal-entries`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(toSnakeCase(entry)),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to add journal entry');
-      }
-      const newJournalEntry = toCamelCase(await response.json());
-      set((state) => ({ 
-        journalEntries: [...state.journalEntries, newJournalEntry]
-      }));
-    } catch (error) {
-      console.error("Failed to add journal entry:", error);
-    }
-  },
-
-  updateJournalEntry: async (entry: JournalEntry): Promise<void> => {
-    const { session } = useAuthStore.getState();
-    if (!session) return;
-
-    try {
-      const response = await fetch(`${API_URL}/journal-entries/${entry.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(toSnakeCase(entry)),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to update journal entry');
-      }
-      const updatedJournalEntry = toCamelCase(await response.json());
-      set((state) => ({
-        journalEntries: state.journalEntries.map((entry) => 
-          entry.id === updatedJournalEntry.id ? updatedJournalEntry : entry
-        ),
-      }));
-    } catch (error) {
-      console.error("Failed to update journal entry:", error);
-    }
-  },
-  // --- GETTERS (Calculations) ---
-
-  /**
-   * 貸借対照表（BS）を計算
-   */
   calculateBalanceSheet: (asOfDate?: string): BalanceSheet => {
     const { journalEntries, journalAccounts } = get();
     const accountBalances = new Map<string, number>();
@@ -391,9 +148,6 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
     return bs;
   },
 
-  /**
-   * 損益計算書（PL）を計算
-   */
   calculateProfitAndLossStatement: (startDate?: string, endDate?: string): ProfitAndLossStatement => {
     const { journalEntries, journalAccounts } = get();
     const accountBalances = new Map<string, number>();
@@ -454,7 +208,221 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
     return pl;
   },
 
-  // --- REGULAR JOURNAL ENTRY ACTIONS ---
+  // --- CRUD Actions ---
+  getAccounts: async (): Promise<Account[]> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return [];
+
+    try {
+      const response = await fetch(`${API_URL}/accounts`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch accounts');
+      }
+      const accounts = toCamelCase(await response.json());
+      set((state) => ({ accounts: accounts || [] }));
+      return accounts || [];
+    } catch (error) {
+      console.error("Failed to fetch accounts:", error);
+      return get().accounts;
+    }
+  },
+
+  getCreditCards: async (): Promise<CreditCard[]> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return [];
+
+    try {
+      const response = await fetch(`${API_URL}/credit-cards`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch credit cards');
+      }
+      const creditCards = toCamelCase(await response.json());
+      set((state) => ({ creditCards: creditCards || [] }));
+      return creditCards || [];
+    } catch (error) {
+      console.error("Failed to fetch credit cards:", error);
+      return get().creditCards;
+    }
+  },
+
+  getJournalAccounts: async (): Promise<JournalAccount[]> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return [];
+
+    try {
+      const response = await fetch(`${API_URL}/journal-accounts`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch journal accounts');
+      }
+      const journalAccounts = toCamelCase(await response.json());
+      set((state) => ({ journalAccounts: journalAccounts || [] }));
+      return journalAccounts || [];
+    } catch (error) {
+      console.error("Failed to fetch journal accounts:", error);
+      return get().journalAccounts;
+    }
+  },
+
+  getJournalEntries: async (): Promise<JournalEntry[]> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return [];
+
+    try {
+      const response = await fetch(`${API_URL}/journal-entries`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch journal entries');
+      }
+      const journalEntries = toCamelCase(await response.json());
+      set((state) => ({ journalEntries: journalEntries || [] }));
+      return journalEntries || [];
+    } catch (error) {
+      console.error("Failed to fetch journal entries:", error);
+      return get().journalEntries;
+    }
+  },
+
+  getRegularJournalEntries: async (): Promise<RecurringTransaction[]> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return [];
+
+    try {
+      const response = await fetch(`${API_URL}/regular-journal-entries`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch regular journal entries');
+      }
+      const regularJournalEntries = toCamelCase(await response.json());
+      set((state) => ({ regularJournalEntries: regularJournalEntries || [] }));
+      return regularJournalEntries || [];
+    } catch (error) {
+      console.error("Failed to fetch regular journal entries:", error);
+      return get().regularJournalEntries;
+    }
+  },
+
+  addAccount: async (account: Omit<Account, 'id'>): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
+    try {
+      const response = await fetch(`${API_URL}/accounts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(toSnakeCase(account)),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to add account');
+      }
+      const newAccount = toCamelCase(await response.json());
+      set((state: FinancialState) => ({
+        accounts: [...state.accounts, newAccount],
+        journalAccounts: [...state.journalAccounts, { ...newAccount, category: 'Asset' }],
+      }));
+    } catch (error) {
+      console.error("Failed to add account:", error);
+    }
+  },
+
+  addCreditCard: async (card: Omit<CreditCard, 'id'>): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
+    try {
+      const response = await fetch(`${API_URL}/credit-cards`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(toSnakeCase(card)),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to add credit card');
+      }
+      const newCard = toCamelCase(await response.json());
+      set((state) => ({
+        creditCards: [...state.creditCards, newCard],
+        journalAccounts: [...state.journalAccounts, { ...newCard, category: 'Liability' }],
+      }));
+    } catch (error) {
+      console.error("Failed to add credit card:", error);
+    }
+  },
+
+  addJournalAccount: async (account: Omit<JournalAccount, 'id'>): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
+    try {
+      const response = await fetch(`${API_URL}/journal-accounts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(toSnakeCase(account)),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to add journal account');
+      }
+      const newAccount = await response.json();
+      set((state) => ({ journalAccounts: [...state.journalAccounts, newAccount] }));
+    } catch (error) {
+      console.error("Failed to add journal account:", error);
+    }
+  },
+
+  addJournalEntry: async (entry: Omit<JournalEntry, 'id'>): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
+    try {
+      const response = await fetch(`${API_URL}/journal-entries`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(toSnakeCase(entry)),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to add journal entry');
+      }
+      const newJournalEntry = toCamelCase(await response.json());
+      set((state) => ({ 
+        journalEntries: [...state.journalEntries, newJournalEntry]
+      }));
+    } catch (error) {
+      console.error("Failed to add journal entry:", error);
+    }
+  },
 
   addRegularJournalEntry: async (entry: Omit<RecurringTransaction, 'id'>): Promise<void> => {
     const { session } = useAuthStore.getState();
@@ -478,6 +446,110 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
       }));
     } catch (error) {
       console.error("Failed to add regular journal entry:", error);
+    }
+  },
+
+  updateAccount: async (account: Account): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
+    try {
+      const response = await fetch(`${API_URL}/accounts/${account.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(toSnakeCase(account)),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update account');
+      }
+      const updatedAccount = toCamelCase(await response.json());
+      set((state) => ({
+        accounts: state.accounts.map((a) => (a.id === updatedAccount.id ? updatedAccount : a)),
+        journalAccounts: state.journalAccounts.map((ja) => (ja.id === updatedAccount.id ? { ...ja, name: updatedAccount.name } : ja)),
+      }));
+    } catch (error) {
+      console.error("Failed to update account:", error);
+    }
+  },
+
+  updateCreditCard: async (card: CreditCard): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
+    try {
+      const response = await fetch(`${API_URL}/credit-cards/${card.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(toSnakeCase(card)),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update credit card');
+      }
+      const updatedCard = toCamelCase(await response.json());
+      set((state) => ({
+        creditCards: state.creditCards.map((c) => (c.id === updatedCard.id ? updatedCard : c)),
+        journalAccounts: state.journalAccounts.map((ja) => (ja.id === updatedCard.id ? { ...ja, name: updatedCard.name } : ja)),
+      }));
+    } catch (error) {
+      console.error("Failed to update credit card:", error);
+    }
+  },
+
+  updateJournalAccount: async (account: JournalAccount): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
+    try {
+      const response = await fetch(`${API_URL}/journal-accounts/${account.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(toSnakeCase(account)),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update journal account');
+      }
+      const updatedAccount = await response.json();
+      set((state) => ({
+        journalAccounts: state.journalAccounts.map((a) => (a.id === updatedAccount.id ? updatedAccount : a)),
+      }));
+    } catch (error) {
+      console.error("Failed to update journal account:", error);
+    }
+  },
+
+  updateJournalEntry: async (entry: JournalEntry): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
+    try {
+      const response = await fetch(`${API_URL}/journal-entries/${entry.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(toSnakeCase(entry)),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update journal entry');
+      }
+      const updatedJournalEntry = toCamelCase(await response.json());
+      set((state) => ({
+        journalEntries: state.journalEntries.map((entry) => 
+          entry.id === updatedJournalEntry.id ? updatedJournalEntry : entry
+        ),
+      }));
+    } catch (error) {
+      console.error("Failed to update journal entry:", error);
     }
   },
 
@@ -508,12 +580,102 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
     }
   },
 
-  deleteRegularJournalEntry: async (id: number): Promise<void> => {
+  deleteAccount: async (account: Account): Promise<void> => {
     const { session } = useAuthStore.getState();
     if (!session) return;
 
     try {
-      const response = await fetch(`${API_URL}/regular-journal-entries/${id}`, {
+      const response = await fetch(`${API_URL}/accounts/${account.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete account');
+      }
+      set((state) => ({
+        accounts: state.accounts.filter(a => a.id !== account.id),
+        journalAccounts: state.journalAccounts.filter(ja => ja.id !== account.id),
+      }));
+    } catch (error) {
+      console.error("Failed to delete account:", error);
+    }
+  },
+
+  deleteCreditCard: async (card: CreditCard): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
+    try {
+      const response = await fetch(`${API_URL}/credit-cards/${card.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete credit card');
+      }
+      set((state) => ({
+        creditCards: state.creditCards.filter(c => c.id !== card.id),
+        journalAccounts: state.journalAccounts.filter(ja => ja.id !== card.id),
+      }));
+    } catch (error) {
+      console.error("Failed to delete credit card:", error);
+    }
+  },
+
+  deleteJournalAccount: async (account: JournalAccount): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
+    try {
+      const response = await fetch(`${API_URL}/journal-accounts/${account.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete journal account');
+      }
+      set((state) => ({
+        journalAccounts: state.journalAccounts.filter(a => a.id !== account.id),
+      }));
+    } catch (error) {
+      console.error("Failed to delete journal account:", error);
+    }
+  },
+
+  deleteJournalEntry: async (entry: JournalEntry): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
+    try {
+      const response = await fetch(`${API_URL}/journal-entries/${entry.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete journal entry');
+      }
+      set((state) => ({
+        journalEntries: state.journalEntries.filter(e => e.id !== entry.id),
+      }));
+    } catch (error) {
+      console.error("Failed to delete journal entry:", error);
+    }
+  },
+
+  deleteRegularJournalEntry: async (entry: RecurringTransaction): Promise<void> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return;
+
+    try {
+      const response = await fetch(`${API_URL}/regular-journal-entries/${entry.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -523,26 +685,25 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
         throw new Error('Failed to delete regular journal entry');
       }
       set((state) => ({
-        regularJournalEntries: state.regularJournalEntries.filter(e => e.id !== id),
+        regularJournalEntries: state.regularJournalEntries.filter(e => e.id !== entry.id),
       }));
     } catch (error) {
       console.error("Failed to delete regular journal entry:", error);
     }
   },
 
-  executeRegularJournalEntry: async (id: number, amount?: number): Promise<void> => {
+  executeRegularJournalEntry: async (entry: RecurringTransaction): Promise<void> => {
     const { session } = useAuthStore.getState();
     if (!session) return;
 
     try {
-      const response = await fetch(`${API_URL}/regular-journal-entries/execute/${id}`, {
+      const response = await fetch(`${API_URL}/regular-journal-entries/execute/${entry.id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ amount }),
-      });
+        body: JSON.stringify(toSnakeCase(entry)),});
       if (!response.ok) {
         throw new Error('Failed to execute regular journal entry');
       }
@@ -585,6 +746,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => ({
       throw error;
     }
   },
+
 });
 
 export const useFinancialStore = create<FinancialState>(financialStore);

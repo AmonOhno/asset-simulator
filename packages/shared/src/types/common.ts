@@ -152,6 +152,7 @@ export interface RecurringTransaction {
   satFlgOfWeek?: boolean; // 土曜日に実行するか
   sunFlgOfWeek?: boolean; // 日曜日に実行するか
   publicHolidayExFlgOfWeek?: boolean; // 祝日を除外するか
+  lastExecutedDate?: string; // 最終実行日 (YYYY-MM-DD)
 }
 
 // --- スケジュールイベント ---

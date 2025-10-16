@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useFinancialStore, RecurringTransaction, RecurrenceFrequency, JournalEntry, HolidayDivOfMonth } from '@asset-simulator/shared';
+import { useFinancialStore, RecurringTransaction, RecurrenceFrequency } from '@asset-simulator/shared';
 
 export const RecurringTransactionManager: React.FC = () => {
   const { 
@@ -8,7 +8,8 @@ export const RecurringTransactionManager: React.FC = () => {
     addRegularJournalEntry,
     updateRegularJournalEntry,
     deleteRegularJournalEntry,
-    addJournalEntry, // Added for execution
+    executeRegularJournalEntry,
+    executeDueRegularJournalEntries,
     fetchFinancial
   } = useFinancialStore();
   
@@ -21,16 +22,154 @@ export const RecurringTransactionManager: React.FC = () => {
     fetchFinancial();
   }, [fetchFinancial]);
 
+  // 自動実行機能 - ページ読み込み時に当日実行分をチェック
+  useEffect(() => {
+    const autoExecuteToday = async () => {
+      try {
+        const result = await executeDueRegularJournalEntries();
+        if (result.executed > 0) {
+          console.log(`${result.executed}件の定期取引を自動実行しました。`);
+          // 必要に応じてアラートまたは通知を表示
+        }
+      } catch (error) {
+        console.error('定期取引の自動実行に失敗しました:', error);
+      }
+    };
+
+    // ページ読み込み時に自動実行
+    autoExecuteToday();
+
+    // 10分ごとに実行状況をチェック（重複実行を防ぐため間隔を延長）
+    const interval = setInterval(autoExecuteToday, 600000); // 10分 = 600,000ms
+
+    return () => clearInterval(interval);
+  }, [executeDueRegularJournalEntries]);
+
+  // 期限到来分の定期取引を手動実行
+  const executeDueTransactions = async () => {
+    try {
+      const result = await executeDueRegularJournalEntries();
+      if (result.executed > 0) {
+        alert(`${result.executed}件の定期取引を実行しました。`);
+      } else {
+        alert('実行対象の定期取引はありませんでした。');
+      }
+    } catch (error) {
+      console.error('定期取引の手動実行に失敗しました:', error);
+      alert('定期取引の実行に失敗しました。');
+    }
+  };
+
+  // 本日が実行日かどうかを判定
+  const isTodayExecutionDate = (transaction: RecurringTransaction): boolean => {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const todayDayOfWeek = today.getDay();
+
+    // 開始日・終了日チェック
+    if (transaction.startDate && todayStr < transaction.startDate) return false;
+    if (transaction.endDate && todayStr > transaction.endDate) return false;
+
+    switch (transaction.frequency) {
+      case 'weekly':
+        const dayFlags = [
+          transaction.sunFlgOfWeek,  // 0: 日曜日
+          transaction.monFlgOfWeek,  // 1: 月曜日
+          transaction.tueFlgOfWeek,  // 2: 火曜日
+          transaction.wedFlgOfWeek,  // 3: 水曜日
+          transaction.thuFlgOfWeek,  // 4: 木曜日
+          transaction.friFlgOfWeek,  // 5: 金曜日
+          transaction.satFlgOfWeek   // 6: 土曜日
+        ];
+        
+        // 基本的な曜日チェック
+        if (!dayFlags[todayDayOfWeek]) return false;
+        
+        // 祝日・日曜日除外設定のチェック（サーバー側ロジックと合わせるためコメントアウト）
+        // サーバー側では publicHolidayExFlgOfWeek の処理が実装されていないため
+        /*
+        if (transaction.publicHolidayExFlgOfWeek) {
+          // 日曜日の場合は除外
+          if (todayDayOfWeek === 0) return false;
+          // 土曜日の場合も除外（平日のみ実行）
+          if (todayDayOfWeek === 6) return false;
+          // 実際の祝日判定は簡略化（必要に応じて祝日カレンダーAPIを使用）
+        }
+        */
+        
+        return true;
+      
+      case 'monthly':
+        if (transaction.dateOfMonth) {
+          const currentMonthLastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+          const targetDay = Math.min(transaction.dateOfMonth, currentMonthLastDay);
+          let targetDate = new Date(today.getFullYear(), today.getMonth(), targetDay);
+          
+          // 休日調整
+          if (transaction.holidayDivOfMonth === 'before') {
+            if (targetDate.getDay() === 0) { // 日曜日
+              targetDate.setDate(targetDate.getDate() - 2);
+            } else if (targetDate.getDay() === 6) { // 土曜日
+              targetDate.setDate(targetDate.getDate() - 1);
+            }
+          } else if (transaction.holidayDivOfMonth === 'after') {
+            if (targetDate.getDay() === 0) { // 日曜日
+              targetDate.setDate(targetDate.getDate() + 1);
+            } else if (targetDate.getDay() === 6) { // 土曜日
+              targetDate.setDate(targetDate.getDate() + 2);
+            }
+          }
+          
+          return targetDate.toISOString().split('T')[0] === todayStr;
+        }
+        return false;
+      
+      case 'yearly':
+        if (transaction.dateOfYear) {
+          const [month, day] = transaction.dateOfYear.split('-').map(Number);
+          let targetDate = new Date(today.getFullYear(), month - 1, day);
+          
+          // 休日調整
+          if (transaction.holidayDivOfMonth === 'before') {
+            if (targetDate.getDay() === 0) { // 日曜日
+              targetDate.setDate(targetDate.getDate() - 2);
+            } else if (targetDate.getDay() === 6) { // 土曜日
+              targetDate.setDate(targetDate.getDate() - 1);
+            }
+          } else if (transaction.holidayDivOfMonth === 'after') {
+            if (targetDate.getDay() === 0) { // 日曜日
+              targetDate.setDate(targetDate.getDate() + 1);
+            } else if (targetDate.getDay() === 6) { // 土曜日
+              targetDate.setDate(targetDate.getDate() + 2);
+            }
+          }
+          
+          return targetDate.toISOString().split('T')[0] === todayStr;
+        }
+        return false;
+      
+      default:
+        return false;
+    }
+  };
+
   // 次の実行予定日を計算
   const getNextExecutionDate = (transaction: RecurringTransaction): Date | undefined => {
-    const startDate = new Date(transaction.startDate || new Date());
     const endDate = new Date(transaction.endDate || new Date());
     const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    
     if (endDate && today > endDate) {
       // 終了日を過ぎている場合は次の実行日を計算しない
       return undefined;
     }
-    let nextDate = new Date(startDate);
+
+    // 本日が実行日で、まだ実行されていない場合は本日を返す
+    if (isTodayExecutionDate(transaction) && transaction.lastExecutedDate !== todayStr) {
+      return today;
+    }
+
+    let nextDate = new Date(today);
 
     switch (transaction.frequency) {
       case 'weekly':
@@ -43,28 +182,93 @@ export const RecurringTransactionManager: React.FC = () => {
           transaction.friFlgOfWeek,
           transaction.satFlgOfWeek
         ];
+        
         const todayIndex = today.getDay();
-        const nextDayIndex = daysOfWeek.findIndex((flag, index) => flag && index > todayIndex);
-        if (nextDayIndex === -1) {
-          nextDate.setDate(today.getDate() + 7 - todayIndex + daysOfWeek.findIndex(flag => flag));
-        } else {
-          nextDate.setDate(today.getDate() + (nextDayIndex - todayIndex));
+        let foundNextDay = false;
+        
+        // 今週の残り日数をチェック
+        for (let i = todayIndex + 1; i < 7; i++) {
+          if (daysOfWeek[i]) {
+            // 祝日除外設定のチェック（サーバー側ロジックと合わせるためコメントアウト）
+            /*
+            if (transaction.publicHolidayExFlgOfWeek && (i === 0 || i === 6)) {
+              continue; // 日曜日または土曜日はスキップ
+            }
+            */
+            nextDate.setDate(today.getDate() + (i - todayIndex));
+            foundNextDay = true;
+            break;
+          }
+        }
+        
+        // 今週に該当日がない場合、来週以降をチェック
+        if (!foundNextDay) {
+          let weekOffset = 1;
+          while (!foundNextDay) {
+            for (let i = 0; i < 7; i++) {
+              if (daysOfWeek[i]) {
+                // 祝日除外設定のチェック（サーバー側ロジックと合わせるためコメントアウト）
+                /*
+                if (transaction.publicHolidayExFlgOfWeek && (i === 0 || i === 6)) {
+                  continue; // 日曜日または土曜日はスキップ
+                }
+                */
+                nextDate.setDate(today.getDate() + (7 * weekOffset) - todayIndex + i);
+                foundNextDay = true;
+                break;
+              }
+            }
+            weekOffset++;
+            if (weekOffset > 4) break; // 無限ループ防止
+          }
         }
         break;
+        
       case 'monthly':
         const dateOfMonth = transaction.dateOfMonth || 1;
-        nextDate = new Date(today.getFullYear(), today.getMonth(), dateOfMonth);
-        if (nextDate <= today) {
-          nextDate.setMonth(nextDate.getMonth() + 1);
+        nextDate = new Date(today.getFullYear(), today.getMonth() + 1, dateOfMonth);
+        
+        // 休日調整
+        if (transaction.holidayDivOfMonth === 'before') {
+          if (nextDate.getDay() === 0) { // 日曜日
+            nextDate.setDate(nextDate.getDate() - 2);
+          } else if (nextDate.getDay() === 6) { // 土曜日
+            nextDate.setDate(nextDate.getDate() - 1);
+          }
+        } else if (transaction.holidayDivOfMonth === 'after') {
+          if (nextDate.getDay() === 0) { // 日曜日
+            nextDate.setDate(nextDate.getDate() + 1);
+          } else if (nextDate.getDay() === 6) { // 土曜日
+            nextDate.setDate(nextDate.getDate() + 2);
+          }
         }
         break;
+        
       case 'yearly':
-        const [month, day] = transaction.dateOfYear.split('-').map(Number);
-        nextDate = new Date(today.getFullYear(), month - 1, day);
-        if (nextDate <= today) {
-          nextDate.setFullYear(nextDate.getFullYear() + 1);
+        if (transaction.dateOfYear) {
+          const [month, day] = transaction.dateOfYear.split('-').map(Number);
+          nextDate = new Date(today.getFullYear() + 1, month - 1, day);
+          
+          // 休日調整
+          if (transaction.holidayDivOfMonth === 'before') {
+            if (nextDate.getDay() === 0) { // 日曜日
+              nextDate.setDate(nextDate.getDate() - 2);
+            } else if (nextDate.getDay() === 6) { // 土曜日
+              nextDate.setDate(nextDate.getDate() - 1);
+            }
+          } else if (transaction.holidayDivOfMonth === 'after') {
+            if (nextDate.getDay() === 0) { // 日曜日
+              nextDate.setDate(nextDate.getDate() + 1);
+            } else if (nextDate.getDay() === 6) { // 土曜日
+              nextDate.setDate(nextDate.getDate() + 2);
+            }
+          }
         }
         break;
+        
+      case 'free':
+        // 適宜実行は次回実行日を計算しない
+        return undefined;
     }
 
     return nextDate;
@@ -129,10 +333,10 @@ export const RecurringTransactionManager: React.FC = () => {
   };
 
   // 削除
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (transaction: RecurringTransaction) => {
     if (window.confirm('この定期取引を削除しますか？')) {
       try {
-        await deleteRegularJournalEntry(id);
+        await deleteRegularJournalEntry(transaction);
       } catch (error) {
         console.error('定期取引の削除に失敗しました:', error);
         alert('削除に失敗しました');
@@ -142,83 +346,13 @@ export const RecurringTransactionManager: React.FC = () => {
 
   // 実行
   const executeTransaction = async (transaction: RecurringTransaction) => {
-    const startDate = new Date(transaction.startDate || new Date());
-    const endDate = new Date(transaction.endDate || new Date());
-    const executionDates: Date[] = [];
-
-    // 実行日リストを作成
-    let currentDate = new Date(startDate);
-    while (currentDate <= endDate) {
-      switch (transaction.frequency) {
-        case 'weekly':
-          if (currentDate.getDay() === 0 && transaction.sunFlgOfWeek) {
-            currentDate.setDate(currentDate.getDate() + 1);
-          }
-          if (currentDate.getDay() === 1 && transaction.monFlgOfWeek) {
-            currentDate.setDate(currentDate.getDate() + 1);
-          }
-          if (currentDate.getDay() === 2 && transaction.tueFlgOfWeek) {
-            currentDate.setDate(currentDate.getDate() + 1);
-          }
-          if (currentDate.getDay() === 3 && transaction.wedFlgOfWeek) {
-            currentDate.setDate(currentDate.getDate() + 1);
-          }
-          if (currentDate.getDay() === 4 && transaction.thuFlgOfWeek) {
-            currentDate.setDate(currentDate.getDate() + 1);
-          }
-          if (currentDate.getDay() === 5 && transaction.friFlgOfWeek) {
-            currentDate.setDate(currentDate.getDate() + 1);
-          }
-          if (currentDate.getDay() === 6 && transaction.satFlgOfWeek) {
-            currentDate.setDate(currentDate.getDate() + 1);
-          }
-          executionDates.push(new Date(currentDate));
-          break;
-        case 'monthly':
-          currentDate.setDate(transaction.dateOfMonth);
-          if (transaction.holidayDivOfMonth === 'before') {
-            if (currentDate.getDay() === 0) { // 日曜日
-                currentDate.setDate(currentDate.getDate() - 2);
-            } else if (currentDate.getDay() === 6) { // 土曜日
-              currentDate.setDate(currentDate.getDate() - 1);
-            }
-          } else if (transaction.holidayDivOfMonth === 'after') {
-            if (currentDate.getDay() === 0) { // 日曜日
-              currentDate.setDate(currentDate.getDate() + 1);
-            } else if (currentDate.getDay() === 6) { // 土曜日
-              currentDate.setDate(currentDate.getDate() + 2);
-            }
-          }
-          executionDates.push(new Date(currentDate));
-          currentDate.setMonth(currentDate.getMonth() + 1);
-          break;
-        case 'yearly':
-          currentDate.setFullYear(currentDate.getFullYear() + 1);
-          executionDates.push(new Date(currentDate));
-          break;
-      }
+    try {
+      await executeRegularJournalEntry(transaction);
+      alert('定期取引を実行しました');
+    } catch (error) {
+      console.error('定期取引の実行に失敗しました:', error);
+      alert('定期取引の実行に失敗しました');
     }
-
-    // 各実行日に対して取引を実行
-    for (const date of executionDates) {
-      const journalEntryData: Omit<JournalEntry, 'id'> = {
-        date: date.toISOString().split('T')[0], // 取引日 (YYYY-MM-DD)
-        description: transaction.description,
-        debitAccountId: transaction.debitAccountId,
-        creditAccountId: transaction.creditAccountId,
-        amount: transaction.amount,
-        user_id: ''
-      };
-
-      try {
-        await addJournalEntry(journalEntryData);
-      } catch (error) {
-        console.error('定期取引の実行に失敗しました:', error);
-        alert('一部の取引実行に失敗しました');
-      }
-    }
-
-    alert('定期取引をすべて実行しました');
   };
 
   return (
@@ -236,7 +370,8 @@ export const RecurringTransactionManager: React.FC = () => {
             color: 'white',
             border: 'none',
             borderRadius: '4px',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            marginRight: '10px'
           }}
         >
           新規定期取引
@@ -303,7 +438,7 @@ export const RecurringTransactionManager: React.FC = () => {
                         編集
                       </button>
                       <button 
-                        onClick={() => handleDelete(transaction.id)}
+                        onClick={() => handleDelete(transaction)}
                         style={{
                           backgroundColor: '#dc2626',
                           color: 'white',
@@ -579,7 +714,7 @@ export const RecurringTransactionManager: React.FC = () => {
                 </label>
                 <select
                   value={formData.holidayDivOfMonth || 'none'}
-                  onChange={(e) => setFormData({ ...formData, holidayDivOfMonth: e.target.value as HolidayDivOfMonth })}
+                  onChange={(e) => setFormData({ ...formData, holidayDivOfMonth: e.target.value as 'before' | 'after' | 'none' })}
                   style={{
                     width: '100%',
                     padding: '8px',
@@ -588,7 +723,7 @@ export const RecurringTransactionManager: React.FC = () => {
                     boxSizing: 'border-box'
                   }}
                 >
-                  <option value="none" defaultChecked>なし</option>
+                  <option value="none">なし</option>
                   <option value="before">前倒し</option>
                   <option value="after">後ろ倒し</option>
                 </select>
