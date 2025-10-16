@@ -211,7 +211,7 @@ export const RecurringTransactionManager: React.FC = () => {
         
       case 'monthly':
         const dateOfMonth = transaction.dateOfMonth || 1;
-        if (dateOfMonth > today.getDate()) {
+        if (dateOfMonth < today.getDate()) {
           nextDate = new Date(today.getFullYear(), today.getMonth() + 1, dateOfMonth);
         } else {
           nextDate = new Date(today.getFullYear(), today.getMonth(), dateOfMonth);
