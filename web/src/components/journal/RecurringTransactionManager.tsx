@@ -9,18 +9,12 @@ export const RecurringTransactionManager: React.FC = () => {
     updateRegularJournalEntry,
     deleteRegularJournalEntry,
     executeRegularJournalEntry,
-    executeDueRegularJournalEntries,
-    fetchFinancial
+    executeDueRegularJournalEntries
   } = useFinancialStore();
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Partial<RecurringTransaction> | null>(null);
   const [formData, setFormData] = useState<Partial<RecurringTransaction>>({});
-
-  // データ読み込み
-  useEffect(() => {
-    fetchFinancial();
-  }, [fetchFinancial]);
 
   // 自動実行機能 - ページ読み込み時に当日実行分をチェック
   useEffect(() => {

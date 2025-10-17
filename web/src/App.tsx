@@ -47,14 +47,23 @@ function App() {
   useEffect(() => {
     if (session) {
       fetchEvents();
-    }
-  }, [session, fetchEvents]);
-
-  useEffect(() => {
-    if (session) {
       fetchFinancial();
     }
-  }, [session, fetchFinancial]);
+  }, [session, fetchEvents, fetchFinancial]);
+
+  // タブ切り替え時の追加データ更新
+  useEffect(() => {
+    if (session) {
+      // 金融データが必要なタブに切り替えた時は最新データを取得
+      if (['transactions', 'calendar', 'dashboard', 'recurring'].includes(activeTab)) {
+        fetchFinancial();
+      }
+      // イベントデータが必要なタブに切り替えた時は最新データを取得
+      if (['calendar', 'events'].includes(activeTab)) {
+        fetchEvents();
+      }
+    }
+  }, [activeTab, session, fetchFinancial, fetchEvents]);
 
   const renderContent = () => {
     switch (activeTab) {

@@ -3,14 +3,12 @@ import { useEventsStore, ScheduleEvent } from '@asset-simulator/shared';
 import { EventScheduleForm } from './EventScheduleForm';
 
 export const EventScheduleManager: React.FC = () => {
-  const { events, fetchEvents, updateEvent, deleteEvent } = useEventsStore();
+  const { events, updateEvent, deleteEvent } = useEventsStore();
   const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'past'>('all');
 
-  useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
+  // データ取得は App.tsx で一元管理されるため、useEffect を削除
 
   const handleEdit = (event: ScheduleEvent) => {
     setEditingEvent(event);
@@ -23,9 +21,8 @@ export const EventScheduleManager: React.FC = () => {
         console.log('削除開始:', eventId);
         await deleteEvent(eventId);
         console.log('削除完了:', eventId);
-        // 削除後にデータを再取得
-        await fetchEvents();
-        console.log('データ再取得完了');
+        // deleteEvent メソッドがローカル状態を更新するため、fetchEvents は不要
+        console.log('ローカル状態更新完了');
         alert('イベントを削除しました');
       } catch (error) {
         console.error('削除に失敗しました:', error);
@@ -201,7 +198,7 @@ export const EventScheduleManager: React.FC = () => {
                     await updateEvent(updatedEvent);
                     setIsModalOpen(false);
                     setEditingEvent(null);
-                    await fetchEvents();
+                    // updateEvent メソッドがローカル状態を更新するため、fetchEvents は不要
                   }}
                   onCancel={() => {
                     setIsModalOpen(false);

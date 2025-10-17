@@ -7,8 +7,8 @@ import type { JournalEntry, ScheduleEvent } from '@asset-simulator/shared';
 type CalendarTileProps = TileArgs;
 
 export const JournalCalendar: React.FC = () => {
-  const { journalEntries, journalAccounts, fetchFinancial } = useFinancialStore();
-  const { events, fetchEvents } = useEventsStore();
+  const { journalEntries, journalAccounts } = useFinancialStore();
+  const { events } = useEventsStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedDateEntries, setSelectedDateEntries] = useState<JournalEntry[]>([]);
   const [selectedDateEvents, setSelectedDateEvents] = useState<ScheduleEvent[]>([]);
@@ -21,11 +21,7 @@ export const JournalCalendar: React.FC = () => {
     return `${year}-${month}-${day}`;
   }, []);
 
-useEffect(() => {
-  // 初回マウント時にデータ取得
-  fetchFinancial();
-  fetchEvents();
-}, [fetchFinancial, fetchEvents]); // ← ここはOK、Zustandの関数は通常安定参照
+// データ取得は App.tsx で一元管理されるため、useEffect を削除
 
 // --- useCallbackで関数を安定化 ---
 const getEntriesForDate = useCallback(

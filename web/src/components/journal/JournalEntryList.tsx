@@ -4,7 +4,7 @@ import { JournalEntry } from '@asset-simulator/shared';
 import { DateRangePicker, DateRange } from '../common/DateRangePicker';
 
 export const JournalEntryList: React.FC = () => {
-  const { journalEntries, journalAccounts, updateJournalEntry, fetchFinancial } = useFinancialStore();
+  const { journalEntries, journalAccounts, updateJournalEntry } = useFinancialStore();
   const { userId } = useAuthStore();
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -115,10 +115,6 @@ export const JournalEntryList: React.FC = () => {
     
     return dateMatch && accountMatch && descriptionMatch;
   });
-
-  useEffect(() => {
-    fetchFinancial();
-  }, [fetchFinancial]);
 
   // 勘定科目名を取得する関数
   const getAccountName = (accountId: string) => {
