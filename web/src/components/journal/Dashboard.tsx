@@ -28,16 +28,22 @@ export const Dashboard: React.FC = () => {
     return { startDate: defaultStartDate, endDate: defaultEndDate };
   };
 
-  const getStoredBsAsOfDate = (): string => {
-    if (!userId) return defaultEndDate;
+  const getStoredBsAsOfDate = (plEndDate?: string): string => {
+    if (!userId) return plEndDate || defaultEndDate;
     const key = `dashboard-bs-as-of-date_${userId}`;
-    return localStorage.getItem(key) || defaultEndDate;
+    const stored = localStorage.getItem(key);
+    // PLの終了日が指定されている場合は、それと同期
+    return stored || plEndDate || defaultEndDate;
   };
   
-  const [dateRange, setDateRange] = useState<DateRange>(getStoredDateRange());
-  const [bsAsOfDate, setBsAsOfDate] = useState<string>(getStoredBsAsOfDate());
+  const initialDateRange = getStoredDateRange();
+  const [dateRange, setDateRange] = useState<DateRange>(initialDateRange);
+  const [bsAsOfDate, setBsAsOfDate] = useState<string>(getStoredBsAsOfDate(initialDateRange.endDate));
+  
+  // 同期の無限ループを防ぐためのフラグ
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  // 日付範囲が変更された時にlocalStorageに保存
+  // LocalStorageへの保存のみを行うuseEffect
   useEffect(() => {
     if (userId) {
       const key = `dashboard-date-range_${userId}`;
@@ -45,13 +51,31 @@ export const Dashboard: React.FC = () => {
     }
   }, [dateRange, userId]);
 
-  // 貸借対照表基準日が変更された時にlocalStorageに保存
   useEffect(() => {
     if (userId) {
       const key = `dashboard-bs-as-of-date_${userId}`;
       localStorage.setItem(key, bsAsOfDate);
     }
   }, [bsAsOfDate, userId]);
+
+  // 日付の同期を処理するカスタム関数
+  const handleDateRangeChange = (newDateRange: DateRange) => {
+    if (!isSyncing) {
+      setIsSyncing(true);
+      setDateRange(newDateRange);
+      setBsAsOfDate(newDateRange.endDate);
+      setTimeout(() => setIsSyncing(false), 0);
+    }
+  };
+
+  const handleBsAsOfDateChange = (newBsAsOfDate: string) => {
+    if (!isSyncing) {
+      setIsSyncing(true);
+      setBsAsOfDate(newBsAsOfDate);
+      setDateRange(prev => ({ ...prev, endDate: newBsAsOfDate }));
+      setTimeout(() => setIsSyncing(false), 0);
+    }
+  };
   
   const bs = calculateBalanceSheet(bsAsOfDate);
   const pl = calculateProfitAndLossStatement(dateRange.startDate, dateRange.endDate);
@@ -113,6 +137,7 @@ export const Dashboard: React.FC = () => {
           <div className="card">
             <div className="card-header">
               <h5 className="mb-0">期間設定</h5>
+              <small className="text-muted">※ 貸借対照表の基準日と損益計算書の終了日は自動的に同期されます</small>
             </div>
             <div className="card-body">
               <div className="row">
@@ -122,14 +147,14 @@ export const Dashboard: React.FC = () => {
                     type="date"
                     className="form-control"
                     value={bsAsOfDate}
-                    onChange={(e) => setBsAsOfDate(e.target.value)}
+                    onChange={(e) => handleBsAsOfDateChange(e.target.value)}
                   />
                 </div>
                 <div className="col-md-6 mb-3">
                   <label className="form-label">損益計算書の期間</label>
                   <DateRangePicker 
                     dateRange={dateRange}
-                    onDateRangeChange={setDateRange}
+                    onDateRangeChange={handleDateRangeChange}
                   />
                 </div>
               </div>
