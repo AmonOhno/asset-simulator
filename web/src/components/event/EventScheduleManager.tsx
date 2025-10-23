@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useEventsStore, ScheduleEvent } from '@asset-simulator/shared';
 import { EventScheduleForm } from './EventScheduleForm';
 
