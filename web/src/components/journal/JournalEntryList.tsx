@@ -8,6 +8,8 @@ export const JournalEntryList: React.FC = () => {
   const { userId } = useAuthStore();
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [markedEntries, setMarkedEntries] = useState<Set<string>>(new Set());
+  const [showOnlyMarked, setShowOnlyMarked] = useState(false);
 
   // 期間フィルタの状態（前回設定を localStorage に保持）
   const today = new Date();
@@ -91,29 +93,29 @@ export const JournalEntryList: React.FC = () => {
     const dateMatch = entry.date >= dateRange.startDate && entry.date <= dateRange.endDate;
     // 摘要フィルタ（部分一致・大文字小文字区別なし）
     const descriptionMatch = !descriptionFilter || entry.description.toLowerCase().includes(descriptionFilter.toLowerCase());
+    // マーキングフィルタ
+    const markMatch = !showOnlyMarked || markedEntries.has(entry.id);
     
     // 勘定科目フィルタ
-    if (!debitAccountFilter && !creditAccountFilter) {
-      return dateMatch; // 勘定科目フィルタなしの場合
-    }
+    let accountMatch = true;
+    if (debitAccountFilter || creditAccountFilter) {
+      const debitMatch = !debitAccountFilter || entry.debitAccountId === debitAccountFilter;
+      const creditMatch = !creditAccountFilter || entry.creditAccountId === creditAccountFilter;
     
-    const debitMatch = !debitAccountFilter || entry.debitAccountId === debitAccountFilter;
-    const creditMatch = !creditAccountFilter || entry.creditAccountId === creditAccountFilter;
-    
-    let accountMatch: boolean;
-    if (filterMode === 'AND') {
-      // AND条件：両方の条件を満たす
-      accountMatch = debitMatch && creditMatch;
-    } else {
-      // OR条件：どちらかの条件を満たす（両方が設定されている場合）
-      if (debitAccountFilter && creditAccountFilter) {
-        accountMatch = entry.debitAccountId === debitAccountFilter || entry.creditAccountId === creditAccountFilter;
-      } else {
+      if (filterMode === 'AND') {
+        // AND条件：両方の条件を満たす
         accountMatch = debitMatch && creditMatch;
+      } else {
+        // OR条件：どちらかの条件を満たす（両方が設定されている場合）
+        if (debitAccountFilter && creditAccountFilter) {
+          accountMatch = entry.debitAccountId === debitAccountFilter || entry.creditAccountId === creditAccountFilter;
+        } else {
+          accountMatch = debitMatch && creditMatch;
+        }
       }
     }
     
-    return dateMatch && accountMatch && descriptionMatch;
+    return dateMatch && accountMatch && descriptionMatch && markMatch;
   });
 
   // 勘定科目名を取得する関数
@@ -280,51 +282,36 @@ export const JournalEntryList: React.FC = () => {
               </div>
             </div>
           </div>
-          
-          {/* クイックフィルタ */}
-          <div className="row">
-            <div className="col-12">
-              <small className="text-muted">クイックフィルタ:</small>
-              <div className="d-flex gap-1 flex-wrap mt-1">
-                {journalAccounts
-                  .filter(account => account.category === 'Asset' || account.category === 'Expense')
-                  .slice(0, 6)
-                  .map(account => (
-                    <button
-                      key={account.id}
-                      className={`btn btn-sm ${
-                        debitAccountFilter === account.id || creditAccountFilter === account.id 
-                          ? 'btn-primary' 
-                          : 'btn-outline-primary'
-                      }`}
-                      onClick={() => {
-                        if (debitAccountFilter === account.id || creditAccountFilter === account.id) {
-                          // 既に選択されている場合はクリア
-                          setDebitAccountFilter('');
-                          setCreditAccountFilter('');
-                        } else {
-                          // 資産・費用科目の場合は借方に設定
-                          if (account.category === 'Asset' || account.category === 'Expense') {
-                            setDebitAccountFilter(account.id);
-                            setCreditAccountFilter('');
-                          } else {
-                            setCreditAccountFilter(account.id);
-                            setDebitAccountFilter('');
-                          }
-                        }
-                      }}
-                    >
-                      {account.name}
-                    </button>
-                  ))}
+
+          {/* マーキングフィルタ */}
+          <div className="col-md-6 mb-2 d-flex align-items-end">
+            <div className="col-md-3 mb-2 d-flex align-items-end">
+              <div className="row">
+                <div className="col-12">
+                  <small className="text-muted">マーキング済みのみ表示：</small>
+                  <div className="d-flex gap-1 flex-wrap mt-1">
+                    <div className="form-check">
+                      <input 
+                        type="checkbox"
+                        className="form-check-input"
+                        id="showOnlyMarked"
+                        checked={showOnlyMarked}
+                        onChange={(e) => setShowOnlyMarked(e.target.checked)}
+                      /> 
+                      <label className="form-check-label" htmlFor="showOnlyMarked">
+                        有効
+                      </label>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        
+
         <table className="table table-striped">
           <thead>
             <tr>
+              <th>マーキング</th>
               <th>日付</th>
               <th>摘要</th>
               <th>借方</th>
@@ -341,6 +328,22 @@ export const JournalEntryList: React.FC = () => {
             ) : (
               filteredEntries.map((entry) => (
                 <tr key={entry.id}>
+                  <td>
+                    <input 
+                      type="checkbox"
+                      className="form-check-input"
+                      checked={markedEntries.has(entry.id)}
+                      onChange={(e) => {
+                        const newMarkedEntries = new Set(markedEntries);
+                        if (e.target.checked) {
+                          newMarkedEntries.add(entry.id);
+                        } else {
+                          newMarkedEntries.delete(entry.id);
+                        }
+                        setMarkedEntries(newMarkedEntries);
+                      }}
+                    />
+                  </td>
                   <td>{entry.date}</td>
                   <td>{entry.description}</td>
                   <td>{getAccountName(entry.debitAccountId)}</td>
@@ -439,6 +442,7 @@ export const JournalEntryList: React.FC = () => {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 };
