@@ -12,7 +12,9 @@ router.get('/', authMiddleware, async (req, res) => {
         const { data, error } = await supabase
             .from('journal_accounts')
             .select('*')
-            .eq('user_id', user_id);
+            .eq('user_id', user_id)
+            .order('category', { ascending: true })
+            .order('name', { ascending: true });
         if (error) throw error;
         res.json(data);
     } catch (error: any) {
