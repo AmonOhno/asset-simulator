@@ -3,15 +3,18 @@ import Calendar, { TileArgs } from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { useFinancialStore, useEventsStore } from '@asset-simulator/shared';
 import type { JournalEntry, ScheduleEvent } from '@asset-simulator/shared';
+import { JournalEntriesModal } from './JournalEntriesModal';
 
 type CalendarTileProps = TileArgs;
 
 export const JournalCalendar: React.FC = () => {
-  const { journalEntries, journalAccounts } = useFinancialStore();
+  const { journalEntries, journalAccounts, updateJournalEntry } = useFinancialStore();
   const { events } = useEventsStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedDateEntries, setSelectedDateEntries] = useState<JournalEntry[]>([]);
   const [selectedDateEvents, setSelectedDateEvents] = useState<ScheduleEvent[]>([]);
+  const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // 日付を文字列形式に変換（YYYY-MM-DD）
   const formatDateToString = useCallback((date: Date): string => {
@@ -102,6 +105,34 @@ useEffect(() => {
       setSelectedDateEvents(events);
     }
   };
+
+    // 編集モーダル関連
+    const handleEditEntry = (entry: JournalEntry) => {
+      setEditingEntry({ ...entry });
+      setIsModalOpen(true);
+    };
+
+    const handleCancelEdit = () => {
+      setEditingEntry(null);
+      setIsModalOpen(false);
+    };
+
+    const handleSaveEdit = async () => {
+      if (editingEntry) {
+        await updateJournalEntry(editingEntry);
+        setEditingEntry(null);
+        setIsModalOpen(false);
+      }
+    };
+
+    const handleModalInputChange = (field: keyof JournalEntry, value: string | number) => {
+      if (editingEntry) {
+        setEditingEntry({
+          ...editingEntry,
+          [field]: value,
+        });
+      }
+    };
 
   // カレンダーのタイルにカスタム内容を表示
   const tileContent = ({ date, view }: CalendarTileProps) => {
@@ -559,10 +590,18 @@ useEffect(() => {
                   
                   return (
                     <div key={entry.id} className={`journal-entry-item ${isExpenseEntry ? 'expense-entry' : ''} ${isRevenueEntry ? 'revenue-entry' : ''}`}>
-                      <div className="entry-description">
-                        {entry.description}
-                        {isExpenseEntry && <span className="entry-type-badge expense">費用</span>}
-                        {isRevenueEntry && <span className="entry-type-badge revenue">収益</span>}
+                      <div className="entry-description d-flex justify-content-between align-items-start">
+                        <div>
+                          {entry.description}
+                          {isExpenseEntry && <span className="entry-type-badge expense ms-2">費用</span>}
+                          {isRevenueEntry && <span className="entry-type-badge revenue ms-2">収益</span>}
+                        </div>
+                        <button
+                          className="btn btn-sm btn-outline-primary"
+                          onClick={() => handleEditEntry(entry)}
+                        >
+                          編集
+                        </button>
                       </div>
                       <div className="entry-accounts">
                         <span className="entry-debit">
@@ -590,6 +629,15 @@ useEffect(() => {
           </div>
         </div>
       </div>
+
+      <JournalEntriesModal
+        isOpen={isModalOpen}
+        entry={editingEntry}
+        journalAccounts={journalAccounts}
+        onCancel={handleCancelEdit}
+        onSave={handleSaveEdit}
+        onChange={handleModalInputChange}
+      />
     </div>
   );
 };
