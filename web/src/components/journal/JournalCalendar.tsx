@@ -15,6 +15,10 @@ export const JournalCalendar: React.FC = () => {
   const [selectedDateEvents, setSelectedDateEvents] = useState<ScheduleEvent[]>([]);
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // 勘定科目フィルタ
+  const [debitAccountFilter, setDebitAccountFilter] = useState<string>('');
+  const [creditAccountFilter, setCreditAccountFilter] = useState<string>('');
 
   // 日付を文字列形式に変換（YYYY-MM-DD）
   const formatDateToString = useCallback((date: Date): string => {
@@ -30,9 +34,21 @@ export const JournalCalendar: React.FC = () => {
 const getEntriesForDate = useCallback(
   (date: Date): JournalEntry[] => {
     const dateString = formatDateToString(date);
-    return journalEntries.filter((entry) => entry.date === dateString);
+    return journalEntries
+      .filter((entry) => entry.date === dateString)
+      .filter((entry) => {
+        // 借方勘定科目フィルタ
+        if (debitAccountFilter && entry.debitAccountId !== debitAccountFilter) {
+          return false;
+        }
+        // 貸方勘定科目フィルタ
+        if (creditAccountFilter && entry.creditAccountId !== creditAccountFilter) {
+          return false;
+        }
+        return true;
+      });
   },
-  [journalEntries, formatDateToString] // journalEntries が変わったときだけ再生成
+  [journalEntries, formatDateToString, debitAccountFilter, creditAccountFilter] // journalEntries が変わったときだけ再生成
 );
 
 const getEventsForDate = useCallback(
@@ -51,6 +67,12 @@ useEffect(() => {
   const eventsForDate = getEventsForDate(selectedDate);
   setSelectedDateEvents(eventsForDate);
 }, [selectedDate, getEntriesForDate, getEventsForDate]);
+
+// フィルタが変更されたら、選択日の仕訳を更新
+useEffect(() => {
+  const entries = getEntriesForDate(selectedDate);
+  setSelectedDateEntries(entries);
+}, [debitAccountFilter, creditAccountFilter, getEntriesForDate, selectedDate]);
 
 // 勘定科目名を取得する関数
   const getAccountName = (accountId: string): string => {
@@ -196,6 +218,29 @@ useEffect(() => {
         
         .calendar-header {
           margin-bottom: 20px;
+        }
+        
+        .account-filters {
+          background: #f8f9fa;
+          border: 1px solid #dee2e6;
+          border-radius: 8px;
+          padding: 15px;
+        }
+        
+        .account-filters .form-label {
+          font-weight: 600;
+          color: #495057;
+          margin-bottom: 5px;
+        }
+        
+        .account-filters .form-select {
+          border-radius: 4px;
+          border: 1px solid #ced4da;
+        }
+        
+        .account-filters .btn-outline-secondary {
+          border-radius: 4px;
+          font-weight: 500;
         }
         
         .calendar-wrapper {
@@ -494,6 +539,55 @@ useEffect(() => {
       <div className="calendar-header">
         <h2>📅 カレンダー</h2>
         <p>カレンダーから日付を選択して、その日のスケジュール及び仕訳データを確認できます。</p>
+        
+        {/* 勘定科目フィルタ */}
+        <div className="account-filters mt-3">
+          <div className="row g-3">
+            <div className="col-md-5">
+              <label htmlFor="debitFilter" className="form-label">借方勘定科目フィルタ</label>
+              <select
+                id="debitFilter"
+                className="form-select"
+                value={debitAccountFilter}
+                onChange={(e) => setDebitAccountFilter(e.target.value)}
+              >
+                <option value="">全て表示</option>
+                {journalAccounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name} ({account.category})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="col-md-5">
+              <label htmlFor="creditFilter" className="form-label">貸方勘定科目フィルタ</label>
+              <select
+                id="creditFilter"
+                className="form-select"
+                value={creditAccountFilter}
+                onChange={(e) => setCreditAccountFilter(e.target.value)}
+              >
+                <option value="">全て表示</option>
+                {journalAccounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name} ({account.category})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="col-md-2 d-flex align-items-end">
+              <button
+                className="btn btn-outline-secondary w-100"
+                onClick={() => {
+                  setDebitAccountFilter('');
+                  setCreditAccountFilter('');
+                }}
+              >
+                クリア
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
       
       <div className="calendar-wrapper">
