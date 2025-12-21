@@ -22,7 +22,7 @@ import { EventScheduleManager } from './components/event/EventScheduleManager';
 import { useEventsStore } from '@asset-simulator/shared';
 
 
-type Tab = 'dashboard' | 'transactions' | 'calendar' | 'masters' | 'recurring' | 'events' | 'Analytics';
+type Tab = 'dashboard' | 'transactions' | 'calendar' | 'masters' | 'recurring' | 'events';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('transactions');
