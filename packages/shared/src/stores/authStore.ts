@@ -5,6 +5,7 @@ interface AuthState {
   session: Session | null;
   userId: string | null;
   setSession: (session: Session | null) => void;
+  
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
