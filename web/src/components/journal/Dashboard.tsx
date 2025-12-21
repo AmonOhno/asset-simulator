@@ -83,6 +83,12 @@ export const Dashboard: React.FC = () => {
   const totalRevenues = pl.revenues.reduce((sum, item) => sum + item.amount, 0);
   const totalExpenses = pl.expenses.reduce((sum, item) => sum + item.amount, 0);
 
+  const totalEquity = () => {
+    const totalAssets = bs.assets.reduce((sum, item) => sum + item.amount, 0);
+    const totalLiabilities = bs.liabilities.reduce((sum, item) => sum + item.amount, 0);
+    return totalAssets - totalLiabilities;
+  };
+
   return (
     <div className="dashboard">
       <div className="row">
@@ -94,34 +100,16 @@ export const Dashboard: React.FC = () => {
       {/* サマリーカード */}
       <div className="row mb-4">
         <div className="col-md-3 mb-3">
-          <div className="card bg-primary text-white">
+          <div className={`card text-white ${totalEquity() >= 0 ? 'bg-primary' : 'bg-danger'}`}>
             <div className="card-body">
               <h5 className="card-title">総資産</h5>
-              <h3 className="card-text">{bs.totalAssets.toLocaleString()}円</h3>
+              <h3 className="card-text">{totalEquity().toLocaleString()}円</h3>
               <small>基準日: {bsAsOfDate}</small>
             </div>
           </div>
         </div>
         <div className="col-md-3 mb-3">
-          <div className="card bg-success text-white">
-            <div className="card-body">
-              <h5 className="card-title">収益</h5>
-              <h3 className="card-text">{totalRevenues.toLocaleString()}円</h3>
-              <small>{dateRange.startDate} 〜 {dateRange.endDate}</small>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3 mb-3">
-          <div className="card bg-warning text-white">
-            <div className="card-body">
-              <h5 className="card-title">費用</h5>
-              <h3 className="card-text">{totalExpenses.toLocaleString()}円</h3>
-              <small>{dateRange.startDate} 〜 {dateRange.endDate}</small>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3 mb-3">
-          <div className={`card text-white ${pl.netIncome >= 0 ? 'bg-info' : 'bg-danger'}`}>
+          <div className={`card text-white ${pl.netIncome >= 0 ? 'bg-info' : 'bg-warning'}`}>
             <div className="card-body">
               <h5 className="card-title">純損益</h5>
               <h3 className="card-text">{pl.netIncome.toLocaleString()}円</h3>
@@ -130,7 +118,6 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
-
       {/* 期間フィルタ */}
       <div className="row mb-4">
         <div className="col-12">
@@ -269,12 +256,6 @@ export const Dashboard: React.FC = () => {
                   <tr className="table-group-divider">
                     <th>費用合計</th>
                     <th className="text-end">{totalExpenses.toLocaleString()}円</th>
-                  </tr>
-                  <tr className="table-light">
-                    <th>当期純利益</th>
-                    <th className={`text-end ${pl.netIncome < 0 ? 'text-danger' : 'text-success'}`}>
-                      {pl.netIncome.toLocaleString()}円
-                    </th>
                   </tr>
                 </tbody>
               </table>

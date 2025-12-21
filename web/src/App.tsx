@@ -30,6 +30,7 @@ function App() {
   const fetchEvents = useEventsStore((state) => state.fetchEvents);
   const { session, setSession } = useAuthStore();
 
+  // 初回ロード時のセッション確認と監視設定
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -44,12 +45,13 @@ function App() {
     return () => subscription.unsubscribe();
   }, [setSession]);
 
+  // ログイン時の初回データ取得
   useEffect(() => {
     if (session) {
       fetchEvents();
       fetchFinancial();
     }
-  }, [session, fetchEvents, fetchFinancial]);
+  }, [session, fetchEvents, fetchFinancial, setActiveTab]);
 
   // タブ切り替え時の追加データ更新
   useEffect(() => {
