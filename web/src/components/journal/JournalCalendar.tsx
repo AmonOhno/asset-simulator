@@ -5,7 +5,6 @@ import { useFinancialStore, useEventsStore } from '@asset-simulator/shared';
 import type { JournalEntry, ScheduleEvent } from '@asset-simulator/shared';
 import { JournalEntriesModal } from './JournalEntriesModal';
 // use absolute import (baseUrl = src) for styles
-import 'styles/JournalCalendar.css';
 
 type CalendarTileProps = TileArgs;
 
