@@ -373,14 +373,14 @@ useEffect(() => {
                           編集
                         </button>
                       </div>
-                      <div className="entry-accounts">
-                        <span className="entry-debit">
-                          借方: {getAccountName(entry.debitAccountId)}
-                        </span>
-                        <span className="entry-credit">
-                          貸方: {getAccountName(entry.creditAccountId)}
-                        </span>
-                      </div>
+                            <div className="entry-accounts">
+                              <span className={`entry-debit me-2 ${debitCategory === 'Expense' ? 'expense' : ''}`}>
+                                借方: {getAccountName(entry.debitAccountId)}
+                              </span>
+                              <span className={`entry-credit ms-2 ${creditCategory === 'Revenue' ? 'revenue' : ''}`}>
+                                貸方: {getAccountName(entry.creditAccountId)}
+                              </span>
+                            </div>
                       <div className="entry-amount">
                         ¥{entry.amount.toLocaleString()}
                       </div>
