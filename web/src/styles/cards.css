@@ -60,3 +60,14 @@
   text-align: right;
   color: #495057;
 }
+
+/* Colorize entry accounts: blue for expense debit, red for revenue credit */
+.entry-debit.expense {
+  color: #1976d2;
+  font-weight: 600;
+}
+
+.entry-credit.revenue {
+  color: #d32f2f;
+  font-weight: 600;
+}
