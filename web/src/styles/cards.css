@@ -1,0 +1,62 @@
+.journal-entry-item {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.journal-entry-item.expense-entry {
+  border-left: 4px solid #2196f3;
+  background: #f8fbff;
+}
+
+.journal-entry-item.revenue-entry {
+  border-left: 4px solid #f44336;
+  background: #fffbfb;
+}
+
+.financial-summary {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 15px;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.summary-item:last-child {
+  margin-bottom: 0;
+  padding-top: 5px;
+  border-top: 1px solid #dee2e6;
+  font-weight: bold;
+}
+
+.summary-item.expense .summary-amount {
+  color: #2196f3;
+}
+
+.summary-item.revenue .summary-amount {
+  color: #f44336;
+}
+
+.summary-amount.positive {
+  color: #28a745;
+}
+
+.summary-amount.negative {
+  color: #dc3545;
+}
+
+.entry-amount {
+  font-size: 1.1em;
+  font-weight: bold;
+  text-align: right;
+  color: #495057;
+}
