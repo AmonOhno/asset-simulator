@@ -21,8 +21,8 @@
   border-radius: 4px;
 }
 
-/* テーブルヘッダーを固定する場合
-.card-body-scrollable table thead th {
+/* テーブルヘッダーを固定する場合 */
+/* .card-body-scrollable table thead th {
   position: sticky;
   top: 0;
   background-color: #fff;

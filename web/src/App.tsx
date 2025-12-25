@@ -1,7 +1,6 @@
 // src/App.tsx
 
-import React, { useState, useEffect } from 'react';
-import './App.css';
+import { useState, useEffect } from 'react';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from './supabaseClient';
@@ -179,7 +178,7 @@ function App() {
               console.error('Sign out failed:', err);
             }
           }}
-          className="btn btn-outline-secondary"
+          className="btn btn-outline-secondary custom-radius"
         >
           ログアウト
         </button>

@@ -9,8 +9,6 @@ export const JournalEntryList: React.FC = () => {
   const { userId } = useAuthStore();
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [markedEntries, setMarkedEntries] = useState<Set<string>>(new Set());
-  const [showOnlyMarked, setShowOnlyMarked] = useState(false);
 
   // 期間フィルタの状態（前回設定を localStorage に保持）
   const today = new Date();
@@ -94,8 +92,6 @@ export const JournalEntryList: React.FC = () => {
     const dateMatch = entry.date >= dateRange.startDate && entry.date <= dateRange.endDate;
     // 摘要フィルタ（部分一致・大文字小文字区別なし）
     const descriptionMatch = !descriptionFilter || entry.description.toLowerCase().includes(descriptionFilter.toLowerCase());
-    // マーキングフィルタ
-    const markMatch = !showOnlyMarked || markedEntries.has(entry.id);
     
     // 勘定科目フィルタ
     let accountMatch = true;
@@ -116,7 +112,7 @@ export const JournalEntryList: React.FC = () => {
       }
     }
     
-    return dateMatch && accountMatch && descriptionMatch && markMatch;
+    return dateMatch && accountMatch && descriptionMatch;
   });
 
   // 勘定科目名を取得する関数
@@ -146,6 +142,11 @@ export const JournalEntryList: React.FC = () => {
     }
   };
 
+  // CSV出力
+  const handleExportCSV = () => {
+    // Package側のCSV生成ロジック呼び出し
+  };
+
   // フォーム入力変更
   const handleInputChange = (field: keyof JournalEntry, value: string | number) => {
     if (editingEntry) {
@@ -161,10 +162,27 @@ export const JournalEntryList: React.FC = () => {
       <div className="card-header">
         <div className="d-flex justify-content-between align-items-center">
           <span>仕訳帳</span>
-          <div className="text-end">
+          <div className="row text-end">
+            {/* 件数 */}
             <small className="text-muted">
               {filteredEntries.length} / {journalEntries.length} 件
             </small>
+            {/* CSV */}
+              <div className="col-2 mb-2">
+              <button
+                type="button"
+                className="btn btn-outline-secondary btn-sm btn-icon-borderless custom-radius"
+                onClick={handleExportCSV}
+                aria-label="CSV出力"
+              >
+                <img
+                  src="/assets/icons/download-icon.svg"
+                  alt=""
+                  style={{ width: 18, height: 20 }}
+                />
+              </button>
+            </div>
+            {/* フィルタ条件 */}
             {(debitAccountFilter || creditAccountFilter || descriptionFilter) && (
               <div className="mt-1">
                 {debitAccountFilter && (
@@ -193,126 +211,101 @@ export const JournalEntryList: React.FC = () => {
         </div>
       </div>
       <div className="card-body card-body-scrollable">
-        {/* フィルタ設定 */}
-        <div className="mb-3">
-          <div className="row">
-            <div className="col-12 mb-3">
-              <label className="form-label">期間</label>
-              <DateRangePicker 
-                dateRange={dateRange}
-                onDateRangeChange={setDateRange}
-              />
-            </div>
-          </div>
-          <div className="row">
-            <div className="col-md-3 mb-2">
-              <label className="form-label">借方勘定科目</label>
-              <select
-                className="form-select form-select-sm"
-                value={debitAccountFilter}
-                onChange={(e) => setDebitAccountFilter(e.target.value)}
-              >
-                <option value="">すべて</option>
-                {journalAccounts.map(account => (
-                  <option key={account.id} value={account.id}>
-                    {account.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="col-md-3 mb-2">
-              <label className="form-label">貸方勘定科目</label>
-              <select
-                className="form-select form-select-sm"
-                value={creditAccountFilter}
-                onChange={(e) => setCreditAccountFilter(e.target.value)}
-              >
-                <option value="">すべて</option>
-                {journalAccounts.map(account => (
-                  <option key={account.id} value={account.id}>
-                    {account.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="col-md-3 mb-2">
-              <label className="form-label">摘要（部分一致）</label>
-              <input
-                type="text"
-                className="form-control form-control-sm"
-                value={descriptionFilter}
-                placeholder="例: 家賃"
-                onChange={(e) => setDescriptionFilter(e.target.value)}
-              />
-            </div>
-            <div className="col-md-3 mb-2 d-flex align-items-end">
-              <div className="d-flex gap-2">
-                <button 
-                  className="btn btn-outline-secondary btn-sm"
-                  onClick={() => {
-                    setDebitAccountFilter('');
-                    setCreditAccountFilter('');
-                    setDescriptionFilter('');
-                  }}
-                >
-                  フィルタクリア
-                </button>
-                {(debitAccountFilter && creditAccountFilter) && (
-                  <div className="btn-group" role="group">
-                    <input 
-                      type="radio" 
-                      className="btn-check" 
-                      name="filterMode" 
-                      id="filterAnd" 
-                      checked={filterMode === 'AND'}
-                      onChange={() => setFilterMode('AND')}
-                    />
-                    <label className="btn btn-outline-info btn-sm" htmlFor="filterAnd">AND</label>
-                    
-                    <input 
-                      type="radio" 
-                      className="btn-check" 
-                      name="filterMode" 
-                      id="filterOr" 
-                      checked={filterMode === 'OR'}
-                      onChange={() => setFilterMode('OR')}
-                    />
-                    <label className="btn btn-outline-info btn-sm" htmlFor="filterOr">OR</label>
-                  </div>
-                )}
+          {/* フィルタ設定 */}
+          <div className="col-10 mb-5">
+            <div className="row">
+              <div className="col-12 mb-3">
+                <label className="form-label">期間</label>
+                <DateRangePicker 
+                  dateRange={dateRange}
+                  onDateRangeChange={setDateRange}
+                />
               </div>
             </div>
-          </div>
-
-          {/* マーキングフィルタ */}
-          <div className="col-md-6 mb-2 d-flex align-items-end">
-            <div className="col-md-3 mb-2 d-flex align-items-end">
-              <div className="row">
-                <div className="col-12">
-                  <small className="text-muted">マーキング済みのみ表示：</small>
-                  <div className="d-flex gap-1 flex-wrap mt-1">
-                    <div className="form-check">
+            <div className="row">
+              <div className="col-md-4 mb-2">
+                <label className="form-label">借方勘定科目</label>
+                <select
+                  className="form-select form-select-sm"
+                  value={debitAccountFilter}
+                  onChange={(e) => setDebitAccountFilter(e.target.value)}
+                >
+                  <option value="">すべて</option>
+                  {journalAccounts.map(account => (
+                    <option key={account.id} value={account.id}>
+                      {account.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-md-4 mb-2">
+                <label className="form-label">貸方勘定科目</label>
+                <select
+                  className="form-select form-select-sm"
+                  value={creditAccountFilter}
+                  onChange={(e) => setCreditAccountFilter(e.target.value)}
+                >
+                  <option value="">すべて</option>
+                  {journalAccounts.map(account => (
+                    <option key={account.id} value={account.id}>
+                      {account.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-md-4 mb-2">
+                <label className="form-label">摘要（部分一致）</label>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  value={descriptionFilter}
+                  placeholder="例: 家賃"
+                  onChange={(e) => setDescriptionFilter(e.target.value)}
+                />
+              </div>
+              <div className="col-md-4 mt-2 d-flex align-items-end">
+                <div className="d-flex gap-2">
+                  <button 
+                    className="btn btn-outline-secondary btn-sm custom-radius"
+                    onClick={() => {
+                      setDebitAccountFilter('');
+                      setCreditAccountFilter('');
+                      setDescriptionFilter('');
+                    }}
+                  >
+                    フィルタクリア
+                  </button>
+                  {(debitAccountFilter && creditAccountFilter) && (
+                    <div className="btn-group" role="group">
                       <input 
-                        type="checkbox"
-                        className="form-check-input"
-                        id="showOnlyMarked"
-                        checked={showOnlyMarked}
-                        onChange={(e) => setShowOnlyMarked(e.target.checked)}
-                      /> 
-                      <label className="form-check-label" htmlFor="showOnlyMarked">
-                        有効
-                      </label>
+                        type="radio" 
+                        className="btn-check" 
+                        name="filterMode" 
+                        id="filterAnd" 
+                        checked={filterMode === 'AND'}
+                        onChange={() => setFilterMode('AND')}
+                      />
+                      <label className="btn btn-outline-info btn-sm" htmlFor="filterAnd">AND</label>
+                      
+                      <input 
+                        type="radio" 
+                        className="btn-check" 
+                        name="filterMode" 
+                        id="filterOr" 
+                        checked={filterMode === 'OR'}
+                        onChange={() => setFilterMode('OR')}
+                      />
+                      <label className="btn btn-outline-info btn-sm" htmlFor="filterOr">OR</label>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
-
+        {/* データリスト */}
         <table className="table table-striped">
           <thead>
             <tr>
-              <th>マーキング</th>
               <th>日付</th>
               <th>摘要</th>
               <th>借方</th>
@@ -329,22 +322,6 @@ export const JournalEntryList: React.FC = () => {
             ) : (
               filteredEntries.map((entry) => (
                 <tr key={entry.id}>
-                  <td>
-                    <input 
-                      type="checkbox"
-                      className="form-check-input"
-                      checked={markedEntries.has(entry.id)}
-                      onChange={(e) => {
-                        const newMarkedEntries = new Set(markedEntries);
-                        if (e.target.checked) {
-                          newMarkedEntries.add(entry.id);
-                        } else {
-                          newMarkedEntries.delete(entry.id);
-                        }
-                        setMarkedEntries(newMarkedEntries);
-                      }}
-                    />
-                  </td>
                   <td>{entry.date}</td>
                   <td>{entry.description}</td>
                   <td>{getAccountName(entry.debitAccountId)}</td>
@@ -363,17 +340,16 @@ export const JournalEntryList: React.FC = () => {
             )}
           </tbody>
         </table>
+        {/* 編集画面 */}
+        <JournalEntriesModal
+          isOpen={isModalOpen}
+          entry={editingEntry}
+          journalAccounts={journalAccounts}
+          onCancel={handleCancelEdit}
+          onSave={handleSaveEdit}
+          onChange={handleInputChange}
+        />
       </div>
-
-      <JournalEntriesModal
-        isOpen={isModalOpen}
-        entry={editingEntry}
-        journalAccounts={journalAccounts}
-        onCancel={handleCancelEdit}
-        onSave={handleSaveEdit}
-        onChange={handleInputChange}
-      />
-    </div>
     </div>
   );
 };
