@@ -15,6 +15,12 @@ export const RecurringTransactionManager: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Partial<RecurringTransaction> | null>(null);
   const [formData, setFormData] = useState<Partial<RecurringTransaction>>({});
+  // フィルタ / ソート状態
+  const [nameFilter, setNameFilter] = useState<string>('');
+  const [debitFilter, setDebitFilter] = useState<string>('');
+  const [creditFilter, setCreditFilter] = useState<string>('');
+  const [sortBy, setSortBy] = useState<'name' | 'debit' | 'credit' | 'amount' | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // 自動実行機能 - ページ読み込み時に当日実行分をチェック
   useEffect(() => {
@@ -25,21 +31,17 @@ export const RecurringTransactionManager: React.FC = () => {
           console.log(`${result.executed}件の定期取引を自動実行しました。`);
           // 必要に応じてアラートまたは通知を表示
         }
-      } catch (error) {
-        console.error('定期取引の自動実行に失敗しました:', error);
-      }
-    };
+        } catch (error) {
+          console.error('定期取引の自動実行に失敗しました:', error);
+        }
+      };
 
-    // ページ読み込み時に自動実行
-    autoExecuteToday();
-
-    // 10分ごとに実行状況をチェック（重複実行を防ぐため間隔を延長）
+      // 10分ごとに実行状況をチェック（重複実行を防ぐため間隔を延長）
     const interval = setInterval(autoExecuteToday, 600000); // 10分 = 600,000ms
 
     return () => clearInterval(interval);
   }, [executeDueRegularJournalEntries]);
 
-  // 本日が実行日かどうかを判定
   const isTodayExecutionDate = (transaction: RecurringTransaction): boolean => {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
@@ -48,88 +50,76 @@ export const RecurringTransactionManager: React.FC = () => {
     // 開始日・終了日チェック
     if (transaction.startDate && todayStr < transaction.startDate) return false;
     if (transaction.endDate && todayStr > transaction.endDate) return false;
-
-    switch (transaction.frequency) {
-      case 'weekly':
-        const dayFlags = [
-          transaction.sunFlgOfWeek,  // 0: 日曜日
-          transaction.monFlgOfWeek,  // 1: 月曜日
-          transaction.tueFlgOfWeek,  // 2: 火曜日
-          transaction.wedFlgOfWeek,  // 3: 水曜日
-          transaction.thuFlgOfWeek,  // 4: 木曜日
-          transaction.friFlgOfWeek,  // 5: 金曜日
-          transaction.satFlgOfWeek   // 6: 土曜日
+    const dayFlags = [
+          transaction.sunFlgOfWeek,
+          transaction.monFlgOfWeek,
+          transaction.tueFlgOfWeek,
+          transaction.wedFlgOfWeek,
+          transaction.thuFlgOfWeek,
+          transaction.friFlgOfWeek,
+          transaction.satFlgOfWeek,
         ];
-        
-        // 基本的な曜日チェック
-        if (!dayFlags[todayDayOfWeek]) return false;
-        
-        // 祝日・日曜日除外設定のチェック（サーバー側ロジックと合わせるためコメントアウト）
-        // サーバー側では publicHolidayExFlgOfWeek の処理が実装されていないため
-        /*
-        if (transaction.publicHolidayExFlgOfWeek) {
-          // 日曜日の場合は除外
-          if (todayDayOfWeek === 0) return false;
-          // 土曜日の場合も除外（平日のみ実行）
-          if (todayDayOfWeek === 6) return false;
-          // 実際の祝日判定は簡略化（必要に応じて祝日カレンダーAPIを使用）
-        }
-        */
-        
-        return true;
-      
-      case 'monthly':
-        if (transaction.dateOfMonth) {
-          const currentMonthLastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-          const targetDay = Math.min(transaction.dateOfMonth, currentMonthLastDay);
-          let targetDate = new Date(today.getFullYear(), today.getMonth(), targetDay);
-          
-          // 休日調整
-          if (transaction.holidayDivOfMonth === 'before') {
-            if (targetDate.getDay() === 0) { // 日曜日
-              targetDate.setDate(targetDate.getDate() - 2);
-            } else if (targetDate.getDay() === 6) { // 土曜日
-              targetDate.setDate(targetDate.getDate() - 1);
-            }
-          } else if (transaction.holidayDivOfMonth === 'after') {
-            if (targetDate.getDay() === 0) { // 日曜日
-              targetDate.setDate(targetDate.getDate() + 1);
-            } else if (targetDate.getDay() === 6) { // 土曜日
-              targetDate.setDate(targetDate.getDate() + 2);
-            }
-          }
-          
-          return targetDate.toISOString().split('T')[0] === todayStr;
-        }
-        return false;
-      
-      case 'yearly':
-        if (transaction.dateOfYear) {
-          const [month, day] = transaction.dateOfYear.split('-').map(Number);
-          let targetDate = new Date(today.getFullYear(), month - 1, day);
-          
-          // 休日調整
-          if (transaction.holidayDivOfMonth === 'before') {
-            if (targetDate.getDay() === 0) { // 日曜日
-              targetDate.setDate(targetDate.getDate() - 2);
-            } else if (targetDate.getDay() === 6) { // 土曜日
-              targetDate.setDate(targetDate.getDate() - 1);
-            }
-          } else if (transaction.holidayDivOfMonth === 'after') {
-            if (targetDate.getDay() === 0) { // 日曜日
-              targetDate.setDate(targetDate.getDate() + 1);
-            } else if (targetDate.getDay() === 6) { // 土曜日
-              targetDate.setDate(targetDate.getDate() + 2);
-            }
-          }
-          
-          return targetDate.toISOString().split('T')[0] === todayStr;
-        }
-        return false;
-      
-      default:
-        return false;
+    // 周次
+    if (transaction.frequency === 'weekly') {
+      // 基本的な曜日チェック
+      if (!dayFlags[todayDayOfWeek]) return false;
+      return true;
     }
+
+    // 月次
+    if (transaction.frequency === 'monthly') {
+      if (transaction.dateOfMonth) {
+        const currentMonthLastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+        const targetDay = Math.min(transaction.dateOfMonth, currentMonthLastDay);
+        let targetDate = new Date(today.getFullYear(), today.getMonth(), targetDay);
+
+        // 休日調整
+        if (transaction.holidayDivOfMonth === 'before') {
+          if (targetDate.getDay() === 0) {
+            targetDate.setDate(targetDate.getDate() - 2);
+          } else if (targetDate.getDay() === 6) {
+            targetDate.setDate(targetDate.getDate() - 1);
+          }
+        } else if (transaction.holidayDivOfMonth === 'after') {
+          if (targetDate.getDay() === 0) {
+            targetDate.setDate(targetDate.getDate() + 1);
+          } else if (targetDate.getDay() === 6) {
+            targetDate.setDate(targetDate.getDate() + 2);
+          }
+        }
+
+        return targetDate.toISOString().split('T')[0] === todayStr;
+      }
+      return false;
+    }
+
+    // 年次
+    if (transaction.frequency === 'yearly') {
+      if (transaction.dateOfYear) {
+        const [month, day] = transaction.dateOfYear.split('-').map(Number);
+        let targetDate = new Date(today.getFullYear(), month - 1, day);
+
+        // 休日調整
+        if (transaction.holidayDivOfMonth === 'before') {
+          if (targetDate.getDay() === 0) {
+            targetDate.setDate(targetDate.getDate() - 2);
+          } else if (targetDate.getDay() === 6) {
+            targetDate.setDate(targetDate.getDate() - 1);
+          }
+        } else if (transaction.holidayDivOfMonth === 'after') {
+          if (targetDate.getDay() === 0) {
+            targetDate.setDate(targetDate.getDate() + 1);
+          } else if (targetDate.getDay() === 6) {
+            targetDate.setDate(targetDate.getDate() + 2);
+          }
+        }
+
+        return targetDate.toISOString().split('T')[0] === todayStr;
+      }
+      return false;
+    }
+
+    return false;
   };
 
   // 次の実行予定日を計算
@@ -359,113 +349,134 @@ export const RecurringTransactionManager: React.FC = () => {
         </button>
       </div>
 
-      {/* 全定期取引一覧 */}
+      {/* 全定期取引一覧（表形式） */}
       <div>
         <h3>定期取引一覧</h3>
+        {/* フィルタ / 検索 */}
+        <div className="mb-3 d-flex gap-2 align-items-center">
+          <input
+            type="text"
+            className="form-control form-control-sm"
+            style={{ maxWidth: 220 }}
+            placeholder="名称で検索"
+            value={nameFilter}
+            onChange={(e) => setNameFilter(e.target.value)}
+          />
+          <select className="form-select form-select-sm" style={{ maxWidth: 220 }} value={debitFilter} onChange={(e) => setDebitFilter(e.target.value)}>
+            <option value="">すべての借方</option>
+            {journalAccounts.map(a => <option key={`d-${a.id}`} value={a.id}>{a.name}</option>)}
+          </select>
+          <select className="form-select form-select-sm" style={{ maxWidth: 220 }} value={creditFilter} onChange={(e) => setCreditFilter(e.target.value)}>
+            <option value="">すべての貸方</option>
+            {journalAccounts.map(a => <option key={`c-${a.id}`} value={a.id}>{a.name}</option>)}
+          </select>
+          <button className="btn btn-sm btn-outline-secondary" onClick={() => { setNameFilter(''); setDebitFilter(''); setCreditFilter(''); setSortBy(null); setSortDirection('asc'); }}>クリア</button>
+        </div>
         {regularJournalEntries.length === 0 ? (
           <p>定期取引が登録されていません</p>
         ) : (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
-            gap: '20px'
-          }}>
-            {regularJournalEntries.map((transaction: RecurringTransaction) => {
-              const debitAccount = journalAccounts.find(acc => acc.id === transaction.debitAccountId);
-              const creditAccount = journalAccounts.find(acc => acc.id === transaction.creditAccountId);
-              const nextExecution = getNextExecutionDate(transaction);
-
-              return (
-                <div key={transaction.id} style={{
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  padding: '15px',
-                  background: 'white'
+          <table className="table table-striped">
+            <thead>
+              <tr>
+                <th style={{ cursor: 'pointer' }} onClick={() => {
+                  if (sortBy === 'name') setSortDirection(d => d === 'asc' ? 'desc' : 'asc');
+                  else { setSortBy('name'); setSortDirection('asc'); }
                 }}>
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    marginBottom: '15px'
+                  名称 {sortBy === 'name' && (sortDirection === 'asc' ? '▲' : '▼')}
+                </th>
+                <th>説明</th>
+                  <th style={{ cursor: 'pointer' }} onClick={() => {
+                    if (sortBy === 'debit') setSortDirection(d => d === 'asc' ? 'desc' : 'asc');
+                    else { setSortBy('debit'); setSortDirection('asc'); }
                   }}>
-                    <h4 style={{ margin: 0, flex: 1 }}>{transaction.name}</h4>
-                    <div style={{ display: 'flex', gap: '5px' }}>
-                      <button 
-                        onClick={() => executeTransaction(transaction)}
-                        style={{
-                          backgroundColor: '#16a34a',
-                          color: 'white',
-                          padding: '4px 8px',
-                          fontSize: '12px',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        実行
-                      </button>
-                      <button 
-                        onClick={() => startEdit(transaction)}
-                        style={{
-                          backgroundColor: '#f59e0b',
-                          color: 'white',
-                          padding: '4px 8px',
-                          fontSize: '12px',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        編集
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(transaction)}
-                        style={{
-                          backgroundColor: '#dc2626',
-                          color: 'white',
-                          padding: '4px 8px',
-                          fontSize: '12px',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        削除
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <p style={{ color: '#666', marginBottom: '10px' }}>{transaction.description}</p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ fontWeight: 'bold', color: '#555' }}>借方:</span>
-                        <span>{debitAccount?.name}</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ fontWeight: 'bold', color: '#555' }}>貸方:</span>
-                        <span>{creditAccount?.name}</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ fontWeight: 'bold', color: '#555' }}>金額:</span>
-                        <span>
-                          {transaction.amount ? `¥${transaction.amount.toLocaleString()}` : '動的金額'}
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ fontWeight: 'bold', color: '#555' }}>頻度:</span>
-                        <span>{transaction.frequency}</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ fontWeight: 'bold', color: '#555' }}>次回実行:</span>
-                        <span>{nextExecution?.toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                    借方 {sortBy === 'debit' && (sortDirection === 'asc' ? '▲' : '▼')}
+                  </th>
+                  <th style={{ cursor: 'pointer' }} onClick={() => {
+                    if (sortBy === 'credit') setSortDirection(d => d === 'asc' ? 'desc' : 'asc');
+                    else { setSortBy('credit'); setSortDirection('asc'); }
+                  }}>
+                    貸方 {sortBy === 'credit' && (sortDirection === 'asc' ? '▲' : '▼')}
+                  </th>
+                  <th className="text-end" style={{ cursor: 'pointer' }} onClick={() => {
+                    if (sortBy === 'amount') setSortDirection(d => d === 'asc' ? 'desc' : 'asc');
+                    else { setSortBy('amount'); setSortDirection('asc'); }
+                  }}>
+                    金額 {sortBy === 'amount' && (sortDirection === 'asc' ? '▲' : '▼')}
+                  </th>
+                <th>頻度</th>
+                <th>次回実行</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(() => {
+                // フィルタ適用
+                const filtered = regularJournalEntries.filter(t => {
+                  if (nameFilter && !t.name.toLowerCase().includes(nameFilter.toLowerCase())) return false;
+                  if (debitFilter && t.debitAccountId !== debitFilter) return false;
+                  if (creditFilter && t.creditAccountId !== creditFilter) return false;
+                  return true;
+                });
+
+                // ソート適用
+                const accountNameMap = new Map(journalAccounts.map(a => [a.id, a.name]));
+                if (sortBy === 'name') {
+                  filtered.sort((a, b) => {
+                    const av = a.name || '';
+                    const bv = b.name || '';
+                    const cmp = av.localeCompare(bv, 'ja');
+                    return sortDirection === 'asc' ? cmp : -cmp;
+                  });
+                } else if (sortBy === 'debit') {
+                  filtered.sort((a, b) => {
+                    const av = accountNameMap.get(a.debitAccountId) || '';
+                    const bv = accountNameMap.get(b.debitAccountId) || '';
+                    const cmp = av.localeCompare(bv, 'ja');
+                    return sortDirection === 'asc' ? cmp : -cmp;
+                  });
+                } else if (sortBy === 'credit') {
+                  filtered.sort((a, b) => {
+                    const av = accountNameMap.get(a.creditAccountId) || '';
+                    const bv = accountNameMap.get(b.creditAccountId) || '';
+                    const cmp = av.localeCompare(bv, 'ja');
+                    return sortDirection === 'asc' ? cmp : -cmp;
+                  });
+                } else if (sortBy === 'amount') {
+                  filtered.sort((a, b) => {
+                    const av = a.amount ?? 0;
+                    const bv = b.amount ?? 0;
+                    const cmp = av - bv;
+                    return sortDirection === 'asc' ? cmp : -cmp;
+                  });
+                }
+
+                return filtered.map((transaction: RecurringTransaction) => {
+                  const debitAccount = journalAccounts.find(acc => acc.id === transaction.debitAccountId);
+                  const creditAccount = journalAccounts.find(acc => acc.id === transaction.creditAccountId);
+                  const nextExecution = getNextExecutionDate(transaction);
+
+                  return (
+                    <tr key={transaction.id}>
+                      <td>{transaction.name}</td>
+                      <td>{transaction.description}</td>
+                      <td>{debitAccount?.name || '不明'}</td>
+                      <td>{creditAccount?.name || '不明'}</td>
+                      <td className="text-end">{transaction.amount ? `¥${transaction.amount.toLocaleString()}` : '動的金額'}</td>
+                      <td>{transaction.frequency}</td>
+                      <td>{nextExecution ? nextExecution.toLocaleDateString() : '-'}</td>
+                      <td>
+                        <div className="d-flex gap-2">
+                          <button className="btn btn-sm btn-success" onClick={() => executeTransaction(transaction)}>実行</button>
+                          <button className="btn btn-sm btn-warning" onClick={() => startEdit(transaction)}>編集</button>
+                          <button className="btn btn-sm btn-danger" onClick={() => handleDelete(transaction)}>削除</button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                });
+              })()}
+            </tbody>
+          </table>
         )}
       </div>
 
