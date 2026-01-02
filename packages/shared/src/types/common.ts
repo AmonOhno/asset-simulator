@@ -101,6 +101,24 @@ export interface JournalEntry {
   user_id: string; // ユーザーID
 }
 
+/**
+ * DB VIEW `v_journal_entries` の型定義
+ * SELECT で返るカラムを camelCase に直した形で定義します。
+ */
+export interface JournalEntryView {
+  date: string;
+  description: string;
+  creditCategory?: string | null;
+  creditName?: string | null;
+  debitCategory?: string | null;
+  debitName?: string | null;
+  amount?: number | null;
+  entriesId: string; // entries_id
+  creditId?: string | null;
+  debitId?: string | null;
+}
+
+
 // --- 財務レポート ---
 export interface BalanceSheetItem {
   accountName: string;

@@ -7,6 +7,7 @@ export type {
     AccountCategory,
     JournalAccount,
     JournalEntry,
+    JournalEntryView,
     BalanceSheet,
     BalanceSheetItem,
     ProfitAndLossStatement,

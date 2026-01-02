@@ -6,6 +6,7 @@ import {
   CreditCard,
   JournalAccount,
   JournalEntry,
+  JournalEntryView,
   RecurringTransaction,
   BalanceSheet,
   ProfitAndLossStatement,
@@ -33,6 +34,7 @@ interface FinancialState {
   getCreditCards: () => Promise<CreditCard[]>;
   getJournalAccounts: () => Promise<JournalAccount[]>;
   getJournalEntries: () => Promise<JournalEntry[]>;
+  getJournalEntriesView: (params: { startDate?: string; endDate?: string; debitId?: string; creditId?: string; description?: string; filterMode?: 'AND' | 'OR' }) => Promise<JournalEntryView[]>;
   getRegularJournalEntries: () => Promise<RecurringTransaction[]>;
   addAccount: (account: Omit<Account, 'id'>) => Promise<void>;
   addCreditCard: (card: Omit<CreditCard, 'id'>) => Promise<void>;
@@ -462,6 +464,34 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
     } catch (error) {
       console.error('Failed to fetch journal entries:', error);
       return get().journalEntries;
+    }
+  },
+
+  // VIEW からフィルタ条件に応じた仕訳一覧を取得
+  getJournalEntriesView: async (params: { startDate?: string; endDate?: string; debitId?: string; creditId?: string; description?: string; filterMode?: 'AND' | 'OR' }) => {
+    const { session } = useAuthStore.getState();
+    if (!session) return [];
+
+    const q = new URLSearchParams();
+    if (params.startDate) q.append('startDate', params.startDate);
+    if (params.endDate) q.append('endDate', params.endDate);
+    if (params.description) q.append('description', params.description);
+    if (params.debitId) q.append('debitId', params.debitId);
+    if (params.creditId) q.append('creditId', params.creditId);
+    if (params.filterMode) q.append('filterMode', params.filterMode);
+
+    try {
+      const response = await fetch(`${API_URL}/journal-entries/view?${q.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch journal entries view');
+      const data = await response.json();
+      return (Array.isArray(data) ? data.map(toCamelCase) : []) as JournalEntryView[];
+    } catch (error) {
+      console.error('Error fetching journal entries view:', error);
+      return [];
     }
   },
 
