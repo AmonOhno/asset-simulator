@@ -4,8 +4,10 @@ import { JournalEntry } from '@asset-simulator/shared';
 import { DateRangePicker, DateRange } from '../common/DateRangePicker';
 import { JournalEntriesModal } from './JournalEntriesModal';
 
+import { JournalEntryView } from '@asset-simulator/shared';
+
 export const JournalEntryList: React.FC = () => {
-  const { journalEntries, journalAccounts, updateJournalEntry } = useFinancialStore();
+  const { journalEntries, journalAccounts, updateJournalEntry, getJournalEntriesView } = useFinancialStore();
   const { userId } = useAuthStore();
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -143,8 +145,59 @@ export const JournalEntryList: React.FC = () => {
   };
 
   // CSV出力
-  const handleExportCSV = () => {
-    // Package側のCSV生成ロジック呼び出し
+  const handleExportCSV = async () => {
+    try {
+      const rows = await getJournalEntriesView({
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate,
+        description: descriptionFilter,
+        debitId: debitAccountFilter,
+        creditId: creditAccountFilter,
+        filterMode,
+      });
+
+      if (!rows || rows.length === 0) {
+        alert('指定の条件でエクスポート可能なデータがありません。');
+        return;
+      }
+
+      const escape = (v: any) => {
+        if (v === null || v === undefined) return '';
+        const s = String(v);
+        if (s.includes(',') || s.includes('\n') || s.includes('"')) {
+          return '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+      };
+
+      const header = ['日付', '摘要', '借方カテゴリ', '借方', '貸方カテゴリ', '貸方', '金額', 'entries_id', 'debit_id', 'credit_id'];
+      const csvRows = (rows as JournalEntryView[]).map((r) => [
+        escape(r.date),
+        escape(r.description),
+        escape(r.debitCategory || ''),
+        escape(r.debitName || ''),
+        escape(r.creditCategory || ''),
+        escape(r.creditName || ''),
+        escape(r.amount ?? ''),
+        escape((r as any).entriesId || ''),
+        escape((r as any).debitId || ''),
+        escape((r as any).creditId || ''),
+      ].join(','));
+
+      const csv = [header.join(','), ...csvRows].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `journal_entries_${dateRange.startDate}_to_${dateRange.endDate}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('CSV export failed:', error);
+      alert('CSVのエクスポートに失敗しました。コンソールを確認してください。');
+    }
   };
 
   // フォーム入力変更
