@@ -70,8 +70,11 @@ function App() {
       case 'transactions':
         return (
           <div className="row">
-            <div className="col-lg-4">
-              <JournalEntryForm />
+            <div className="col-lg-4 input-form">
+              <div className="mb-4">
+                <JournalEntryForm />
+                <EventScheduleForm />
+              </div>
             </div>
             <div className="col-lg-8">
               <JournalCalendar />

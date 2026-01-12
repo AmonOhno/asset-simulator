@@ -21,6 +21,10 @@
   border-radius: 4px;
 }
 
+.card {
+  margin-bottom: 15px;
+}
+
 /* テーブルヘッダーを固定する場合 */
 /* .card-body-scrollable table thead th {
   position: sticky;
