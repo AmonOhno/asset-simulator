@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import Calendar, { TileArgs } from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
+import '../../styles/JournalCalendar.css';
 import { useFinancialStore, useEventsStore } from '@asset-simulator/shared';
 import type { JournalEntry, ScheduleEvent } from '@asset-simulator/shared';
 import { JournalEntriesModal } from './JournalEntriesModal';
@@ -210,201 +211,205 @@ useEffect(() => {
   };
 
   return (
-    <div className="journal-calendar-container">
-      
-      <div className="calendar-header">
-        {/* 勘定科目フィルタ */}
-        <div className="account-filters mt-3">
-          <div className="row g-3">
-            <div className="col-md-5">
-              <label htmlFor="debitFilter" className="form-label">借方勘定科目フィルタ</label>
-              <select
-                id="debitFilter"
-                className="form-select"
-                value={debitAccountFilter}
-                onChange={(e) => setDebitAccountFilter(e.target.value)}
-              >
-                <option value="">全て表示</option>
-                {journalAccounts.map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.name} ({account.category})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="col-md-5">
-              <label htmlFor="creditFilter" className="form-label">貸方勘定科目フィルタ</label>
-              <select
-                id="creditFilter"
-                className="form-select"
-                value={creditAccountFilter}
-                onChange={(e) => setCreditAccountFilter(e.target.value)}
-              >
-                <option value="">全て表示</option>
-                {journalAccounts.map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.name} ({account.category})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="col-md-2 d-flex align-items-end">
-              <button
-                className="btn btn-outline-secondary custom-radius w-100"
-                onClick={() => {
-                  setDebitAccountFilter('');
-                  setCreditAccountFilter('');
-                }}
-              >
-                クリア
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div className="calendar-wrapper">
-        <div className="calendar-section">
-          <Calendar
-            onChange={handleDateChange}
-            value={selectedDate}
-            tileContent={tileContent}
-            tileClassName={tileClassName}
-            locale="ja-JP"
-          />
-        </div>
-        
-        <div className="entries-section">
-          <div className="selected-date-section">
-            <div className="selected-date-header">
-              {selectedDate.toLocaleDateString('ja-JP', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                weekday: 'long'
-              })} 
-            </div>
-            
-            {selectedDateEntries.length === 0 && selectedDateEvents.length === 0 ? (
-              <div className="no-entries">
-                この日はスケジュール／仕訳データがありません
-              </div>
-            ) : (
-              <div className="entries-list">
-                {/* イベント表示 */}
-                {selectedDateEvents.length > 0 && (
-                  <div className="events-section mb-3">
-                    <h5 className="text-primary">📅 スケジュール ({selectedDateEvents.length}件)</h5>
-                    {selectedDateEvents.map((event) => (
-                      <div key={event.eventId} className="card mb-2" style={{backgroundColor: '#f8f9fa'}}>
-                        <div className="card-body py-2">
-                          <div className="d-flex justify-content-between align-items-center">
-                            <div>
-                              <strong>{event.title}</strong>
-                              <div className="text-muted small">
-                                {event.startTime} - {event.endTime}
-                              </div>
-                              {event.description && (
-                                <div className="small">{event.description}</div>
-                              )}
-                            </div>
-                            <div className="badge bg-primary">
-                              {event.allDayFlg ? '終日' : '時間指定'}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+    <div className="card">
+      <div className="card-header">カレンダー</div>
+      <div className="card-body">
+        <div className="journal-calendar-container">
+          <div className="calendar-header">
+            {/* 勘定科目フィルタ */}
+            <div className="account-filters mt-3">
+              <div className="row g-3">
+                <div className="col-md-5">
+                  <label htmlFor="debitFilter" className="form-label">借方勘定科目フィルタ</label>
+                  <select
+                    id="debitFilter"
+                    className="form-select"
+                    value={debitAccountFilter}
+                    onChange={(e) => setDebitAccountFilter(e.target.value)}
+                  >
+                    <option value="">全て表示</option>
+                    {journalAccounts.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.name} ({account.category})
+                      </option>
                     ))}
-                  </div>
-                )}
-                
-                {/* 費用・収益サマリー */}
-                {(() => {
-                  const { expenses, revenues } = calculateDayFinancials(selectedDate);
-                  if (expenses > 0 || revenues > 0) {
-                    return (
-                      <div className="financial-summary">
-                        {expenses > 0 && (
-                          <div className="summary-item expense">
-                            <span className="summary-label">費用合計:</span>
-                            <span className="summary-amount">¥{expenses.toLocaleString()}</span>
-                          </div>
-                        )}
-                        {revenues > 0 && (
-                          <div className="summary-item revenue">
-                            <span className="summary-label">収益合計:</span>
-                            <span className="summary-amount">¥{revenues.toLocaleString()}</span>
-                          </div>
-                        )}
-                        <div className="summary-item net">
-                          <span className="summary-label">純損益:</span>
-                          <span className={`summary-amount ${revenues - expenses >= 0 ? 'positive' : 'negative'}`}>
-                            ¥{(revenues - expenses).toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-
-                {/* 仕訳詳細リスト */}
-                {selectedDateEntries.map((entry) => {
-                  const debitCategory = getAccountCategory(entry.debitAccountId);
-                  const creditCategory = getAccountCategory(entry.creditAccountId);
-                  const isExpenseEntry = debitCategory === 'Expense' || creditCategory === 'Expense';
-                  const isRevenueEntry = debitCategory === 'Revenue' || creditCategory === 'Revenue';
-                  
-                  return (
-                    <div key={entry.id} className={`journal-entry-item ${isExpenseEntry ? 'expense-entry' : ''} ${isRevenueEntry ? 'revenue-entry' : ''}`}>
-                      <div className="entry-description d-flex justify-content-between align-items-start">
-                        <div>
-                          {entry.description}
-                          {isExpenseEntry && <span className="entry-type-badge expense ms-2">費用</span>}
-                          {isRevenueEntry && <span className="entry-type-badge revenue ms-2">収益</span>}
-                        </div>
-                        <button
-                          className="btn btn-sm btn-outline-primary"
-                          onClick={() => handleEditEntry(entry)}
-                        >
-                          編集
-                        </button>
-                      </div>
-                            <div className="entry-accounts">
-                              <span className={`entry-debit me-2 ${debitCategory === 'Expense' ? 'expense' : ''}`}>
-                                借方: {getAccountName(entry.debitAccountId)}
-                              </span>
-                              <span className={`entry-credit ms-2 ${creditCategory === 'Revenue' ? 'revenue' : ''}`}>
-                                貸方: {getAccountName(entry.creditAccountId)}
-                              </span>
-                            </div>
-                      <div className="entry-amount">
-                        ¥{entry.amount.toLocaleString()}
-                      </div>
-                    </div>
-                  );
-                })}
-                
-                <div className="daily-summary">
-                  <strong>
-                    仕訳件数: {selectedDateEntries.length}件
-                    {selectedDateEvents.length > 0 && ` / イベント: ${selectedDateEvents.length}件`}
-                  </strong>
+                  </select>
+                </div>
+                <div className="col-md-5">
+                  <label htmlFor="creditFilter" className="form-label">貸方勘定科目フィルタ</label>
+                  <select
+                    id="creditFilter"
+                    className="form-select"
+                    value={creditAccountFilter}
+                    onChange={(e) => setCreditAccountFilter(e.target.value)}
+                  >
+                    <option value="">全て表示</option>
+                    {journalAccounts.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.name} ({account.category})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-md-2 d-flex align-items-end">
+                  <button
+                    className="btn btn-outline-secondary custom-radius w-100"
+                    onClick={() => {
+                      setDebitAccountFilter('');
+                      setCreditAccountFilter('');
+                    }}
+                  >
+                    クリア
+                  </button>
                 </div>
               </div>
-            )}
+            </div>
           </div>
+          
+          <div className="calendar-wrapper">
+            <div className="calendar-section">
+              <Calendar
+                onChange={handleDateChange}
+                value={selectedDate}
+                tileContent={tileContent}
+                tileClassName={tileClassName}
+                locale="ja-JP"
+              />
+            </div>
+            
+            <div className="entries-section">
+              <div className="selected-date-section">
+                <div className="selected-date-header">
+                  {selectedDate.toLocaleDateString('ja-JP', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    weekday: 'long'
+                  })} 
+                </div>
+                
+                {selectedDateEntries.length === 0 && selectedDateEvents.length === 0 ? (
+                  <div className="no-entries">
+                    この日はスケジュール／仕訳データがありません
+                  </div>
+                ) : (
+                  <div className="entries-list">
+                    {/* イベント表示 */}
+                    {selectedDateEvents.length > 0 && (
+                      <div className="events-section mb-3">
+                        <h5 className="text-primary">📅 スケジュール ({selectedDateEvents.length}件)</h5>
+                        {selectedDateEvents.map((event) => (
+                          <div key={event.eventId} className="card mb-2" style={{backgroundColor: '#f8f9fa'}}>
+                            <div className="card-body py-2">
+                              <div className="d-flex justify-content-between align-items-center">
+                                <div>
+                                  <strong>{event.title}</strong>
+                                  <div className="text-muted small">
+                                    {event.startTime} - {event.endTime}
+                                  </div>
+                                  {event.description && (
+                                    <div className="small">{event.description}</div>
+                                  )}
+                                </div>
+                                <div className="badge bg-primary">
+                                  {event.allDayFlg ? '終日' : '時間指定'}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* 費用・収益サマリー */}
+                    {(() => {
+                      const { expenses, revenues } = calculateDayFinancials(selectedDate);
+                      if (expenses > 0 || revenues > 0) {
+                        return (
+                          <div className="financial-summary">
+                            {expenses > 0 && (
+                              <div className="summary-item expense">
+                                <span className="summary-label">費用合計:</span>
+                                <span className="summary-amount">¥{expenses.toLocaleString()}</span>
+                              </div>
+                            )}
+                            {revenues > 0 && (
+                              <div className="summary-item revenue">
+                                <span className="summary-label">収益合計:</span>
+                                <span className="summary-amount">¥{revenues.toLocaleString()}</span>
+                              </div>
+                            )}
+                            <div className="summary-item net">
+                              <span className="summary-label">純損益:</span>
+                              <span className={`summary-amount ${revenues - expenses >= 0 ? 'positive' : 'negative'}`}>
+                                ¥{(revenues - expenses).toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+
+                    {/* 仕訳詳細リスト */}
+                    {selectedDateEntries.map((entry) => {
+                      const debitCategory = getAccountCategory(entry.debitAccountId);
+                      const creditCategory = getAccountCategory(entry.creditAccountId);
+                      const isExpenseEntry = debitCategory === 'Expense' || creditCategory === 'Expense';
+                      const isRevenueEntry = debitCategory === 'Revenue' || creditCategory === 'Revenue';
+                      
+                      return (
+                        <div key={entry.id} className={`journal-entry-item ${isExpenseEntry ? 'expense-entry' : ''} ${isRevenueEntry ? 'revenue-entry' : ''}`}>
+                          <div className="entry-description d-flex justify-content-between align-items-start">
+                            <div>
+                              {entry.description}
+                              {isExpenseEntry && <span className="entry-type-badge expense ms-2">費用</span>}
+                              {isRevenueEntry && <span className="entry-type-badge revenue ms-2">収益</span>}
+                            </div>
+                            <button
+                              className="btn btn-sm btn-outline-primary"
+                              onClick={() => handleEditEntry(entry)}
+                            >
+                              編集
+                            </button>
+                          </div>
+                                <div className="entry-accounts">
+                                  <span className={`entry-debit me-2 ${debitCategory === 'Expense' ? 'expense' : ''}`}>
+                                    借方: {getAccountName(entry.debitAccountId)}
+                                  </span>
+                                  <span className={`entry-credit ms-2 ${creditCategory === 'Revenue' ? 'revenue' : ''}`}>
+                                    貸方: {getAccountName(entry.creditAccountId)}
+                                  </span>
+                                </div>
+                          <div className="entry-amount">
+                            ¥{entry.amount.toLocaleString()}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    
+                    <div className="daily-summary">
+                      <strong>
+                        仕訳件数: {selectedDateEntries.length}件
+                        {selectedDateEvents.length > 0 && ` / イベント: ${selectedDateEvents.length}件`}
+                      </strong>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <JournalEntriesModal
+            isOpen={isModalOpen}
+            entry={editingEntry}
+            journalAccounts={journalAccounts}
+            onCancel={handleCancelEdit}
+            onSave={handleSaveEdit}
+            onChange={handleModalInputChange}
+          />
         </div>
       </div>
-
-      <JournalEntriesModal
-        isOpen={isModalOpen}
-        entry={editingEntry}
-        journalAccounts={journalAccounts}
-        onCancel={handleCancelEdit}
-        onSave={handleSaveEdit}
-        onChange={handleModalInputChange}
-      />
     </div>
   );
 };
