@@ -89,13 +89,13 @@ function App() {
         return (
           <div className="row">
             <div className="col-lg-4 mb-4">
+              <JournalAccountManager />
+            </div>
+            <div className="col-lg-4 mb-4">
               <AccountManager />
             </div>
             <div className="col-lg-4 mb-4">
               <CreditCardManager />
-            </div>
-            <div className="col-lg-4 mb-4">
-              <JournalAccountManager />
             </div>
           </div>
         );

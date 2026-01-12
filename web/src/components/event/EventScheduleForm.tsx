@@ -13,6 +13,7 @@ export const EventScheduleForm: React.FC<EventScheduleFormProps> = ({
   onCancel
 }) => {
   const { addEvent } = useEventsStore();
+  const [visible, setVisible] = useState(false);
   const [title, setTitle] = useState('');
   const [allDayFlg, setAllDay] = useState(false);
   const [startDate, setStartDate] = useState('');
@@ -97,9 +98,19 @@ export const EventScheduleForm: React.FC<EventScheduleFormProps> = ({
 
   return (
       <div className="card">
-        <div className="card-header">イベント入力</div>
-        <div className="card-body">
-          <form onSubmit={handleSubmit}>
+        <div className="card-header"
+          role="button"
+          tabIndex={0}
+          onClick={() => setVisible(v => !v)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setVisible(v => !v); } }}
+          style={{ cursor: 'pointer' }}
+          aria-expanded={visible}
+        >
+          イベント入力
+        </div>
+        {visible && (
+          <div className="card-body">
+            <form onSubmit={handleSubmit}>
             <div className="mb-3">
               <label className="form-label">イベント名:</label>
               <div className="col-md-8">
@@ -196,8 +207,10 @@ export const EventScheduleForm: React.FC<EventScheduleFormProps> = ({
                 </button>
               )}
             </div>
-          </form>
-        </div>
+            </form>
+          </div>
+        )}
       </div>
+    
   );
 };

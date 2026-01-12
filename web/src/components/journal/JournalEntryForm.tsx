@@ -6,6 +6,8 @@ import { useFinancialStore } from '@asset-simulator/shared';
 export const JournalEntryForm: React.FC = () => {
   const { journalAccounts, addJournalEntry } = useFinancialStore();
 
+  const [visible, setVisible] = useState(false);
+
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [description, setDescription] = useState('');
   const [debitAccountId, setDebitAccountId] = useState('');
@@ -37,9 +39,20 @@ export const JournalEntryForm: React.FC = () => {
 
   return (
     <div className="card">
-      <div className="card-header">仕訳入力</div>
-      <div className="card-body">
-        <form onSubmit={handleSubmit}>
+      <div
+        className="card-header"
+        role="button"
+        tabIndex={0}
+        onClick={() => setVisible(v => !v)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setVisible(v => !v); } }}
+        style={{ cursor: 'pointer' }}
+        aria-expanded={visible}
+      >
+        仕訳入力
+      </div>
+      {visible && (
+        <div className="card-body">
+          <form onSubmit={handleSubmit}>
           <div className="mb-3">
             <label htmlFor="date" className="form-label">日付</label>
             <input
@@ -117,6 +130,7 @@ export const JournalEntryForm: React.FC = () => {
           <button type="submit" className="btn btn-primary">登録</button>
         </form>
       </div>
+      )}
     </div>
   );
 };
