@@ -7,6 +7,8 @@ import {
   JournalAccount,
   JournalEntry,
   JournalEntryView,
+  BalanceSheetViewRow,
+  ProfitLossViewRow,
   RecurringTransaction,
   BalanceSheet,
   ProfitAndLossStatement,
@@ -28,6 +30,8 @@ interface FinancialState {
   fetchFinancial: () => Promise<void>; // 全データを取得
   calculateBalanceSheet: (asOfDate?: string) => BalanceSheet; //貸借対照表（BS）を計算
   calculateProfitAndLossStatement: (startDate?: string, endDate?: string) => ProfitAndLossStatement; //損益計算書（PL）を計算
+  getBalanceSheetView: (asOfDate?: string) => Promise<BalanceSheetViewRow[]>;
+  getProfitLossStatementView: (startDate?: string, endDate?: string) => Promise<ProfitLossViewRow[]>;
 
   // CRUD Actions
   getAccounts: () => Promise<Account[]>;
@@ -975,6 +979,52 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
     } catch (error) {
       console.error("Failed to execute due regular journal entries:", error);
       throw error;
+    }
+  },
+
+  // --- VIEW Methods (Server-side Aggregation) ---
+  getBalanceSheetView: async (asOfDate?: string): Promise<BalanceSheetViewRow[]> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return [];
+
+    try {
+      const url = new URL(`${API_URL}/balance-sheet-view`);
+      if (asOfDate) url.searchParams.append('asOfDate', asOfDate);
+      
+      const response = await fetch(url.toString(), {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch balance sheet view');
+      const data = await response.json();
+      return (Array.isArray(data) ? data : []) as BalanceSheetViewRow[];
+    } catch (error) {
+      console.error('Error fetching balance sheet view:', error);
+      return [];
+    }
+  },
+
+  getProfitLossStatementView: async (startDate?: string, endDate?: string): Promise<ProfitLossViewRow[]> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return [];
+
+    try {
+      const url = new URL(`${API_URL}/profit-loss-statement-view`);
+      if (startDate) url.searchParams.append('startDate', startDate);
+      if (endDate) url.searchParams.append('endDate', endDate);
+      
+      const response = await fetch(url.toString(), {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch profit/loss statement view');
+      const data = await response.json();
+      return (Array.isArray(data) ? data : []) as ProfitLossViewRow[];
+    } catch (error) {
+      console.error('Error fetching profit/loss statement view:', error);
+      return [];
     }
   },
 

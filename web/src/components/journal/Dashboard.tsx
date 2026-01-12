@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useFinancialStore, useAuthStore } from '@asset-simulator/shared';
+import { useFinancialStore, useAuthStore, BalanceSheetViewRow, ProfitLossViewRow } from '@asset-simulator/shared';
 import { DateRangePicker, DateRange } from '../common/DateRangePicker';
 
 export const Dashboard: React.FC = () => {
-  const { calculateBalanceSheet, calculateProfitAndLossStatement } = useFinancialStore();
+  const { getBalanceSheetView, getProfitLossStatementView } = useFinancialStore();
   const { userId } = useAuthStore();
   
   // デフォルトは今月
@@ -13,7 +13,6 @@ export const Dashboard: React.FC = () => {
   const defaultStartDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
   const defaultEndDate = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0];
   
-  // 前回設定した日付範囲を取得または初期値を使用
   const getStoredDateRange = (): DateRange => {
     if (!userId) return { startDate: defaultStartDate, endDate: defaultEndDate };
     const key = `dashboard-date-range_${userId}`;
@@ -32,33 +31,29 @@ export const Dashboard: React.FC = () => {
     if (!userId) return plEndDate || defaultEndDate;
     const key = `dashboard-bs-as-of-date_${userId}`;
     const stored = localStorage.getItem(key);
-    // PLの終了日が指定されている場合は、それと同期
     return stored || plEndDate || defaultEndDate;
   };
   
   const initialDateRange = getStoredDateRange();
   const [dateRange, setDateRange] = useState<DateRange>(initialDateRange);
   const [bsAsOfDate, setBsAsOfDate] = useState<string>(getStoredBsAsOfDate(initialDateRange.endDate));
-  
-  // 同期の無限ループを防ぐためのフラグ
+  const [bsData, setBsData] = useState<BalanceSheetViewRow[]>([]);
+  const [plData, setPlData] = useState<ProfitLossViewRow[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // LocalStorageへの保存のみを行うuseEffect
   useEffect(() => {
     if (userId) {
-      const key = `dashboard-date-range_${userId}`;
-      localStorage.setItem(key, JSON.stringify(dateRange));
+      localStorage.setItem(`dashboard-date-range_${userId}`, JSON.stringify(dateRange));
     }
   }, [dateRange, userId]);
 
   useEffect(() => {
     if (userId) {
-      const key = `dashboard-bs-as-of-date_${userId}`;
-      localStorage.setItem(key, bsAsOfDate);
+      localStorage.setItem(`dashboard-bs-as-of-date_${userId}`, bsAsOfDate);
     }
   }, [bsAsOfDate, userId]);
 
-  // 日付の同期を処理するカスタム関数
   const handleDateRangeChange = (newDateRange: DateRange) => {
     if (!isSyncing) {
       setIsSyncing(true);
@@ -76,18 +71,56 @@ export const Dashboard: React.FC = () => {
       setTimeout(() => setIsSyncing(false), 0);
     }
   };
-  
-  const bs = calculateBalanceSheet(bsAsOfDate);
-  const pl = calculateProfitAndLossStatement(dateRange.startDate, dateRange.endDate);
-  
-  const totalRevenues = pl.revenues.reduce((sum, item) => sum + item.amount, 0);
-  const totalExpenses = pl.expenses.reduce((sum, item) => sum + item.amount, 0);
 
-  const totalEquity = () => {
-    const totalAssets = bs.assets.reduce((sum, item) => sum + item.amount, 0);
-    const totalLiabilities = bs.liabilities.reduce((sum, item) => sum + item.amount, 0);
-    return totalAssets - totalLiabilities;
+  // サーバーVIEWからBS・PLデータを取得
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [bsRows, plRows] = await Promise.all([
+          getBalanceSheetView(bsAsOfDate),
+          getProfitLossStatementView(dateRange.startDate, dateRange.endDate)
+        ]);
+        setBsData(bsRows);
+        setPlData(plRows);
+      } catch (error) {
+        console.error('Error fetching financial views:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [getBalanceSheetView, getProfitLossStatementView, bsAsOfDate, dateRange]);
+
+  const groupByCategory = (rows: BalanceSheetViewRow[] | ProfitLossViewRow[]): Record<string, number> => {
+    const grouped: Record<string, number> = {};
+    rows.forEach(row => {
+      grouped[row.category] = (grouped[row.category] || 0) + (row.sumAmount || 0);
+    });
+    return grouped;
   };
+
+  const getDetailsByCategory = (rows: BalanceSheetViewRow[] | ProfitLossViewRow[], category: string) => {
+    return rows.filter(row => row.category === category);
+  };
+
+  const bsCategorized = groupByCategory(bsData);
+  const plCategorized = groupByCategory(plData);
+  
+  const totalAssets = bsCategorized['Asset'] || 0;
+  const totalLiabilities = bsCategorized['Liability'] || 0;
+  const totalEquity_Value = totalAssets - totalLiabilities;
+
+  const assetDetails = getDetailsByCategory(bsData, 'Asset');
+  const liabilityDetails = getDetailsByCategory(bsData, 'Liability');
+  const equityDetails = getDetailsByCategory(bsData, 'Equity');
+  
+  const totalRevenues = plCategorized['Revenue'] || 0;
+  const totalExpenses = plCategorized['Expense'] || 0;
+  const netIncome = totalRevenues - totalExpenses;
+  
+  const revenueDetails = getDetailsByCategory(plData, 'Revenue');
+  const expenseDetails = getDetailsByCategory(plData, 'Expense');
 
   return (
     <div className="dashboard">
@@ -97,28 +130,35 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
       
-      {/* サマリーカード */}
+      {isLoading && (
+        <div className="row mb-4">
+          <div className="col-12">
+            <div className="alert alert-info">読み込み中...</div>
+          </div>
+        </div>
+      )}
+      
       <div className="row mb-4">
         <div className="col-md-3 mb-3">
-          <div className={`card text-white ${totalEquity() >= 0 ? 'bg-primary' : 'bg-danger'}`}>
+          <div className={`card text-white ${totalEquity_Value >= 0 ? 'bg-primary' : 'bg-danger'}`}>
             <div className="card-body">
               <h5 className="card-title">総資産</h5>
-              <h3 className="card-text">{totalEquity().toLocaleString()}円</h3>
+              <h3 className="card-text">{totalEquity_Value.toLocaleString()}円</h3>
               <small>基準日: {bsAsOfDate}</small>
             </div>
           </div>
         </div>
         <div className="col-md-3 mb-3">
-          <div className={`card text-white ${pl.netIncome >= 0 ? 'bg-info' : 'bg-warning'}`}>
+          <div className={`card text-white ${netIncome >= 0 ? 'bg-info' : 'bg-warning'}`}>
             <div className="card-body">
               <h5 className="card-title">純損益</h5>
-              <h3 className="card-text">{pl.netIncome.toLocaleString()}円</h3>
+              <h3 className="card-text">{netIncome.toLocaleString()}円</h3>
               <small>{dateRange.startDate} 〜 {dateRange.endDate}</small>
             </div>
           </div>
         </div>
       </div>
-      {/* 期間フィルタ */}
+      
       <div className="row mb-4">
         <div className="col-12">
           <div className="card">
@@ -150,7 +190,6 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* 財務レポート */}
       <div className="row">
         <div className="col-lg-6 mb-4">
           <div className="card h-100">
@@ -164,11 +203,11 @@ export const Dashboard: React.FC = () => {
                   <tr>
                     <th colSpan={2} className="table-secondary">資産</th>
                   </tr>
-                  {bs.assets.length > 0 ? (
-                    bs.assets.map((item, index) => (
+                  {assetDetails.length > 0 ? (
+                    assetDetails.map((item, index) => (
                       <tr key={index}>
-                        <td>{item.accountName}</td>
-                        <td className="text-end">{item.amount.toLocaleString()}円</td>
+                        <td>{item.name}</td>
+                        <td className="text-end">{item.sumAmount.toLocaleString()}円</td>
                       </tr>
                     ))
                   ) : (
@@ -176,16 +215,16 @@ export const Dashboard: React.FC = () => {
                   )}
                   <tr className="table-group-divider">
                     <th>資産合計</th>
-                    <th className="text-end">{bs.totalAssets.toLocaleString()}円</th>
+                    <th className="text-end">{totalAssets.toLocaleString()}円</th>
                   </tr>
                   <tr>
                     <th colSpan={2} className="table-secondary">負債</th>
                   </tr>
-                  {bs.liabilities.length > 0 ? (
-                    bs.liabilities.map((item, index) => (
+                  {liabilityDetails.length > 0 ? (
+                    liabilityDetails.map((item, index) => (
                       <tr key={index}>
-                        <td>{item.accountName}</td>
-                        <td className="text-end">{item.amount.toLocaleString()}円</td>
+                        <td>{item.name}</td>
+                        <td className="text-end">{item.sumAmount.toLocaleString()}円</td>
                       </tr>
                     ))
                   ) : (
@@ -194,11 +233,11 @@ export const Dashboard: React.FC = () => {
                   <tr>
                     <th colSpan={2} className="table-secondary">純資産</th>
                   </tr>
-                  {bs.equity.length > 0 ? (
-                    bs.equity.map((item, index) => (
+                  {equityDetails.length > 0 ? (
+                    equityDetails.map((item, index) => (
                       <tr key={index}>
-                        <td>{item.accountName}</td>
-                        <td className="text-end">{item.amount.toLocaleString()}円</td>
+                        <td>{item.name}</td>
+                        <td className="text-end">{item.sumAmount.toLocaleString()}円</td>
                       </tr>
                     ))
                   ) : (
@@ -206,7 +245,7 @@ export const Dashboard: React.FC = () => {
                   )}
                   <tr className="table-group-divider">
                     <th>負債・純資産合計</th>
-                    <th className="text-end">{bs.totalLiabilitiesAndEquity.toLocaleString()}円</th>
+                    <th className="text-end">{(totalLiabilities + (bsCategorized['Equity'] || 0)).toLocaleString()}円</th>
                   </tr>
                 </tbody>
               </table>
@@ -226,11 +265,11 @@ export const Dashboard: React.FC = () => {
                   <tr>
                     <th colSpan={2} className="table-secondary">収益</th>
                   </tr>
-                  {pl.revenues.length > 0 ? (
-                    pl.revenues.map((item, index) => (
+                  {revenueDetails.length > 0 ? (
+                    revenueDetails.map((item, index) => (
                       <tr key={index}>
-                        <td>{item.accountName}</td>
-                        <td className="text-end">{item.amount.toLocaleString()}円</td>
+                        <td>{item.name}</td>
+                        <td className="text-end">{item.sumAmount.toLocaleString()}円</td>
                       </tr>
                     ))
                   ) : (
@@ -243,11 +282,11 @@ export const Dashboard: React.FC = () => {
                   <tr>
                     <th colSpan={2} className="table-secondary">費用</th>
                   </tr>
-                  {pl.expenses.length > 0 ? (
-                    pl.expenses.map((item, index) => (
+                  {expenseDetails.length > 0 ? (
+                    expenseDetails.map((item, index) => (
                       <tr key={index}>
-                        <td>{item.accountName}</td>
-                        <td className="text-end">{item.amount.toLocaleString()}円</td>
+                        <td>{item.name}</td>
+                        <td className="text-end">{item.sumAmount.toLocaleString()}円</td>
                       </tr>
                     ))
                   ) : (
@@ -256,6 +295,10 @@ export const Dashboard: React.FC = () => {
                   <tr className="table-group-divider">
                     <th>費用合計</th>
                     <th className="text-end">{totalExpenses.toLocaleString()}円</th>
+                  </tr>
+                  <tr className="table-group-divider">
+                    <th>純損益</th>
+                    <th className="text-end">{netIncome.toLocaleString()}円</th>
                   </tr>
                 </tbody>
               </table>

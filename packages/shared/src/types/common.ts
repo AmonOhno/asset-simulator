@@ -118,6 +118,27 @@ export interface JournalEntryView {
   debitId?: string | null;
 }
 
+/**
+ * DB VIEW `v_balance_sheet` の型定義
+ */
+export interface BalanceSheetViewRow {
+  userId: string;
+  accountId: string;
+  category: AccountCategory;
+  name: string;
+  sumAmount: number;
+}
+
+/**
+ * DB VIEW `v_profit_loss_statement` の型定義
+ */
+export interface ProfitLossViewRow {
+  userId: string;
+  accountId: string;
+  category: AccountCategory;
+  name: string;
+  sumAmount: number;
+}
 
 // --- 財務レポート ---
 export interface BalanceSheetItem {

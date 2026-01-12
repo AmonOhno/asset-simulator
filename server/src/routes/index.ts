@@ -4,6 +4,8 @@ import creditCardsRouter from './creditCards';
 import journalAccountsRouter from './journalAccounts';
 import journalEntriesRouter from './journalEntries';
 import journalEntriesViewRouter from './journalEntriesView';
+import balanceSheetViewRouter from './balanceSheetView';
+import profitLossStatementViewRouter from './profitLossStatementView';
 import regularJournalEntriesRouter from './regularJournalEntries';
 import scheduleEventsRouter from './scheduleEvents';
 
@@ -14,6 +16,8 @@ router.use('/credit-cards', creditCardsRouter);
 router.use('/journal-accounts', journalAccountsRouter);
 router.use('/journal-entries', journalEntriesRouter);
 router.use('/journal-entries/view', journalEntriesViewRouter);
+router.use('/balance-sheet-view', balanceSheetViewRouter);
+router.use('/profit-loss-statement-view', profitLossStatementViewRouter);
 router.use('/regular-journal-entries', regularJournalEntriesRouter);
 router.use('/schedule-events', scheduleEventsRouter);
 export default router;

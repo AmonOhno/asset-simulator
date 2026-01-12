@@ -1,6 +1,7 @@
 export * from './stores/financialStore';
 export * from './stores/authStore';
 export * from './stores/eventsStore';
+export { toCamelCase, toSnakeCase } from './types/common';
 export type {
     Account,
     CreditCard,
@@ -8,6 +9,8 @@ export type {
     JournalAccount,
     JournalEntry,
     JournalEntryView,
+    BalanceSheetViewRow,
+    ProfitLossViewRow,
     BalanceSheet,
     BalanceSheetItem,
     ProfitAndLossStatement,
