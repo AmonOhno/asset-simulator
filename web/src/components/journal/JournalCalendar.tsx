@@ -213,9 +213,6 @@ useEffect(() => {
     <div className="journal-calendar-container">
       
       <div className="calendar-header">
-        <h2>📅 カレンダー</h2>
-        <p>カレンダーから日付を選択して、その日のスケジュール及び仕訳データを確認できます。</p>
-        
         {/* 勘定科目フィルタ */}
         <div className="account-filters mt-3">
           <div className="row g-3">
