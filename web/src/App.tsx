@@ -10,7 +10,6 @@ import { AccountManager } from './components/journal/AccountManager';
 import { CreditCardManager } from './components/journal/CreditCardManager';
 import { JournalAccountManager } from './components/journal/JournalAccountManager';
 import { JournalEntryForm } from './components/journal/JournalEntryForm';
-import { JournalEntryList } from './components/journal/JournalEntryList';
 import { JournalCalendar } from './components/journal/JournalCalendar';
 import { Dashboard } from './components/journal/Dashboard';
 import { RecurringTransactionManager } from './components/journal/RecurringTransactionManager';
@@ -21,7 +20,7 @@ import { EventScheduleManager } from './components/event/EventScheduleManager';
 import { useEventsStore } from '@asset-simulator/shared';
 
 
-type Tab = 'dashboard' | 'transactions' | 'calendar' | 'masters' | 'recurring' | 'events';
+type Tab = 'dashboard' | 'transactions' | 'masters' | 'recurring' | 'events';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('transactions');
@@ -71,18 +70,10 @@ function App() {
       case 'transactions':
         return (
           <div className="row">
-            <div className="col-lg-5">
+            <div className="col-lg-4">
               <JournalEntryForm />
             </div>
-            <div className="col-lg-7">
-              <JournalEntryList />
-            </div>
-          </div>
-        );
-      case 'calendar':
-        return (
-          <div className="row">
-            <div className="col-12">
+            <div className="col-lg-8">
               <JournalCalendar />
             </div>
           </div>
@@ -146,9 +137,6 @@ function App() {
       <ul className="nav nav-tabs mb-3">
         <li className="nav-item">
           <button className={`nav-link ${activeTab === 'transactions' ? 'active' : ''}`} onClick={() => setActiveTab('transactions')}>取引入力</button>
-        </li>
-        <li className="nav-item">
-          <button className={`nav-link ${activeTab === 'calendar' ? 'active' : ''}`} onClick={() => setActiveTab('calendar')}>カレンダー</button>
         </li>
         <li className="nav-item">
           <button className={`nav-link ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>ダッシュボード</button>
