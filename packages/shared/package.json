@@ -6,22 +6,27 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "require": "./dist/index.js",
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
     "./stores/financialStore": {
+      "require": "./dist/stores/financialStore.js",
       "import": "./dist/stores/financialStore.js",
       "types": "./dist/stores/financialStore.d.ts"
     },
     "./stores/authStore": {
+      "require": "./dist/stores/authStore.js",
       "import": "./dist/stores/authStore.js",
       "types": "./dist/stores/authStore.d.ts"
     },
     "./stores/eventsStore": {
+      "require": "./dist/stores/eventsStore.js",
       "import": "./dist/stores/eventsStore.js",
       "types": "./dist/stores/eventsStore.d.ts"
     },
     "./types/common": {
+      "require": "./dist/types/common.js",
       "import": "./dist/types/common.js",
       "types": "./dist/types/common.d.ts"
     }
