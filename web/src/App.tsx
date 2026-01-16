@@ -30,14 +30,49 @@ function App() {
 
   // 初回ロード時のセッション確認と監視設定
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
+    const initSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // アクセストークンがない場合は、リフレッシュトークンを使用して新しいトークンを取得
+      if (session && !session.access_token) {
+        try {
+          const { data, error } = await supabase.auth.refreshSession();
+          if (error) {
+            console.warn('Failed to refresh session:', error);
+            setSession(null);
+          } else if (data.session) {
+            setSession(data.session);
+          }
+        } catch (err) {
+          console.error('Error refreshing session:', err);
+          setSession(null);
+        }
+      } else {
+        setSession(session);
+      }
+    };
+
+    initSession();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      // トークンが無い場合はリフレッシュ
+      if (session && !session.access_token) {
+        try {
+          const { data, error } = await supabase.auth.refreshSession();
+          if (!error && data.session) {
+            setSession(data.session);
+          } else {
+            setSession(session);
+          }
+        } catch (err) {
+          console.error('Error refreshing session on auth state change:', err);
+          setSession(session);
+        }
+      } else {
+        setSession(session);
+      }
     });
 
     return () => subscription.unsubscribe();

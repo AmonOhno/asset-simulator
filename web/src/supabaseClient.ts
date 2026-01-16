@@ -19,4 +19,26 @@ if (!supabaseUrl || !supabaseAnonKey) {
   }
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey as string);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey as string, {
+  auth: {
+    flowType: 'pkce',
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+  },
+});
+
+// アクセストークンがない場合、リフレッシュを待つのではなく取得しに行く
+supabase.auth.onAuthStateChange(async (event, session) => {
+  if (session && !session.access_token) {
+    try {
+      // リフレッシュトークンを使用してセッションを更新
+      const { data, error } = await supabase.auth.refreshSession();
+      if (error) {
+        console.warn('Failed to refresh session:', error);
+      }
+    } catch (err) {
+      console.error('Error refreshing session:', err);
+    }
+  }
+});
