@@ -4,6 +4,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "noEmit": false,
+    "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
     "module": "commonjs",

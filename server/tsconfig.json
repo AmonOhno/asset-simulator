@@ -6,6 +6,8 @@
     "target": "es2020",
     "module": "commonjs",
     "noEmit": false,
+    "sourceMap": true,
+    "inlineSourceMap": false,
     "typeRoots": ["./src/types", "./node_modules/@types"]
   },
   "include": ["src/**/*"],
