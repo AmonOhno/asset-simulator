@@ -63,15 +63,6 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  const handleBsAsOfDateChange = (newBsAsOfDate: string) => {
-    if (!isSyncing) {
-      setIsSyncing(true);
-      setBsAsOfDate(newBsAsOfDate);
-      setDateRange(prev => ({ ...prev, endDate: newBsAsOfDate }));
-      setTimeout(() => setIsSyncing(false), 0);
-    }
-  };
-
   // サーバーVIEWからBS・PLデータを取得
   useEffect(() => {
     const fetchData = async () => {
@@ -125,18 +116,16 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="dashboard">
       <div className="row">
-        <div className="col-12">
+        <div className="col-3">
           <h2 className="mb-4">財務ダッシュボード</h2>
         </div>
+        {isLoading && (
+          <div className="col-2">
+            <div>読み込み中...</div>
+          </div>
+        )}
       </div>
       
-      {isLoading && (
-        <div className="row mb-4">
-          <div className="col-12">
-            <div className="alert alert-info">読み込み中...</div>
-          </div>
-        </div>
-      )}
       
       <div className="row mb-4">
         <div className="col-md-3 mb-3">
@@ -158,38 +147,13 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
-      
-      <div className="row mb-4">
-        <div className="col-12">
-          <div className="card">
-            <div className="card-header">
-              <h5 className="mb-0">期間設定</h5>
-              <small className="text-muted">※ 貸借対照表の基準日と損益計算書の終了日は自動的に同期されます</small>
-            </div>
-            <div className="card-body">
-              <div className="row">
-                <div className="col-md-6 mb-3">
-                  <label className="form-label">貸借対照表の基準日</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    value={bsAsOfDate}
-                    onChange={(e) => handleBsAsOfDateChange(e.target.value)}
-                  />
-                </div>
-                <div className="col-md-6 mb-3">
-                  <label className="form-label">損益計算書の期間</label>
-                  <DateRangePicker 
-                    dateRange={dateRange}
-                    onDateRangeChange={handleDateRangeChange}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className="col-md-6 mb-3">
+        <label className="form-label">損益計算書の期間</label>
+        <DateRangePicker 
+          dateRange={dateRange}
+          onDateRangeChange={handleDateRangeChange}
+        />
       </div>
-
       <div className="row">
         <div className="col-lg-6 mb-4">
           <div className="card h-100">
@@ -247,6 +211,10 @@ export const Dashboard: React.FC = () => {
                     <th>負債・純資産合計</th>
                     <th className="text-end">{(totalLiabilities + (bsCategorized['Equity'] || 0)).toLocaleString()}円</th>
                   </tr>
+                  <tr className="table-dark">
+                    <th>総資産</th>
+                    <th className="text-end">{(totalEquity_Value).toLocaleString()}円</th>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -296,7 +264,7 @@ export const Dashboard: React.FC = () => {
                     <th>費用合計</th>
                     <th className="text-end">{totalExpenses.toLocaleString()}円</th>
                   </tr>
-                  <tr className="table-group-divider">
+                  <tr className="table-dark">
                     <th>純損益</th>
                     <th className="text-end">{netIncome.toLocaleString()}円</th>
                   </tr>
