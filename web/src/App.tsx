@@ -44,11 +44,17 @@ function App() {
   }, [setSession]);
 
   // ログイン時の初回データ取得
-  // 金融データの取得はタブ切り替えエフェクトでカバーするためここではイベントのみ
+  // ・金融データはここで一度だけ取得（カレンダー等からは呼ばない）
+  // ・イベントデータはログインごとに必ず最新を取得
+  const hasFetchedFinancialRef = useRef(false);
   useEffect(() => {
     if (!session) return;
+    if (!hasFetchedFinancialRef.current) {
+      fetchFinancial();
+      hasFetchedFinancialRef.current = true;
+    }
     fetchEvents();
-  }, [session, fetchEvents]);
+  }, [session, fetchEvents, fetchFinancial]);
 
   // タブ切り替え時の追加データ更新
   const prevTabRef = useRef<Tab | null>(null);
@@ -58,22 +64,13 @@ function App() {
       return;
     }
 
-    const needsFinancial = ['transactions', 'calendar', 'dashboard', 'recurring'].includes(activeTab);
-    const prevTab = prevTabRef.current;
-    const prevNeedsFinancial = prevTab ? ['transactions', 'calendar', 'dashboard', 'recurring'].includes(prevTab) : false;
-
-    // 新たに金融データが必要なタブに移動した場合のみ取得
-    if (needsFinancial && !prevNeedsFinancial) {
-      fetchFinancial();
-    }
-
-    // イベントデータが必要なタブに切り替えた時は最新データを取得
+    // イベントタブまたはカレンダーを表示するときは常に最新を取得
     if (['calendar', 'events'].includes(activeTab)) {
       fetchEvents();
     }
 
     prevTabRef.current = activeTab;
-  }, [activeTab, session, fetchFinancial, fetchEvents]);
+  }, [activeTab, session, fetchEvents]);
 
   const renderContent = () => {
     switch (activeTab) {

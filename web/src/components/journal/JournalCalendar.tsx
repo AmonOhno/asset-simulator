@@ -9,7 +9,7 @@ import { JournalEntriesModal } from './JournalEntriesModal';
 type CalendarTileProps = TileArgs;
 
 export const JournalCalendar: React.FC = () => {
-  const { journalAccounts, updateJournalEntry, getJournalEntries } = useFinancialStore();
+  const { journalAccounts, updateJournalEntry, getJournalEntries, fetchFinancial } = useFinancialStore();
   const { events } = useEventsStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [currentMonth, setCurrentMonth] = useState<{ year: number; month: number }>({
@@ -55,6 +55,9 @@ export const JournalCalendar: React.FC = () => {
 
     const fetch = async () => {
       try {
+        // 仕訳に関連する勘定科目が先に揃っている必要があるため、
+        // まずfetchFinancial を呼び出しキャッシュを更新しておく
+        await fetchFinancial();
         const { startDate, endDate } = getMonthDateRange(year, month);
         const entries = await getJournalEntries(startDate, endDate);
         setMonthlyJournalEntries(entries);
@@ -65,7 +68,7 @@ export const JournalCalendar: React.FC = () => {
     };
 
     fetch();
-  }, [currentMonth, getJournalEntries, getMonthDateRange]);
+  }, [currentMonth, getJournalEntries, getMonthDateRange, fetchFinancial]);
 
 // --- useCallbackで関数を安定化 ---
 const getEntriesForDate = useCallback(
