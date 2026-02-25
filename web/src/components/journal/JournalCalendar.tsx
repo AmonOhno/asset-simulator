@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Calendar, { TileArgs } from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import '../../styles/JournalCalendar.css';
@@ -42,22 +42,30 @@ export const JournalCalendar: React.FC = () => {
     return { startDate, endDate };
   }, []);
 
-  // 月ごとのデータ取得
-  const fetchMonthlyEntries = useCallback(async (year: number, month: number) => {
-    try {
-      const { startDate, endDate } = getMonthDateRange(year, month);
-      const entries = await getJournalEntries(startDate, endDate);
-      setMonthlyJournalEntries(entries);
-    } catch (error) {
-      console.error('Error fetching monthly journal entries:', error);
-      setMonthlyJournalEntries([]);
-    }
-  }, [getJournalEntries, getMonthDateRange]);
+  // 前回フェッチした年月を保持
+  const lastFetchRef = useRef<{ year: number; month: number } | null>(null);
 
-  // 月が変わったときに新しいデータを取得
+  // 月が変わったとき、かつまだ同じ月を取得していなければデータを取得
   useEffect(() => {
-    fetchMonthlyEntries(currentMonth.year, currentMonth.month);
-  }, [currentMonth, fetchMonthlyEntries]);
+    const { year, month } = currentMonth;
+    if (lastFetchRef.current && lastFetchRef.current.year === year && lastFetchRef.current.month === month) {
+      return; // 既に同じ月をフェッチ済み
+    }
+    lastFetchRef.current = { year, month };
+
+    const fetch = async () => {
+      try {
+        const { startDate, endDate } = getMonthDateRange(year, month);
+        const entries = await getJournalEntries(startDate, endDate);
+        setMonthlyJournalEntries(entries);
+      } catch (error) {
+        console.error('Error fetching monthly journal entries:', error);
+        setMonthlyJournalEntries([]);
+      }
+    };
+
+    fetch();
+  }, [currentMonth, getJournalEntries, getMonthDateRange]);
 
 // --- useCallbackで関数を安定化 ---
 const getEntriesForDate = useCallback(

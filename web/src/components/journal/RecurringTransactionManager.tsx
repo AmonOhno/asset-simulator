@@ -14,8 +14,12 @@ export const RecurringTransactionManager: React.FC = () => {
   const { regularJournalEntries, getRegularJournalEntries } = useFinancialStore();
 
   // 初回ロード時に定期取引データを取得
+  const hasFetchedRef = React.useRef(false);
   useEffect(() => {
-    getRegularJournalEntries();
+    if (!hasFetchedRef.current) {
+      getRegularJournalEntries();
+      hasFetchedRef.current = true;
+    }
   }, [getRegularJournalEntries]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);

@@ -64,7 +64,15 @@ export const Dashboard: React.FC = () => {
   };
 
   // サーバーVIEWからBS・PLデータを取得
+  const lastFetchKey = React.useRef<string>('');
   useEffect(() => {
+    const key = `${bsAsOfDate}|${dateRange.startDate}|${dateRange.endDate}`;
+    if (lastFetchKey.current === key) {
+      // 既に同じ期間で取得済み（StrictMode等で効果が2回呼ばれた場合の二重防止）
+      return;
+    }
+    lastFetchKey.current = key;
+
     const fetchData = async () => {
       setIsLoading(true);
       try {

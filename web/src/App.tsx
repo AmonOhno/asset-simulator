@@ -1,6 +1,6 @@
 // src/App.tsx
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { supabase } from './supabaseClient';
@@ -44,25 +44,35 @@ function App() {
   }, [setSession]);
 
   // ログイン時の初回データ取得
+  // 金融データの取得はタブ切り替えエフェクトでカバーするためここではイベントのみ
   useEffect(() => {
-    if (session) {
-      fetchEvents();
-      fetchFinancial();
-    }
-  }, [session, fetchEvents, fetchFinancial, setActiveTab]);
+    if (!session) return;
+    fetchEvents();
+  }, [session, fetchEvents]);
 
   // タブ切り替え時の追加データ更新
+  const prevTabRef = useRef<Tab | null>(null);
   useEffect(() => {
-    if (session) {
-      // 金融データが必要なタブに切り替えた時は最新データを取得
-      if (['transactions', 'calendar', 'dashboard', 'recurring'].includes(activeTab)) {
-        fetchFinancial();
-      }
-      // イベントデータが必要なタブに切り替えた時は最新データを取得
-      if (['calendar', 'events'].includes(activeTab)) {
-        fetchEvents();
-      }
+    if (!session) {
+      prevTabRef.current = activeTab;
+      return;
     }
+
+    const needsFinancial = ['transactions', 'calendar', 'dashboard', 'recurring'].includes(activeTab);
+    const prevTab = prevTabRef.current;
+    const prevNeedsFinancial = prevTab ? ['transactions', 'calendar', 'dashboard', 'recurring'].includes(prevTab) : false;
+
+    // 新たに金融データが必要なタブに移動した場合のみ取得
+    if (needsFinancial && !prevNeedsFinancial) {
+      fetchFinancial();
+    }
+
+    // イベントデータが必要なタブに切り替えた時は最新データを取得
+    if (['calendar', 'events'].includes(activeTab)) {
+      fetchEvents();
+    }
+
+    prevTabRef.current = activeTab;
   }, [activeTab, session, fetchFinancial, fetchEvents]);
 
   const renderContent = () => {
