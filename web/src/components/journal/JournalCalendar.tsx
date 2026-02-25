@@ -9,9 +9,14 @@ import { JournalEntriesModal } from './JournalEntriesModal';
 type CalendarTileProps = TileArgs;
 
 export const JournalCalendar: React.FC = () => {
-  const { journalEntries, journalAccounts, updateJournalEntry } = useFinancialStore();
+  const { journalAccounts, updateJournalEntry, getJournalEntries } = useFinancialStore();
   const { events } = useEventsStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [currentMonth, setCurrentMonth] = useState<{ year: number; month: number }>({
+    year: new Date().getFullYear(),
+    month: new Date().getMonth() + 1,
+  });
+  const [monthlyJournalEntries, setMonthlyJournalEntries] = useState<JournalEntry[]>([]);
   const [selectedDateEntries, setSelectedDateEntries] = useState<JournalEntry[]>([]);
   const [selectedDateEvents, setSelectedDateEvents] = useState<ScheduleEvent[]>([]);
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
@@ -29,13 +34,36 @@ export const JournalCalendar: React.FC = () => {
     return `${year}-${month}-${day}`;
   }, []);
 
-// データ取得は App.tsx で一元管理されるため、useEffect を削除
+  // 月の開始日と最終日を取得
+  const getMonthDateRange = useCallback((year: number, month: number) => {
+    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    return { startDate, endDate };
+  }, []);
+
+  // 月ごとのデータ取得
+  const fetchMonthlyEntries = useCallback(async (year: number, month: number) => {
+    try {
+      const { startDate, endDate } = getMonthDateRange(year, month);
+      const entries = await getJournalEntries(startDate, endDate);
+      setMonthlyJournalEntries(entries);
+    } catch (error) {
+      console.error('Error fetching monthly journal entries:', error);
+      setMonthlyJournalEntries([]);
+    }
+  }, [getJournalEntries, getMonthDateRange]);
+
+  // 月が変わったときに新しいデータを取得
+  useEffect(() => {
+    fetchMonthlyEntries(currentMonth.year, currentMonth.month);
+  }, [currentMonth, fetchMonthlyEntries]);
 
 // --- useCallbackで関数を安定化 ---
 const getEntriesForDate = useCallback(
   (date: Date): JournalEntry[] => {
     const dateString = formatDateToString(date);
-    return journalEntries
+    return monthlyJournalEntries
       .filter((entry) => entry.date === dateString)
       .filter((entry) => {
         // 借方勘定科目フィルタ
@@ -49,7 +77,7 @@ const getEntriesForDate = useCallback(
         return true;
       });
   },
-  [journalEntries, formatDateToString, debitAccountFilter, creditAccountFilter] // journalEntries が変わったときだけ再生成
+  [monthlyJournalEntries, formatDateToString, debitAccountFilter, creditAccountFilter]
 );
 
 const getEventsForDate = useCallback(
@@ -122,10 +150,27 @@ useEffect(() => {
   const handleDateChange = (value: any) => {
     if (value && value instanceof Date) {
       setSelectedDate(value);
+      // 選択された日付の月が異なる場合は、新しい月のデータを取得
+      const newYear = value.getFullYear();
+      const newMonth = value.getMonth() + 1;
+      if (newYear !== currentMonth.year || newMonth !== currentMonth.month) {
+        setCurrentMonth({ year: newYear, month: newMonth });
+      }
       const entries = getEntriesForDate(value);
       setSelectedDateEntries(entries);
       const events = getEventsForDate(value);
       setSelectedDateEvents(events);
+    }
+  };
+
+  // カレンダーの月が変わった時の処理（前後ボタンで月を移動した場合）
+  const handleActiveStartDateChange = ({ activeStartDate }: { activeStartDate: Date | null }) => {
+    if (activeStartDate) {
+      const newYear = activeStartDate.getFullYear();
+      const newMonth = activeStartDate.getMonth() + 1;
+      if (newYear !== currentMonth.year || newMonth !== currentMonth.month) {
+        setCurrentMonth({ year: newYear, month: newMonth });
+      }
     }
   };
 
@@ -270,6 +315,7 @@ useEffect(() => {
             <div className="calendar-section">
               <Calendar
                 onChange={handleDateChange}
+                onActiveStartDateChange={handleActiveStartDateChange}
                 value={selectedDate}
                 tileContent={tileContent}
                 tileClassName={tileClassName}

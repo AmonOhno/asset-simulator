@@ -37,7 +37,7 @@ interface FinancialState {
   getAccounts: () => Promise<Account[]>;
   getCreditCards: () => Promise<CreditCard[]>;
   getJournalAccounts: () => Promise<JournalAccount[]>;
-  getJournalEntries: () => Promise<JournalEntry[]>;
+  getJournalEntries: (startDate?: string, endDate?: string) => Promise<JournalEntry[]>;
   getJournalEntriesView: (params: { startDate?: string; endDate?: string; debitId?: string; creditId?: string; description?: string; filterMode?: 'AND' | 'OR' }) => Promise<JournalEntryView[]>;
   getRegularJournalEntries: () => Promise<RecurringTransaction[]>;
   addAccount: (account: Omit<Account, 'id'>) => Promise<void>;
@@ -163,8 +163,6 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
     get().getAccounts();
     get().getCreditCards();
     get().getJournalAccounts();
-    get().getJournalEntries();
-    get().getRegularJournalEntries();
   },
 
   calculateBalanceSheet: (asOfDate?: string): BalanceSheet => {
@@ -430,44 +428,65 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
     }
   },
 
-  getJournalEntries: async (): Promise<JournalEntry[]> => {
+  getJournalEntries: async (startDate?: string, endDate?: string): Promise<JournalEntry[]> => {
     const { session, userId } = useAuthStore.getState();
     if (!session || !userId) return [];
 
-    const cached = financialCache[userId]?.journalEntries;
-    if (cached && cached.length > 0) {
-      set(() => ({ journalEntries: cached }));
-      (async () => {
-        try {
-          const resp = await fetch(`${API_URL}/journal-entries`, {
-            method: 'GET',
-            headers: { 'Authorization': `Bearer ${session.access_token}` },
-          });
-          if (resp.ok) {
-            const fresh = toCamelCase(await resp.json()) || [];
-            set(() => ({ journalEntries: fresh }));
-            setCacheForUser(userId, { journalEntries: fresh });
+    // 期間指定がない場合はキャッシュを使用
+    if (!startDate && !endDate) {
+      const cached = financialCache[userId]?.journalEntries;
+      if (cached && cached.length > 0) {
+        set(() => ({ journalEntries: cached }));
+        (async () => {
+          try {
+            const resp = await fetch(`${API_URL}/journal-entries`, {
+              method: 'GET',
+              headers: { 'Authorization': `Bearer ${session.access_token}` },
+            });
+            if (resp.ok) {
+              const fresh = toCamelCase(await resp.json()) || [];
+              set(() => ({ journalEntries: fresh }));
+              setCacheForUser(userId, { journalEntries: fresh });
+            }
+          } catch (e) {
+            console.debug('Background refresh journal entries failed', e);
           }
-        } catch (e) {
-          console.debug('Background refresh journal entries failed', e);
-        }
-      })();
-      return cached;
+        })();
+        return cached;
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/journal-entries`, {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${session.access_token}` },
+        });
+        if (!response.ok) throw new Error('Failed to fetch journal entries');
+        const journalEntries = toCamelCase(await response.json()) || [];
+        set(() => ({ journalEntries }));
+        setCacheForUser(userId, { journalEntries });
+        return journalEntries;
+      } catch (error) {
+        console.error('Failed to fetch journal entries:', error);
+        return get().journalEntries;
+      }
     }
 
+    // 期間指定がある場合は直接取得（キャッシュなし）
     try {
-      const response = await fetch(`${API_URL}/journal-entries`, {
+      const params = new URLSearchParams();
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      
+      const response = await fetch(`${API_URL}/journal-entries?${params.toString()}`, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${session.access_token}` },
       });
-      if (!response.ok) throw new Error('Failed to fetch journal entries');
+      if (!response.ok) throw new Error('Failed to fetch journal entries for period');
       const journalEntries = toCamelCase(await response.json()) || [];
-      set(() => ({ journalEntries }));
-      setCacheForUser(userId, { journalEntries });
       return journalEntries;
     } catch (error) {
-      console.error('Failed to fetch journal entries:', error);
-      return get().journalEntries;
+      console.error('Failed to fetch journal entries for period:', error);
+      return [];
     }
   },
 

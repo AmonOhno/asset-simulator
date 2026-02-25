@@ -9,13 +9,26 @@ const router = Router();
 router.get('/', authMiddleware, async (req, res) => {
     try {
         const user_id = req.user?.id;
+        const { startDate, endDate } = req.query;
         console.log('Fetching journal entries...');
         console.log('Using user_id:', user_id);
-        const { data, error } = await supabase
+        console.log('Date range - startDate:', startDate, 'endDate:', endDate);
+        
+        let query = supabase
             .from('journal_entries')
             .select(`*`)
-            .eq('user_id', user_id)
-            .order('date', { ascending: false });
+            .eq('user_id', user_id);
+        
+        // 期間フィルタを適用
+        if (startDate) {
+            query = query.gte('date', startDate as string);
+        }
+        if (endDate) {
+            query = query.lte('date', endDate as string);
+        }
+        
+        const { data, error } = await query.order('date', { ascending: false });
+        
         if (error) {
             console.error("Supabase error:", error);
             throw error;

@@ -4,7 +4,6 @@ import { useFinancialStore, RecurringTransaction, RecurrenceFrequency } from '@a
 export const RecurringTransactionManager: React.FC = () => {
   const { 
     journalAccounts, 
-    regularJournalEntries,
     addRegularJournalEntry,
     updateRegularJournalEntry,
     deleteRegularJournalEntry,
@@ -12,6 +11,13 @@ export const RecurringTransactionManager: React.FC = () => {
     executeDueRegularJournalEntries
   } = useFinancialStore();
   
+  const { regularJournalEntries, getRegularJournalEntries } = useFinancialStore();
+
+  // 初回ロード時に定期取引データを取得
+  useEffect(() => {
+    getRegularJournalEntries();
+  }, [getRegularJournalEntries]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Partial<RecurringTransaction> | null>(null);
   const [formData, setFormData] = useState<Partial<RecurringTransaction>>({});
