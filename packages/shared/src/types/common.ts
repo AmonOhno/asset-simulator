@@ -119,6 +119,25 @@ export interface JournalEntryView {
 }
 
 /**
+ * カレンダー表示用 VIEW `v_journal_entries_for_calendar` の型定義
+ * 勘定科目の名称とカテゴリが事前に JOIN されているため
+ * JournalCalendar での find() 検索が不要になり、パフォーマンス向上
+ */
+export interface CalendarJournalEntry {
+  id: string; // 仕訳ID
+  date: string; // 取引日 (YYYY-MM-DD)
+  description: string; // 摘要
+  amount: number; // 金額
+  debitAccountId: string; // 借方勘定科目のID
+  debitAccountName: string; // 借方勘定科目の名称
+  debitAccountCategory: AccountCategory; // 借方勘定科目のカテゴリ
+  creditAccountId: string; // 貸方勘定科目のID
+  creditAccountName: string; // 貸方勘定科目の名称
+  creditAccountCategory: AccountCategory; // 貸方勘定科目のカテゴリ
+  userId: string; // ユーザーID
+}
+
+/**
  * DB VIEW `v_balance_sheet` の型定義
  */
 export interface BalanceSheetViewRow {

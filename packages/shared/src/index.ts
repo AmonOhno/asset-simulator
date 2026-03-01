@@ -9,6 +9,7 @@ export type {
     JournalAccount,
     JournalEntry,
     JournalEntryView,
+    CalendarJournalEntry,
     BalanceSheetViewRow,
     ProfitLossViewRow,
     BalanceSheet,

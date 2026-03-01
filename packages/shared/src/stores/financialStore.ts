@@ -7,6 +7,7 @@ import {
   JournalAccount,
   JournalEntry,
   JournalEntryView,
+  CalendarJournalEntry,
   BalanceSheetViewRow,
   ProfitLossViewRow,
   RecurringTransaction,
@@ -38,6 +39,7 @@ interface FinancialState {
   getCreditCards: () => Promise<CreditCard[]>;
   getJournalAccounts: () => Promise<JournalAccount[]>;
   getJournalEntries: (startDate?: string, endDate?: string) => Promise<JournalEntry[]>;
+  getCalendarJournalEntries: (startDate: string, endDate: string) => Promise<CalendarJournalEntry[]>; // カレンダー用VIEW
   getJournalEntriesView: (params: { startDate?: string; endDate?: string; debitId?: string; creditId?: string; description?: string; filterMode?: 'AND' | 'OR' }) => Promise<JournalEntryView[]>;
   getRegularJournalEntries: () => Promise<RecurringTransaction[]>;
   addAccount: (account: Omit<Account, 'id'>) => Promise<void>;
@@ -514,6 +516,30 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
       return (Array.isArray(data) ? data.map(toCamelCase) : []) as JournalEntryView[];
     } catch (error) {
       console.error('Error fetching journal entries view:', error);
+      return [];
+    }
+  },
+
+  // カレンダー表示用VIEW `v_journal_entries_for_calendar` から仕訳を取得
+  // 勘定科目名とカテゴリが事前に JOIN されているため、クライアント側の find() 検索が不要
+  getCalendarJournalEntries: async (startDate: string, endDate: string): Promise<CalendarJournalEntry[]> => {
+    const { session } = useAuthStore.getState();
+    if (!session) return [];
+
+    try {
+      const params = new URLSearchParams();
+      params.append('startDate', startDate);
+      params.append('endDate', endDate);
+      
+      const response = await fetch(`${API_URL}/journal-entries/calendar?${params.toString()}`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
+      if (!response.ok) throw new Error('Failed to fetch calendar journal entries');
+      const entries = toCamelCase(await response.json()) || [];
+      return entries as CalendarJournalEntry[];
+    } catch (error) {
+      console.error('Failed to fetch calendar journal entries:', error);
       return [];
     }
   },

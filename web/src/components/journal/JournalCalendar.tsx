@@ -3,23 +3,23 @@ import Calendar, { TileArgs } from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import '../../styles/JournalCalendar.css';
 import { useFinancialStore, useEventsStore } from '@asset-simulator/shared';
-import type { JournalEntry, ScheduleEvent } from '@asset-simulator/shared';
+import type { CalendarJournalEntry, JournalEntry, ScheduleEvent } from '@asset-simulator/shared';
 import { JournalEntriesModal } from './JournalEntriesModal';
 
 type CalendarTileProps = TileArgs;
 
 export const JournalCalendar: React.FC = () => {
-  const { journalAccounts, updateJournalEntry, getJournalEntries, fetchFinancial } = useFinancialStore();
+  const { updateJournalEntry, getCalendarJournalEntries } = useFinancialStore();
   const { events } = useEventsStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [currentMonth, setCurrentMonth] = useState<{ year: number; month: number }>({
     year: new Date().getFullYear(),
     month: new Date().getMonth() + 1,
   });
-  const [monthlyJournalEntries, setMonthlyJournalEntries] = useState<JournalEntry[]>([]);
-  const [selectedDateEntries, setSelectedDateEntries] = useState<JournalEntry[]>([]);
+  const [monthlyJournalEntries, setMonthlyJournalEntries] = useState<CalendarJournalEntry[]>([]);
+  const [selectedDateEntries, setSelectedDateEntries] = useState<CalendarJournalEntry[]>([]);
   const [selectedDateEvents, setSelectedDateEvents] = useState<ScheduleEvent[]>([]);
-  const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
+  const [editingEntry, setEditingEntry] = useState<CalendarJournalEntry | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
   // 勘定科目フィルタ
@@ -55,24 +55,21 @@ export const JournalCalendar: React.FC = () => {
 
     const fetch = async () => {
       try {
-        // 仕訳に関連する勘定科目が先に揃っている必要があるため、
-        // まずfetchFinancial を呼び出しキャッシュを更新しておく
-        await fetchFinancial();
         const { startDate, endDate } = getMonthDateRange(year, month);
-        const entries = await getJournalEntries(startDate, endDate);
+        const entries = await getCalendarJournalEntries(startDate, endDate);
         setMonthlyJournalEntries(entries);
       } catch (error) {
-        console.error('Error fetching monthly journal entries:', error);
+        console.error('Error fetching monthly calendar journal entries:', error);
         setMonthlyJournalEntries([]);
       }
     };
 
     fetch();
-  }, [currentMonth, getJournalEntries, getMonthDateRange, fetchFinancial]);
+  }, [currentMonth, getCalendarJournalEntries, getMonthDateRange]);
 
 // --- useCallbackで関数を安定化 ---
 const getEntriesForDate = useCallback(
-  (date: Date): JournalEntry[] => {
+  (date: Date): CalendarJournalEntry[] => {
     const dateString = formatDateToString(date);
     return monthlyJournalEntries
       .filter((entry) => entry.date === dateString)
@@ -114,17 +111,37 @@ useEffect(() => {
   setSelectedDateEntries(entries);
 }, [debitAccountFilter, creditAccountFilter, getEntriesForDate, selectedDate]);
 
-// 勘定科目名を取得する関数
-  const getAccountName = (accountId: string): string => {
-    const account = journalAccounts.find(acc => acc.id === accountId);
-    return account?.name || '不明';
-  };
+  // 月間データから借方勘定科目のユニークなリストを取得
+  const getUniqueDebitAccounts = useCallback(() => {
+    const seen = new Set<string>();
+    return monthlyJournalEntries
+      .filter(entry => {
+        if (seen.has(entry.debitAccountId)) return false;
+        seen.add(entry.debitAccountId);
+        return true;
+      })
+      .map(entry => ({
+        id: entry.debitAccountId,
+        name: entry.debitAccountName,
+        category: entry.debitAccountCategory
+      }));
+  }, [monthlyJournalEntries]);
 
-  // 勘定科目のカテゴリを取得する関数
-  const getAccountCategory = (accountId: string): string => {
-    const account = journalAccounts.find(acc => acc.id === accountId);
-    return account?.category || '';
-  };
+  // 月間データから貸方勘定科目のユニークなリストを取得
+  const getUniqueCreditAccounts = useCallback(() => {
+    const seen = new Set<string>();
+    return monthlyJournalEntries
+      .filter(entry => {
+        if (seen.has(entry.creditAccountId)) return false;
+        seen.add(entry.creditAccountId);
+        return true;
+      })
+      .map(entry => ({
+        id: entry.creditAccountId,
+        name: entry.creditAccountName,
+        category: entry.creditAccountCategory
+      }));
+  }, [monthlyJournalEntries]);
 
   // 指定した日付の費用・収益を計算
   const calculateDayFinancials = (date: Date) => {
@@ -133,9 +150,8 @@ useEffect(() => {
     let revenues = 0;
 
     entries.forEach(entry => {
-      const debitCategory = getAccountCategory(entry.debitAccountId);
-      const creditCategory = getAccountCategory(entry.creditAccountId);
-
+      const debitCategory = entry.debitAccountCategory;
+      const creditCategory = entry.creditAccountCategory;
       // 借方が費用科目の場合、費用が増加
       if (debitCategory === 'Expense') {
         expenses += entry.amount;
@@ -186,8 +202,8 @@ useEffect(() => {
   };
 
     // 編集モーダル関連
-    const handleEditEntry = (entry: JournalEntry) => {
-      setEditingEntry({ ...entry });
+    const handleEditEntry = (entry: CalendarJournalEntry) => {
+      setEditingEntry(entry);
       setIsModalOpen(true);
     };
 
@@ -198,13 +214,29 @@ useEffect(() => {
 
     const handleSaveEdit = async () => {
       if (editingEntry) {
-        await updateJournalEntry(editingEntry);
+        // CalendarJournalEntry を JournalEntry に変換して保存
+        const journalEntry: JournalEntry = {
+          id: editingEntry.id,
+          date: editingEntry.date,
+          description: editingEntry.description,
+          debitAccountId: editingEntry.debitAccountId,
+          creditAccountId: editingEntry.creditAccountId,
+          amount: editingEntry.amount,
+          user_id: editingEntry.userId,
+        };
+        await updateJournalEntry(journalEntry);
+        
+        // カレンダーを再描画するため、月間データを再取得
+        const { startDate, endDate } = getMonthDateRange(currentMonth.year, currentMonth.month);
+        const entries = await getCalendarJournalEntries(startDate, endDate);
+        setMonthlyJournalEntries(entries);
+        
         setEditingEntry(null);
         setIsModalOpen(false);
       }
     };
 
-    const handleModalInputChange = (field: keyof JournalEntry, value: string | number) => {
+    const handleModalInputChange = (field: keyof CalendarJournalEntry, value: string | number) => {
       if (editingEntry) {
         setEditingEntry({
           ...editingEntry,
@@ -284,7 +316,7 @@ useEffect(() => {
                     onChange={(e) => setDebitAccountFilter(e.target.value)}
                   >
                     <option value="">全て表示</option>
-                    {journalAccounts.map((account) => (
+                    {getUniqueDebitAccounts().map((account) => (
                       <option key={account.id} value={account.id}>
                         {account.name} ({account.category})
                       </option>
@@ -300,7 +332,7 @@ useEffect(() => {
                     onChange={(e) => setCreditAccountFilter(e.target.value)}
                   >
                     <option value="">全て表示</option>
-                    {journalAccounts.map((account) => (
+                    {getUniqueCreditAccounts().map((account) => (
                       <option key={account.id} value={account.id}>
                         {account.name} ({account.category})
                       </option>
@@ -410,8 +442,8 @@ useEffect(() => {
 
                     {/* 仕訳詳細リスト */}
                     {selectedDateEntries.map((entry) => {
-                      const debitCategory = getAccountCategory(entry.debitAccountId);
-                      const creditCategory = getAccountCategory(entry.creditAccountId);
+                      const debitCategory = entry.debitAccountCategory;
+                      const creditCategory = entry.creditAccountCategory;
                       const isExpenseEntry = debitCategory === 'Expense' || creditCategory === 'Expense';
                       const isRevenueEntry = debitCategory === 'Revenue' || creditCategory === 'Revenue';
                       
@@ -432,10 +464,10 @@ useEffect(() => {
                           </div>
                                 <div className="entry-accounts">
                                   <span className={`entry-debit me-2 ${debitCategory === 'Expense' ? 'expense' : ''}`}>
-                                    借方: {getAccountName(entry.debitAccountId)}
+                                    借方: {entry.debitAccountName}
                                   </span>
                                   <span className={`entry-credit ms-2 ${creditCategory === 'Revenue' ? 'revenue' : ''}`}>
-                                    貸方: {getAccountName(entry.creditAccountId)}
+                                    貸方: {entry.creditAccountName}
                                   </span>
                                 </div>
                           <div className="entry-amount">
@@ -460,7 +492,6 @@ useEffect(() => {
           <JournalEntriesModal
             isOpen={isModalOpen}
             entry={editingEntry}
-            journalAccounts={journalAccounts}
             onCancel={handleCancelEdit}
             onSave={handleSaveEdit}
             onChange={handleModalInputChange}

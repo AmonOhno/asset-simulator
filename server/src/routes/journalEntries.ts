@@ -108,4 +108,41 @@ router.put('/:id', authMiddleware, async (req, res) => {
     }
 });
 
+// GET /api/calendar-journal-entries
+// カレンダー表示用VIEW: v_journal_entries_for_calendar から仕訳を取得
+// 勘定科目情報が事前に JOIN されているため、クライアント側の検索が不要
+router.get('/calendar', authMiddleware, async (req, res) => {
+    try {
+        const user_id = req.user?.id;
+        const { startDate, endDate } = req.query;
+        
+        if (!startDate || !endDate) {
+            return res.status(400).json({ error: "startDate and endDate are required" });
+        }
+        
+        console.log('Fetching calendar journal entries...');
+        console.log('Using user_id:', user_id);
+        console.log('Date range - startDate:', startDate, 'endDate:', endDate);
+        
+        const { data, error } = await supabase
+            .from('v_journal_entries_for_calendar')
+            .select('*')
+            .eq('user_id', user_id)
+            .gte('date', startDate as string)
+            .lte('date', endDate as string)
+            .order('date', { ascending: false });
+        
+        if (error) {
+            console.error("Supabase error:", error);
+            throw error;
+        }
+        console.log('Calendar journal entries fetched successfully:', data?.length || 0, 'entries');
+        res.json(data);
+    } catch (error: any) {
+        console.error("Error fetching calendar journal entries:", error);
+        console.error("Error details:", JSON.stringify(error, null, 2));
+        res.status(500).json({ error: error.message });
+    }
+});
+
 export default router;
