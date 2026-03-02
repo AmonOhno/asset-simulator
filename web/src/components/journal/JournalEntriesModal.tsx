@@ -1,9 +1,10 @@
 import React from 'react';
-import { CalendarJournalEntry } from '@asset-simulator/shared';
+import { JournalAccount, CalendarJournalEntry } from '@asset-simulator/shared';
 
 interface JournalEntriesModalProps {
   isOpen: boolean;
   entry: CalendarJournalEntry | null;
+  journalAccounts: JournalAccount[];
   onCancel: () => void;
   onSave: () => void;
   onChange: (field: keyof CalendarJournalEntry, value: string | number) => void;
@@ -12,6 +13,7 @@ interface JournalEntriesModalProps {
 export const JournalEntriesModal: React.FC<JournalEntriesModalProps> = ({
   isOpen,
   entry,
+  journalAccounts,
   onCancel,
   onSave,
   onChange,
@@ -54,9 +56,11 @@ export const JournalEntriesModal: React.FC<JournalEntriesModalProps> = ({
                 value={entry.debitAccountId}
                 onChange={(e) => onChange('debitAccountId', e.target.value)}
               >
-                <option value={entry.debitAccountId}>
-                  {entry.debitAccountName} ({entry.debitAccountCategory})
-                </option>
+                {journalAccounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name} ({account.category})
+                  </option>
+                ))}
               </select>
             </div>
             <div className="mb-3">
@@ -66,9 +70,11 @@ export const JournalEntriesModal: React.FC<JournalEntriesModalProps> = ({
                 value={entry.creditAccountId}
                 onChange={(e) => onChange('creditAccountId', e.target.value)}
               >
-                <option value={entry.creditAccountId}>
-                  {entry.creditAccountName} ({entry.creditAccountCategory})
-                </option>
+                {journalAccounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name} ({account.category})
+                  </option>
+                ))}
               </select>
             </div>
             <div className="mb-3">

@@ -6,7 +6,7 @@ import { useScrollToTop } from '../../hooks/useScrollToTop';
 
 export const JournalAccountManager: React.FC = () => {
   const scrollToTop = useScrollToTop('journal-account-manager');
-  const { journalAccounts, addJournalAccount, updateJournalAccount, fetchFinancial } = useFinancialStore();
+  const { journalAccounts, addJournalAccount, updateJournalAccount, getJournalAccounts } = useFinancialStore();
   
   const [isEditing, setIsEditing] = useState(false);
   const [currentAccount, setCurrentAccount] = useState<Omit<JournalAccount, 'id'> | JournalAccount>({
@@ -38,7 +38,7 @@ export const JournalAccountManager: React.FC = () => {
         await addJournalAccount(currentAccount as Omit<JournalAccount, 'id'>);
       }
       // 勘定科目が変わったのでキャッシュをリフレッシュ
-      await fetchFinancial();
+      await getJournalAccounts();
       resetForm();
     } catch (error) {
       console.error('Journal account save failed:', error);

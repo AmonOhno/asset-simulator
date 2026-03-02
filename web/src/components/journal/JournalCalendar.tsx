@@ -9,6 +9,7 @@ import { JournalEntriesModal } from './JournalEntriesModal';
 type CalendarTileProps = TileArgs;
 
 export const JournalCalendar: React.FC = () => {
+  const { journalAccounts } = useFinancialStore();
   const { updateJournalEntry, getCalendarJournalEntries } = useFinancialStore();
   const { events } = useEventsStore();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -110,38 +111,6 @@ useEffect(() => {
   const entries = getEntriesForDate(selectedDate);
   setSelectedDateEntries(entries);
 }, [debitAccountFilter, creditAccountFilter, getEntriesForDate, selectedDate]);
-
-  // 月間データから借方勘定科目のユニークなリストを取得
-  const getUniqueDebitAccounts = useCallback(() => {
-    const seen = new Set<string>();
-    return monthlyJournalEntries
-      .filter(entry => {
-        if (seen.has(entry.debitAccountId)) return false;
-        seen.add(entry.debitAccountId);
-        return true;
-      })
-      .map(entry => ({
-        id: entry.debitAccountId,
-        name: entry.debitAccountName,
-        category: entry.debitAccountCategory
-      }));
-  }, [monthlyJournalEntries]);
-
-  // 月間データから貸方勘定科目のユニークなリストを取得
-  const getUniqueCreditAccounts = useCallback(() => {
-    const seen = new Set<string>();
-    return monthlyJournalEntries
-      .filter(entry => {
-        if (seen.has(entry.creditAccountId)) return false;
-        seen.add(entry.creditAccountId);
-        return true;
-      })
-      .map(entry => ({
-        id: entry.creditAccountId,
-        name: entry.creditAccountName,
-        category: entry.creditAccountCategory
-      }));
-  }, [monthlyJournalEntries]);
 
   // 指定した日付の費用・収益を計算
   const calculateDayFinancials = (date: Date) => {
@@ -316,7 +285,7 @@ useEffect(() => {
                     onChange={(e) => setDebitAccountFilter(e.target.value)}
                   >
                     <option value="">全て表示</option>
-                    {getUniqueDebitAccounts().map((account) => (
+                    {journalAccounts.map((account) => (
                       <option key={account.id} value={account.id}>
                         {account.name} ({account.category})
                       </option>
@@ -332,7 +301,7 @@ useEffect(() => {
                     onChange={(e) => setCreditAccountFilter(e.target.value)}
                   >
                     <option value="">全て表示</option>
-                    {getUniqueCreditAccounts().map((account) => (
+                    {journalAccounts.map((account) => (
                       <option key={account.id} value={account.id}>
                         {account.name} ({account.category})
                       </option>
@@ -492,6 +461,7 @@ useEffect(() => {
           <JournalEntriesModal
             isOpen={isModalOpen}
             entry={editingEntry}
+            journalAccounts={journalAccounts}
             onCancel={handleCancelEdit}
             onSave={handleSaveEdit}
             onChange={handleModalInputChange}
