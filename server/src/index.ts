@@ -14,14 +14,14 @@ app.use(express.json());
 // --- API Routes ---
 app.use('/api', authMiddleware, apiRouter);
 
-// --- Health Check ---
-app.get('/health', (req, res) => {
-    res.status(200).json({ 
-        status: 'OK', 
-        timestamp: new Date().toISOString(),
-        env: process.env.NODE_ENV 
-    });
-});
+// // --- Health Check ---
+// app.get('/health', (req, res) => {
+//     res.status(200).json({ 
+//         status: 'OK', 
+//         timestamp: new Date().toISOString(),
+//         env: process.env.NODE_ENV 
+//     });
+// });
 
 // --- Server Startup ---
 app.listen(port, () => {
