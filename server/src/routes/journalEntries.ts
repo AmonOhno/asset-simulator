@@ -108,7 +108,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// GET /api/calendar-journal-entries
+// GET /api/journal-entries/calendar?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
 // カレンダー表示用VIEW: v_journal_entries_for_calendar から仕訳を取得
 // 勘定科目情報が事前に JOIN されているため、クライアント側の検索が不要
 router.get('/calendar', authMiddleware, async (req, res) => {

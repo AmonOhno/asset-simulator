@@ -17,7 +17,7 @@ if (process.env.NODE_ENV !== 'production') {
   }
 }
 
-export const supabaseUrl = 'https://dfqtsogrhkrayfixnbtz.supabase.co';
+export const supabaseUrl = process.env.SUPABASE_URL!;
 export const supabaseKey = process.env.SUPABASE_KEY!;
 export const defaultUserId = process.env.DEFAULT_USER_ID!;
 
