@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
-import { supabase } from './supabaseClient';
 import { useAuthStore } from '@asset-simulator/shared';
 
 import { AccountManager } from './components/journal/AccountManager';
@@ -26,23 +25,31 @@ function App() {
   const [activeTab, setActiveTab] = useState<Tab>('transactions');
   const fetchFinancial = useFinancialStore((state) => state.fetchFinancial);
   const fetchEvents = useEventsStore((state) => state.fetchEvents);
-  const { session, setSession } = useAuthStore();
+  const { session, client, setSession, refreshSession, signOut } = useAuthStore();
 
-  // 初回ロード時のセッション確認と監視設定
+// 認証状態の監視設定
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+    let isMounted = true;
+
+    // 初回セッション取得
+    refreshSession().then((currentSession) => {
+      if (isMounted) setSession(currentSession);
     });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+    // リスナーの設定
+    const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
+      if (isMounted) {
+        setSession(session);
+      }
     });
 
-    return () => subscription.unsubscribe();
-  }, [setSession]);
-
+    // クリーンアップ関数: アンマウント時に購読を解除し、コールバックを防ぐ
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [client, setSession, refreshSession]); // 依存配列に注意
+  
   // ログイン時の初回データ取得
   // ・金融データはここで一度だけ取得（カレンダー等からは呼ばない）
   // ・イベントデータはログインごとに必ず最新を取得
@@ -128,7 +135,7 @@ function App() {
         <div className="row justify-content-center">
           <div className="col-md-6">
             <Auth
-              supabaseClient={supabase}
+              supabaseClient={client}
               appearance={{ theme: ThemeSupa }}
               providers={['google', 'github']}
             />
@@ -168,14 +175,7 @@ function App() {
 
       <footer className="mt-4 text-center text-muted">
         <button
-          onClick={async () => {
-            try {
-              await supabase.auth.signOut();
-              setSession(null);
-            } catch (err) {
-              console.error('Sign out failed:', err);
-            }
-          }}
+          onClick={signOut} // ストアのsignOutを呼ぶだけ
           className="btn btn-outline-secondary custom-radius"
         >
           ログアウト
