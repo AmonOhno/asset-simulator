@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 // In the browser (CRA) we should rely on build-time environment variables.
 // Do not import `path` or `dotenv` here — those are server/node-only.
 
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://dfqtsogrhkrayfixnbtz.supabase.co';
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL!;
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
