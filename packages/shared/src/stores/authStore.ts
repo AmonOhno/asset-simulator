@@ -2,8 +2,8 @@ import { create } from 'zustand';
 import { createClient, Session, SupabaseClient } from '@supabase/supabase-js';
 
 // 環境変数の統合
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://dfqtsogrhkrayfixnbtz.supabase.co';
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL!;
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY!;
 
 // クライアントの初期化
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
