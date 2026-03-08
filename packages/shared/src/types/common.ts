@@ -102,23 +102,6 @@ export interface JournalEntry {
 }
 
 /**
- * DB VIEW `v_journal_entries` の型定義
- * SELECT で返るカラムを camelCase に直した形で定義します。
- */
-export interface JournalEntryView {
-  date: string;
-  description: string;
-  creditCategory?: string | null;
-  creditName?: string | null;
-  debitCategory?: string | null;
-  debitName?: string | null;
-  amount?: number | null;
-  entriesId: string; // entries_id
-  creditId?: string | null;
-  debitId?: string | null;
-}
-
-/**
  * カレンダー表示用 VIEW `v_journal_entries_for_calendar` の型定義
  * 勘定科目の名称とカテゴリが事前に JOIN されているため
  * JournalCalendar での find() 検索が不要になり、パフォーマンス向上
@@ -157,26 +140,6 @@ export interface ProfitLossViewRow {
   category: AccountCategory;
   name: string;
   sumAmount: number;
-}
-
-// --- 財務レポート ---
-export interface BalanceSheetItem {
-  accountName: string;
-  amount: number;
-}
-
-export interface BalanceSheet {
-  assets: BalanceSheetItem[];
-  liabilities: BalanceSheetItem[];
-  equity: BalanceSheetItem[];
-  totalAssets: number;
-  totalLiabilitiesAndEquity: number;
-}
-
-export interface ProfitAndLossStatement {
-  revenues: BalanceSheetItem[];
-  expenses: BalanceSheetItem[];
-  netIncome: number;
 }
 
 // --- 定期取引リマインド ---

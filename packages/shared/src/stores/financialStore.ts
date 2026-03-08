@@ -6,14 +6,10 @@ import {
   CreditCard,
   JournalAccount,
   JournalEntry,
-  JournalEntryView,
   CalendarJournalEntry,
   BalanceSheetViewRow,
   ProfitLossViewRow,
   RecurringTransaction,
-  BalanceSheet,
-  ProfitAndLossStatement,
-  BalanceSheetItem,
 } from '../types/common';
 import { useAuthStore } from './authStore';
 
@@ -29,8 +25,6 @@ interface FinancialState {
 
   // Actions
   fetchFinancial: () => Promise<void>; // 全データを取得
-  calculateBalanceSheet: (asOfDate?: string) => BalanceSheet; //貸借対照表（BS）を計算
-  calculateProfitAndLossStatement: (startDate?: string, endDate?: string) => ProfitAndLossStatement; //損益計算書（PL）を計算
   getBalanceSheetView: (asOfDate?: string) => Promise<BalanceSheetViewRow[]>;
   getProfitLossStatementView: (startDate?: string, endDate?: string) => Promise<ProfitLossViewRow[]>;
 
@@ -40,7 +34,6 @@ interface FinancialState {
   getJournalAccounts: () => Promise<JournalAccount[]>;
   getJournalEntries: (startDate?: string, endDate?: string) => Promise<JournalEntry[]>;
   getCalendarJournalEntries: (startDate: string, endDate: string) => Promise<CalendarJournalEntry[]>; // カレンダー用VIEW
-  getJournalEntriesView: (params: { startDate?: string; endDate?: string; debitId?: string; creditId?: string; description?: string; filterMode?: 'AND' | 'OR' }) => Promise<JournalEntryView[]>;
   getRegularJournalEntries: () => Promise<RecurringTransaction[]>;
   addAccount: (account: Omit<Account, 'id'>) => Promise<void>;
   addCreditCard: (card: Omit<CreditCard, 'id'>) => Promise<void>;
@@ -165,143 +158,6 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
     get().getAccounts();
     get().getCreditCards();
     get().getJournalAccounts();
-  },
-
-  calculateBalanceSheet: (asOfDate?: string): BalanceSheet => {
-    const { journalEntries, journalAccounts } = get();
-    const accountBalances = new Map<string, number>();
-
-    // 期間でフィルタリング
-    const filteredEntries = asOfDate 
-      ? journalEntries.filter(entry => entry.date <= asOfDate)
-      : journalEntries;
-
-    // 各勘定科目の残高を計算
-    filteredEntries.forEach((entry: JournalEntry) => {
-      accountBalances.set(
-        entry.debitAccountId,
-        (accountBalances.get(entry.debitAccountId) || 0) + entry.amount
-      );
-      accountBalances.set(
-        entry.creditAccountId,
-        (accountBalances.get(entry.creditAccountId) || 0) - entry.amount
-      );
-    });
-
-    const bs: BalanceSheet = {
-      assets: [],
-      liabilities: [],
-      equity: [],
-      totalAssets: 0,
-      totalLiabilitiesAndEquity: 0,
-    };
-
-    // PLを計算して当期純利益を求める（期間指定がある場合は同じ期間で計算）
-    const pl = asOfDate 
-      ? get().calculateProfitAndLossStatement(undefined, asOfDate)
-      : get().calculateProfitAndLossStatement();
-    const netIncome = pl.netIncome;
-
-    journalAccounts.forEach((account: JournalAccount) => {
-      let balance = accountBalances.get(account.id) || 0;
-
-      // 利益剰余金に当期純利益を加算
-      if (account.id === 'acc_retained_earnings') {
-        balance += netIncome;
-      }
-
-      // 残高が0の科目は表示しない（ただし純資産は0でも表示）
-      if (balance === 0 && account.category !== 'Equity') return;
-
-      const item: BalanceSheetItem = {
-        accountName: account.name,
-        amount: balance,
-      };
-
-      switch (account.category) {
-        case 'Asset':
-          bs.assets.push(item);
-          bs.totalAssets += item.amount;
-          break;
-        case 'Liability':
-          // 負債は貸方残高なので、借方残高として表示するために符号を反転
-          item.amount *= -1;
-          bs.liabilities.push(item);
-          break;
-        case 'Equity':
-          // 純資産は貸方残高なので、借方残高として表示するために符号を反転
-          item.amount *= -1;
-          bs.equity.push(item);
-          break;
-        default:
-          break;
-      }
-    });
-
-    bs.totalLiabilitiesAndEquity = bs.liabilities.reduce((sum, item) => sum + item.amount, 0) +
-                                   bs.equity.reduce((sum, item) => sum + item.amount, 0);
-
-    return bs;
-  },
-
-  calculateProfitAndLossStatement: (startDate?: string, endDate?: string): ProfitAndLossStatement => {
-    const { journalEntries, journalAccounts } = get();
-    const accountBalances = new Map<string, number>();
-
-    // 期間でフィルタリング
-    const filteredEntries = journalEntries.filter((entry: JournalEntry) => {
-      if (startDate && entry.date < startDate) return false;
-      if (endDate && entry.date > endDate) return false;
-      return true;
-    });
-
-    filteredEntries.forEach((entry: JournalEntry) => {
-      accountBalances.set(
-        entry.debitAccountId,
-        (accountBalances.get(entry.debitAccountId) || 0) + entry.amount
-      );
-      accountBalances.set(
-        entry.creditAccountId,
-        (accountBalances.get(entry.creditAccountId) || 0) - entry.amount
-      );
-    });
-
-    const pl: ProfitAndLossStatement = {
-      revenues: [],
-      expenses: [],
-      netIncome: 0,
-    };
-
-    let totalRevenue = 0;
-    let totalExpense = 0;
-
-    journalAccounts.forEach((account: JournalAccount) => {
-      const balance = accountBalances.get(account.id) || 0;
-      if (balance === 0) return;
-
-      const item: BalanceSheetItem = {
-        accountName: account.name,
-        amount: balance,
-      };
-
-      switch (account.category) {
-        case 'Revenue':
-          // 収益は貸方残高なので、借方残高として表示するために符号を反転
-          item.amount *= -1;
-          pl.revenues.push(item);
-          totalRevenue += item.amount;
-          break;
-        case 'Expense':
-          pl.expenses.push(item);
-          totalExpense += item.amount;
-          break;
-        default:
-          break;
-      }
-    });
-
-    pl.netIncome = totalRevenue - totalExpense;
-    return pl;
   },
 
   // --- CRUD Actions ---
@@ -488,34 +344,6 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
       return journalEntries;
     } catch (error) {
       console.error('Failed to fetch journal entries for period:', error);
-      return [];
-    }
-  },
-
-  // VIEW からフィルタ条件に応じた仕訳一覧を取得
-  getJournalEntriesView: async (params: { startDate?: string; endDate?: string; debitId?: string; creditId?: string; description?: string; filterMode?: 'AND' | 'OR' }) => {
-    const { session } = useAuthStore.getState();
-    if (!session) return [];
-
-    const q = new URLSearchParams();
-    if (params.startDate) q.append('startDate', params.startDate);
-    if (params.endDate) q.append('endDate', params.endDate);
-    if (params.description) q.append('description', params.description);
-    if (params.debitId) q.append('debitId', params.debitId);
-    if (params.creditId) q.append('creditId', params.creditId);
-    if (params.filterMode) q.append('filterMode', params.filterMode);
-
-    try {
-      const response = await fetch(`${API_URL}/journal-entries/view?${q.toString()}`, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      });
-      if (!response.ok) throw new Error('Failed to fetch journal entries view');
-      const data = await response.json();
-      return (Array.isArray(data) ? data.map(toCamelCase) : []) as JournalEntryView[];
-    } catch (error) {
-      console.error('Error fetching journal entries view:', error);
       return [];
     }
   },

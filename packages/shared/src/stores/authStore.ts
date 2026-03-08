@@ -4,9 +4,7 @@ import { createClient, Session, SupabaseClient } from '@supabase/supabase-js';
 // 環境変数の統合
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL!;
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY!;
-
-// クライアントの初期化
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 
 interface AuthState {
   session: Session | null;
