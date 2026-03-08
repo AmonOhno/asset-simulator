@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useFinancialStore, useAuthStore, BalanceSheetViewRow, ProfitLossViewRow } from '@asset-simulator/shared';
+import { useFinancialStore, useAuthStore, BalanceSheetView, ProfitLossView } from '@asset-simulator/shared';
 import { DateRangePicker, DateRange } from '../common/DateRangePicker';
 
 export const Dashboard: React.FC = () => {
@@ -37,8 +37,8 @@ export const Dashboard: React.FC = () => {
   const initialDateRange = getStoredDateRange();
   const [dateRange, setDateRange] = useState<DateRange>(initialDateRange);
   const [bsAsOfDate, setBsAsOfDate] = useState<string>(getStoredBsAsOfDate(initialDateRange.endDate));
-  const [bsData, setBsData] = useState<BalanceSheetViewRow[]>([]);
-  const [plData, setPlData] = useState<ProfitLossViewRow[]>([]);
+  const [bsData, setBsData] = useState<BalanceSheetView[]>([]);
+  const [plData, setPlData] = useState<ProfitLossView[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -91,7 +91,7 @@ export const Dashboard: React.FC = () => {
     fetchData();
   }, [getBalanceSheetView, getProfitLossStatementView, bsAsOfDate, dateRange]);
 
-  const groupByCategory = (rows: BalanceSheetViewRow[] | ProfitLossViewRow[]): Record<string, number> => {
+  const groupByCategory = (rows: BalanceSheetView[] | ProfitLossView[]): Record<string, number> => {
     const grouped: Record<string, number> = {};
     rows.forEach(row => {
       grouped[row.category] = (grouped[row.category] || 0) + (row.sumAmount || 0);
@@ -99,7 +99,7 @@ export const Dashboard: React.FC = () => {
     return grouped;
   };
 
-  const getDetailsByCategory = (rows: BalanceSheetViewRow[] | ProfitLossViewRow[], category: string) => {
+  const getDetailsByCategory = (rows: BalanceSheetView[] | ProfitLossView[], category: string) => {
     return rows.filter(row => row.category === category);
   };
 

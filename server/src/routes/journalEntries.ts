@@ -5,43 +5,6 @@ import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
 
-// GET /api/journal-entries
-router.get('/', authMiddleware, async (req, res) => {
-    try {
-        const user_id = req.user?.id;
-        const { startDate, endDate } = req.query;
-        console.log('Fetching journal entries...');
-        console.log('Using user_id:', user_id);
-        console.log('Date range - startDate:', startDate, 'endDate:', endDate);
-        
-        let query = supabase
-            .from('journal_entries')
-            .select(`*`)
-            .eq('user_id', user_id);
-        
-        // 期間フィルタを適用
-        if (startDate) {
-            query = query.gte('date', startDate as string);
-        }
-        if (endDate) {
-            query = query.lte('date', endDate as string);
-        }
-        
-        const { data, error } = await query.order('date', { ascending: false });
-        
-        if (error) {
-            console.error("Supabase error:", error);
-            throw error;
-        }
-        console.log('Journal entries fetched successfully:', data?.length || 0, 'entries');
-        res.json(data);
-    } catch (error: any) {
-        console.error("Error fetching journal entries:", error);
-        console.error("Error details:", JSON.stringify(error, null, 2));
-        res.status(500).json({ error: error.message });
-    }
-});
-
 // POST /api/journal-entries
 router.post('/', authMiddleware, async (req, res) => {
     const user_id = req.user?.id;

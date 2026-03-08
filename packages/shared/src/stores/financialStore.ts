@@ -7,8 +7,8 @@ import {
   JournalAccount,
   JournalEntry,
   CalendarJournalEntry,
-  BalanceSheetViewRow,
-  ProfitLossViewRow,
+  BalanceSheetView,
+  ProfitLossView,
   RecurringTransaction,
 } from '../types/common';
 import { useAuthStore } from './authStore';
@@ -23,18 +23,17 @@ interface FinancialState {
   journalEntries: JournalEntry[];
   regularJournalEntries: RecurringTransaction[];
 
-  // Actions
+  // GET Actions
   fetchFinancial: () => Promise<void>; // 全データを取得
-  getBalanceSheetView: (asOfDate?: string) => Promise<BalanceSheetViewRow[]>;
-  getProfitLossStatementView: (startDate?: string, endDate?: string) => Promise<ProfitLossViewRow[]>;
-
-  // CRUD Actions
   getAccounts: () => Promise<Account[]>;
   getCreditCards: () => Promise<CreditCard[]>;
   getJournalAccounts: () => Promise<JournalAccount[]>;
-  getJournalEntries: (startDate?: string, endDate?: string) => Promise<JournalEntry[]>;
   getCalendarJournalEntries: (startDate: string, endDate: string) => Promise<CalendarJournalEntry[]>; // カレンダー用VIEW
   getRegularJournalEntries: () => Promise<RecurringTransaction[]>;
+  getBalanceSheetView: (asOfDate?: string) => Promise<BalanceSheetView[]>;
+  getProfitLossStatementView: (startDate?: string, endDate?: string) => Promise<ProfitLossView[]>;
+
+  // CRUD Actions
   addAccount: (account: Omit<Account, 'id'>) => Promise<void>;
   addCreditCard: (card: Omit<CreditCard, 'id'>) => Promise<void>;
   addJournalAccount: (account: Omit<JournalAccount, 'id'>) => Promise<void>;
@@ -283,68 +282,6 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
     } catch (error) {
       console.error('Failed to fetch journal accounts:', error);
       return get().journalAccounts;
-    }
-  },
-
-  getJournalEntries: async (startDate?: string, endDate?: string): Promise<JournalEntry[]> => {
-    const { session, userId } = useAuthStore.getState();
-    if (!session || !userId) return [];
-
-    // 期間指定がない場合はキャッシュを使用
-    if (!startDate && !endDate) {
-      const cached = financialCache[userId]?.journalEntries;
-      if (cached && cached.length > 0) {
-        set(() => ({ journalEntries: cached }));
-        (async () => {
-          try {
-            const resp = await fetch(`${API_URL}/journal-entries`, {
-              method: 'GET',
-              headers: { 'Authorization': `Bearer ${session.access_token}` },
-            });
-            if (resp.ok) {
-              const fresh = toCamelCase(await resp.json()) || [];
-              set(() => ({ journalEntries: fresh }));
-              setCacheForUser(userId, { journalEntries: fresh });
-            }
-          } catch (e) {
-            console.debug('Background refresh journal entries failed', e);
-          }
-        })();
-        return cached;
-      }
-
-      try {
-        const response = await fetch(`${API_URL}/journal-entries`, {
-          method: 'GET',
-          headers: { 'Authorization': `Bearer ${session.access_token}` },
-        });
-        if (!response.ok) throw new Error('Failed to fetch journal entries');
-        const journalEntries = toCamelCase(await response.json()) || [];
-        set(() => ({ journalEntries }));
-        setCacheForUser(userId, { journalEntries });
-        return journalEntries;
-      } catch (error) {
-        console.error('Failed to fetch journal entries:', error);
-        return get().journalEntries;
-      }
-    }
-
-    // 期間指定がある場合は直接取得（キャッシュなし）
-    try {
-      const params = new URLSearchParams();
-      if (startDate) params.append('startDate', startDate);
-      if (endDate) params.append('endDate', endDate);
-      
-      const response = await fetch(`${API_URL}/journal-entries?${params.toString()}`, {
-        method: 'GET',
-        headers: { 'Authorization': `Bearer ${session.access_token}` },
-      });
-      if (!response.ok) throw new Error('Failed to fetch journal entries for period');
-      const journalEntries = toCamelCase(await response.json()) || [];
-      return journalEntries;
-    } catch (error) {
-      console.error('Failed to fetch journal entries for period:', error);
-      return [];
     }
   },
 
@@ -856,7 +793,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
   },
 
   // --- VIEW Methods (Server-side Aggregation) ---
-  getBalanceSheetView: async (asOfDate?: string): Promise<BalanceSheetViewRow[]> => {
+  getBalanceSheetView: async (asOfDate?: string): Promise<BalanceSheetView[]> => {
     const { session } = useAuthStore.getState();
     if (!session) return [];
 
@@ -871,14 +808,14 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
       });
       if (!response.ok) throw new Error('Failed to fetch balance sheet view');
       const data = await response.json();
-      return (Array.isArray(data) ? data : []) as BalanceSheetViewRow[];
+      return (Array.isArray(data) ? data : []) as BalanceSheetView[];
     } catch (error) {
       console.error('Error fetching balance sheet view:', error);
       return [];
     }
   },
 
-  getProfitLossStatementView: async (startDate?: string, endDate?: string): Promise<ProfitLossViewRow[]> => {
+  getProfitLossStatementView: async (startDate?: string, endDate?: string): Promise<ProfitLossView[]> => {
     const { session } = useAuthStore.getState();
     if (!session) return [];
 
@@ -894,7 +831,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
       });
       if (!response.ok) throw new Error('Failed to fetch profit/loss statement view');
       const data = await response.json();
-      return (Array.isArray(data) ? data : []) as ProfitLossViewRow[];
+      return (Array.isArray(data) ? data : []) as ProfitLossView[];
     } catch (error) {
       console.error('Error fetching profit/loss statement view:', error);
       return [];

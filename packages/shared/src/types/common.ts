@@ -123,7 +123,7 @@ export interface CalendarJournalEntry {
 /**
  * DB VIEW `v_balance_sheet` の型定義
  */
-export interface BalanceSheetViewRow {
+export interface BalanceSheetView {
   userId: string;
   accountId: string;
   category: AccountCategory;
@@ -134,7 +134,7 @@ export interface BalanceSheetViewRow {
 /**
  * DB VIEW `v_profit_loss_statement` の型定義
  */
-export interface ProfitLossViewRow {
+export interface ProfitLossView {
   userId: string;
   accountId: string;
   category: AccountCategory;
