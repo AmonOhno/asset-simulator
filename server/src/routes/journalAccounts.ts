@@ -9,6 +9,8 @@ const router = Router();
 router.get('/', authMiddleware, async (req, res) => {
     try {
         const user_id = req.user?.id;
+        console.log('Fetching calendar journal accounts...');
+        console.log('Using user_id:', user_id);
         const { data, error } = await supabase
             .from('journal_accounts')
             .select('*')
@@ -17,6 +19,7 @@ router.get('/', authMiddleware, async (req, res) => {
             .order('name', { ascending: true });
         if (error) throw error;
         res.json(data);
+        console.log('Calendar journal accounts fetched successfully:', data?.length || 0, 'journal accounts');
     } catch (error: any) {
         console.error("Error fetching journal accounts:", error);
         res.status(500).json({ error: error.message });

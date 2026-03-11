@@ -9,12 +9,16 @@ const router = Router();
 router.get('/', authMiddleware, async (req, res) => {
     try {
     const user_id = req.user?.id;
+
+    console.log('Fetching accounts...');
+    console.log('Using user_id:', user_id);
     const { data, error } = await supabase
         .from('accounts')
         .select('*')
         .eq('user_id', user_id);
     if (error) throw error;
     res.json(data);
+    console.log('Accounts fetched successfully:', data?.length || 0, 'accounts');
     } catch (error: any) {
         console.error("Error fetching accounts:", error);
         res.status(500).json({ error: error.message });

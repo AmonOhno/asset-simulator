@@ -26,6 +26,7 @@ router.get('/', authMiddleware, async (req, res) => {
     const { data, error } = await supabase
       .rpc('fn_profit_loss', { p_start_date: startDate, p_end_date: endDate });
 
+    
     if (error) {
       console.error('Error calling fn_profit_loss:', error);
       throw error;

@@ -9,12 +9,16 @@ const router = Router();
 router.get('/', authMiddleware, async (req, res) => {
     try {
         const user_id = req.user?.id;
+
+        console.log('Fetching credit cards...');
+        console.log('Using user_id:', user_id);
         const { data, error } = await supabase
             .from('credit_cards')
             .select('*')
             .eq('user_id', user_id);
         if (error) throw error;
         res.json(data);
+        console.log('Credit cards fetched successfully:', data?.length || 0, 'credit cards');
     } catch (error: any) {
         console.error("Error fetching credit cards:", error);
         res.status(500).json({ error: error.message });
