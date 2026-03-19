@@ -63,6 +63,19 @@ export const Dashboard: React.FC = () => {
     }
   };
 
+  const handleBsAsOfDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newBsAsOfDate = e.target.value; // 文字列として取得
+    
+    // 無限ループ防止のため、値が異なる場合のみ更新
+    if (newBsAsOfDate !== bsAsOfDate) {
+      setDateRange(prev => ({
+        ...prev,
+        endDate: newBsAsOfDate
+      }));
+      setBsAsOfDate(newBsAsOfDate);
+    }
+  };
+
   // サーバーVIEWからBS・PLデータを取得
   const lastFetchKey = React.useRef<string>('');
   useEffect(() => {
@@ -137,15 +150,6 @@ export const Dashboard: React.FC = () => {
       
       <div className="row mb-4">
         <div className="col-md-3 mb-3">
-          <div className={`card text-white ${totalEquity_Value >= 0 ? 'bg-primary' : 'bg-danger'}`}>
-            <div className="card-body">
-              <h5 className="card-title">総資産</h5>
-              <h3 className="card-text">{totalEquity_Value.toLocaleString()}円</h3>
-              <small>基準日: {bsAsOfDate}</small>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3 mb-3">
           <div className={`card text-white ${netIncome >= 0 ? 'bg-info' : 'bg-warning'}`}>
             <div className="card-body">
               <h5 className="card-title">純損益</h5>
@@ -154,15 +158,76 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
-      <div className="col-md-6 mb-3">
-        <label className="form-label">損益計算書の期間</label>
-        <DateRangePicker 
-          dateRange={dateRange}
-          onDateRangeChange={handleDateRangeChange}
-        />
+        <div className="col-md-3 mb-3">
+          <div className={`card text-white ${totalEquity_Value >= 0 ? 'bg-primary' : 'bg-danger'}`}>
+            <div className="card-body">
+              <h5 className="card-title">総資産</h5>
+              <h3 className="card-text">{totalEquity_Value.toLocaleString()}円</h3>
+              <small>基準日: {bsAsOfDate}</small>
+            </div>
+          </div>
+        </div>
       </div>
       <div className="row">
+        <div className="col-lg-6 mb-4">
+          <div className="card h-100">
+            <div className="card-header">
+              <h5 className="mb-0">損益計算書 (PL)</h5>
+              <small className="text-muted">{dateRange.startDate} 〜 {dateRange.endDate}</small>
+            </div>
+            <div className="card-body">
+              <div className="col-md-6 mb-3">
+                <DateRangePicker 
+                  dateRange={dateRange}
+                  onDateRangeChange={handleDateRangeChange}
+                />
+              </div>
+              <table className="table table-sm">
+                <tbody>
+                  <tr>
+                    <th colSpan={2} className="table-secondary">収益</th>
+                  </tr>
+                  {revenueDetails.length > 0 ? (
+                    revenueDetails.map((item, index) => (
+                      <tr key={index}>
+                        <td>{item.name}</td>
+                        <td className="text-end">{item.sumAmount.toLocaleString()}円</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr><td colSpan={2} className="text-muted">項目がありません</td></tr>
+                  )}
+                  <tr className="table-group-divider">
+                    <th>収益合計</th>
+                    <th className="text-end">{totalRevenues.toLocaleString()}円</th>
+                  </tr>
+                  <tr>
+                    <th colSpan={2} className="table-secondary">費用</th>
+                  </tr>
+                  {expenseDetails.length > 0 ? (
+                    expenseDetails.map((item, index) => (
+                      <tr key={index}>
+                        <td>{item.name}</td>
+                        <td className="text-end">{item.sumAmount.toLocaleString()}円</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr><td colSpan={2} className="text-muted">項目がありません</td></tr>
+                  )}
+                  <tr className="table-group-divider">
+                    <th>費用合計</th>
+                    <th className="text-end">{totalExpenses.toLocaleString()}円</th>
+                  </tr>
+                  <tr className="table-dark">
+                    <th>純損益</th>
+                    <th className="text-end">{netIncome.toLocaleString()}円</th>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <div className="col-lg-6 mb-4">
           <div className="card h-100">
             <div className="card-header">
@@ -170,6 +235,22 @@ export const Dashboard: React.FC = () => {
               <small className="text-muted">基準日: {bsAsOfDate}</small>
             </div>
             <div className="card-body">
+              <div className="date-range-picker mb-3">
+                <div className="row g-2 align-items-center">
+                  <div className="col-auto">
+                    <label className="form-label mb-0">基準日:</label>
+                  </div>
+                  <div className="col-auto">
+                    <input
+                      type="date"
+                      className="form-control form-control-sm"
+                      value={bsAsOfDate}
+                      onChange={handleBsAsOfDateChange}
+                      // 既存の col-md-4 や mb-3 はグリッド外に移動、または削除
+                    />
+                  </div>
+                </div>
+              </div>
               <table className="table table-sm">
                 <tbody>
                   <tr>
@@ -222,59 +303,6 @@ export const Dashboard: React.FC = () => {
                   <tr className="table-dark">
                     <th>総資産</th>
                     <th className="text-end">{(totalEquity_Value).toLocaleString()}円</th>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-        
-        <div className="col-lg-6 mb-4">
-          <div className="card h-100">
-            <div className="card-header">
-              <h5 className="mb-0">損益計算書 (PL)</h5>
-              <small className="text-muted">{dateRange.startDate} 〜 {dateRange.endDate}</small>
-            </div>
-            <div className="card-body">
-              <table className="table table-sm">
-                <tbody>
-                  <tr>
-                    <th colSpan={2} className="table-secondary">収益</th>
-                  </tr>
-                  {revenueDetails.length > 0 ? (
-                    revenueDetails.map((item, index) => (
-                      <tr key={index}>
-                        <td>{item.name}</td>
-                        <td className="text-end">{item.sumAmount.toLocaleString()}円</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr><td colSpan={2} className="text-muted">項目がありません</td></tr>
-                  )}
-                  <tr className="table-group-divider">
-                    <th>収益合計</th>
-                    <th className="text-end">{totalRevenues.toLocaleString()}円</th>
-                  </tr>
-                  <tr>
-                    <th colSpan={2} className="table-secondary">費用</th>
-                  </tr>
-                  {expenseDetails.length > 0 ? (
-                    expenseDetails.map((item, index) => (
-                      <tr key={index}>
-                        <td>{item.name}</td>
-                        <td className="text-end">{item.sumAmount.toLocaleString()}円</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr><td colSpan={2} className="text-muted">項目がありません</td></tr>
-                  )}
-                  <tr className="table-group-divider">
-                    <th>費用合計</th>
-                    <th className="text-end">{totalExpenses.toLocaleString()}円</th>
-                  </tr>
-                  <tr className="table-dark">
-                    <th>純損益</th>
-                    <th className="text-end">{netIncome.toLocaleString()}円</th>
                   </tr>
                 </tbody>
               </table>
