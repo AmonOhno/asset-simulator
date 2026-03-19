@@ -5,33 +5,42 @@ import { DateRangePicker, DateRange } from '../common/DateRangePicker';
 export const Dashboard: React.FC = () => {
   const { getBalanceSheetView, getProfitLossStatementView } = useFinancialStore();
   const { userId } = useAuthStore();
+    
+  const getInitialRange = (): DateRange => {
+    const today = new Date();
+    const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+    const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+    // ヘルパーを使い回すか、ここでも同様のフォーマット処理を行う
+    const f = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+    return {
+      startDate: f(startDate),
+      endDate: f(endDate)
+    };
+  };
+
+  const defaultRange = getInitialRange();
   
-  // デフォルトは今月
-  const today = new Date();
-  const currentYear = today.getFullYear();
-  const currentMonth = today.getMonth();
-  const defaultStartDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
-  const defaultEndDate = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0];
-  
-  const getStoredDateRange = (): DateRange => {
-    if (!userId) return { startDate: defaultStartDate, endDate: defaultEndDate };
+const getStoredDateRange = (): DateRange => {
+    if (!userId) return defaultRange;
     const key = `dashboard-date-range_${userId}`;
     const stored = localStorage.getItem(key);
     if (stored) {
       try {
         return JSON.parse(stored);
       } catch {
-        return { startDate: defaultStartDate, endDate: defaultEndDate };
+        return defaultRange;
       }
     }
-    return { startDate: defaultStartDate, endDate: defaultEndDate };
+    return defaultRange;
   };
 
   const getStoredBsAsOfDate = (plEndDate?: string): string => {
-    if (!userId) return plEndDate || defaultEndDate;
+    if (!userId) return plEndDate || defaultRange.endDate;
     const key = `dashboard-bs-as-of-date_${userId}`;
     const stored = localStorage.getItem(key);
-    return stored || plEndDate || defaultEndDate;
+    return stored || plEndDate || defaultRange.endDate;
   };
   
   const initialDateRange = getStoredDateRange();
@@ -40,7 +49,6 @@ export const Dashboard: React.FC = () => {
   const [bsData, setBsData] = useState<BalanceSheetView[]>([]);
   const [plData, setPlData] = useState<ProfitLossView[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     if (userId) {
@@ -55,24 +63,28 @@ export const Dashboard: React.FC = () => {
   }, [bsAsOfDate, userId]);
 
   const handleDateRangeChange = (newDateRange: DateRange) => {
-    if (!isSyncing) {
-      setIsSyncing(true);
-      setDateRange(newDateRange);
-      setBsAsOfDate(newDateRange.endDate);
-      setTimeout(() => setIsSyncing(false), 0);
-    }
-  };
-
-  const handleBsAsOfDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newBsAsOfDate = e.target.value; // 文字列として取得
+    // 現在の値と同じなら更新しない（不要なレンダリング防止）
+    setDateRange(prev => {
+      if (prev.startDate === newDateRange.startDate && prev.endDate === newDateRange.endDate) {
+        return prev;
+      }
+      return newDateRange;
+    });
     
-    // 無限ループ防止のため、値が異なる場合のみ更新
+    // BSの基準日を更新
+    setBsAsOfDate(prev => prev === newDateRange.endDate ? prev : newDateRange.endDate);
+  };
+  
+  const handleBsAsOfDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newBsAsOfDate = e.target.value;
+    
     if (newBsAsOfDate !== bsAsOfDate) {
+      setBsAsOfDate(newBsAsOfDate);
+      // PLの終了日も合わせる
       setDateRange(prev => ({
         ...prev,
         endDate: newBsAsOfDate
       }));
-      setBsAsOfDate(newBsAsOfDate);
     }
   };
 
@@ -176,10 +188,11 @@ export const Dashboard: React.FC = () => {
               <small className="text-muted">{dateRange.startDate} 〜 {dateRange.endDate}</small>
             </div>
             <div className="card-body">
-              <div className="col-md-6 mb-3">
+              <div className="col-md-12 mb-3">
                 <DateRangePicker 
                   dateRange={dateRange}
                   onDateRangeChange={handleDateRangeChange}
+                  className=''
                 />
               </div>
               <table className="table table-sm">
