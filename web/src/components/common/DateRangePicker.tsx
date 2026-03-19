@@ -23,7 +23,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   const [startDayOfWeek, setStartDayOfWeek] = useState<number>(1); // 0:日, 1:月...
   const [startDayOfMonth, setStartDayOfMonth] = useState<number>(25);
   const [holidayAdj, setHolidayAdj] = useState<HolidayAdjustment>('before');
-  const [startMonthDay, setStartMonthDay] = useState<{ m: number, d: number }>({ m: 4, d: 1 });
+  const [startMonthDay, setStartMonthDay] = useState<{ m: number, d: number }>({ m: 12, d: 25 });
 
   // タイムゾーンのズレを防ぐフォーマット関数 (YYYY-MM-DD)
   const formatDate = (date: Date) => {
