@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useFinancialStore, useAuthStore, BalanceSheetView, ProfitLossView } from '@asset-simulator/shared';
 import { DateRangePicker, DateRange } from '../common/DateRangePicker';
 
-export const Dashboard: React.FC = () => {
+export const JournalDashboard: React.FC = () => {
   const { getBalanceSheetView, getProfitLossStatementView } = useFinancialStore();
   const { userId } = useAuthStore();
     
@@ -24,7 +24,7 @@ export const Dashboard: React.FC = () => {
   
 const getStoredDateRange = (): DateRange => {
     if (!userId) return defaultRange;
-    const key = `dashboard-date-range_${userId}`;
+    const key = `JournalDashboard-date-range_${userId}`;
     const stored = localStorage.getItem(key);
     if (stored) {
       try {
@@ -38,7 +38,7 @@ const getStoredDateRange = (): DateRange => {
 
   const getStoredBsAsOfDate = (plEndDate?: string): string => {
     if (!userId) return plEndDate || defaultRange.endDate;
-    const key = `dashboard-bs-as-of-date_${userId}`;
+    const key = `JournalDashboard-bs-as-of-date_${userId}`;
     const stored = localStorage.getItem(key);
     return stored || plEndDate || defaultRange.endDate;
   };
@@ -52,13 +52,13 @@ const getStoredDateRange = (): DateRange => {
 
   useEffect(() => {
     if (userId) {
-      localStorage.setItem(`dashboard-date-range_${userId}`, JSON.stringify(dateRange));
+      localStorage.setItem(`JournalDashboard-date-range_${userId}`, JSON.stringify(dateRange));
     }
   }, [dateRange, userId]);
 
   useEffect(() => {
     if (userId) {
-      localStorage.setItem(`dashboard-bs-as-of-date_${userId}`, bsAsOfDate);
+      localStorage.setItem(`JournalDashboard-bs-as-of-date_${userId}`, bsAsOfDate);
     }
   }, [bsAsOfDate, userId]);
 
@@ -147,7 +147,7 @@ const getStoredDateRange = (): DateRange => {
   const expenseDetails = getDetailsByCategory(plData, 'Expense');
 
   return (
-    <div className="dashboard">
+    <div className="JournalDashboard">
       <div className="row">
         <div className="col-3">
           <h2 className="mb-4">財務ダッシュボード</h2>

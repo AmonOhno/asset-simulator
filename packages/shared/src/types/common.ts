@@ -104,7 +104,7 @@ export interface JournalEntry {
 /**
  * カレンダー表示用 VIEW `v_journal_entries_for_calendar` の型定義
  * 勘定科目の名称とカテゴリが事前に JOIN されているため
- * JournalCalendar での find() 検索が不要になり、パフォーマンス向上
+ * MainCalendar での find() 検索が不要になり、パフォーマンス向上
  */
 export interface CalendarJournalEntry {
   id: string; // 仕訳ID

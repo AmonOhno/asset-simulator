@@ -9,7 +9,7 @@ package "Frontend Layer" {
   
   package "UI Components" {
     component [App] as MainApp
-    component [Dashboard] as DashComp
+    component [JournalDashboard] as DashComp
     component [Account Manager] as AccMgr
     component [Credit Card Manager] as CCMgr
     component [Journal Entry Form] as JEForm

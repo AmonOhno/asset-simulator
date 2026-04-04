@@ -18,16 +18,12 @@ import { useAuthStore } from './authStore';
 // --- ストアの型定義 ---
 interface FinancialState {
   // Master Data
-  accounts: Account[];
-  creditCards: CreditCard[];
   journalAccounts: JournalAccount[]; // 勘定科目リスト
   journalEntries: JournalEntry[];
   regularJournalEntries: RecurringTransaction[];
 
   // GET Actions
   fetchFinancial: () => Promise<void>; // 全データを取得
-  getAccounts: () => Promise<Account[]>;
-  getCreditCards: () => Promise<CreditCard[]>;
   getJournalAccounts: () => Promise<JournalAccount[]>;
   getCalendarJournalEntries: (startDate: string, endDate: string) => Promise<CalendarJournalEntry[]>; // カレンダー用VIEW
   getRegularJournalEntries: () => Promise<RecurringTransaction[]>;
@@ -35,18 +31,12 @@ interface FinancialState {
   getProfitLossStatementView: (startDate?: string, endDate?: string) => Promise<ProfitLossView[]>;
 
   // CRUD Actions
-  addAccount: (account: Omit<Account, 'id'>) => Promise<void>;
-  addCreditCard: (card: Omit<CreditCard, 'id'>) => Promise<void>;
   addJournalAccount: (account: Omit<JournalAccount, 'id'>) => Promise<void>;
   addJournalEntry: (entry: Omit<JournalEntry, 'id'>) => Promise<void>;
   addRegularJournalEntry: (entry: Omit<RecurringTransaction, 'id'>) => Promise<void>;
-  updateAccount: (account: Account) => Promise<void>;
-  updateCreditCard: (card: CreditCard) => Promise<void>;
   updateJournalAccount: (account: JournalAccount) => Promise<void>;
   updateJournalEntry: (entry: JournalEntry) => Promise<void>;
   updateRegularJournalEntry: (entry: RecurringTransaction) => Promise<void>;
-  deleteAccount: (account: Account) => Promise<void>;
-  deleteCreditCard: (card: CreditCard) => Promise<void>;
   deleteJournalAccount: (account: JournalAccount) => Promise<void>;
   deleteJournalEntry: (entry: JournalEntry) => Promise<void>;
   deleteRegularJournalEntry: (entry: RecurringTransaction) => Promise<void>;
@@ -60,8 +50,6 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
     const uid = s.userId;
     if (!uid) {
       set({
-        accounts: [],
-        creditCards: [],
         journalAccounts: [],
         journalEntries: [],
         regularJournalEntries: [],
@@ -72,58 +60,16 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
 
   return ({
   // --- STATE ---
-  accounts: [],
-  creditCards: [],
   journalAccounts: [],
   journalEntries: [],
   regularJournalEntries: [],
 
   // --- Actions ---
   fetchFinancial: async (): Promise<void> => {
-    get().getAccounts();
-    get().getCreditCards();
     get().getJournalAccounts();
   },
 
   // --- CRUD Actions ---
-  getAccounts: async (): Promise<Account[]> => {
-    const { session, userId } = useAuthStore.getState();
-    if (!session || !userId) return [];
-
-    try {
-      const response = await fetch(`${API_URL}/accounts`, {
-        method: 'GET',
-        headers: { 'Authorization': `Bearer ${session.access_token}` },
-      });
-      if (!response.ok) throw new Error('Failed to fetch accounts');
-      const accounts = toCamelCase(await response.json()) || [];
-      set(() => ({ accounts }));
-      return accounts;
-    } catch (error) {
-      console.error('Failed to fetch accounts:', error);
-      return get().accounts;
-    }
-  },
-
-  getCreditCards: async (): Promise<CreditCard[]> => {
-    const { session, userId } = useAuthStore.getState();
-    if (!session || !userId) return [];
-
-    try {
-      const response = await fetch(`${API_URL}/credit-cards`, {
-        method: 'GET',
-        headers: { 'Authorization': `Bearer ${session.access_token}` },
-      });
-      if (!response.ok) throw new Error('Failed to fetch credit cards');
-      const creditCards = toCamelCase(await response.json()) || [];
-      set(() => ({ creditCards }));
-      return creditCards;
-    } catch (error) {
-      console.error('Failed to fetch credit cards:', error);
-      return get().creditCards;
-    }
-  },
-
   getJournalAccounts: async (): Promise<JournalAccount[]> => {
     const { session, userId } = useAuthStore.getState();
     if (!session || !userId) return [];
@@ -183,64 +129,6 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
     } catch (error) {
       console.error('Failed to fetch regular journal entries:', error);
       return get().regularJournalEntries;
-    }
-  },
-
-  addAccount: async (account: Omit<Account, 'id'>): Promise<void> => {
-    const { session } = useAuthStore.getState();
-    if (!session) return;
-
-    try {
-      const response = await fetch(`${API_URL}/accounts`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(toSnakeCase(account)),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to add account');
-      }
-      const newAccount = toCamelCase(await response.json());
-      const updatedAccounts = [...get().accounts, newAccount];
-      const updatedJournalAccounts = [...get().journalAccounts, { ...newAccount, category: 'Asset' }];
-      set(() => ({
-        accounts: updatedAccounts,
-        journalAccounts: updatedJournalAccounts,
-      }));
-      const { userId } = useAuthStore.getState();
-    } catch (error) {
-      console.error("Failed to add account:", error);
-    }
-  },
-
-  addCreditCard: async (card: Omit<CreditCard, 'id'>): Promise<void> => {
-    const { session } = useAuthStore.getState();
-    if (!session) return;
-
-    try {
-      const response = await fetch(`${API_URL}/credit-cards`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(toSnakeCase(card)),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to add credit card');
-      }
-      const newCard = toCamelCase(await response.json());
-      const updatedCards = [...get().creditCards, newCard];
-      const updatedJournalAccounts = [...get().journalAccounts, { ...newCard, category: 'Liability' }];
-      set(() => ({
-        creditCards: updatedCards,
-        journalAccounts: updatedJournalAccounts,
-      }));
-      const { userId } = useAuthStore.getState();
-    } catch (error) {
-      console.error("Failed to add credit card:", error);
     }
   },
 
@@ -319,58 +207,6 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
     }
   },
 
-  updateAccount: async (account: Account): Promise<void> => {
-    const { session } = useAuthStore.getState();
-    if (!session) return;
-
-    try {
-      const response = await fetch(`${API_URL}/accounts/${account.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(toSnakeCase(account)),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to update account');
-      }
-      const updatedAccount = toCamelCase(await response.json());
-      const updatedAccounts = get().accounts.map((a) => (a.id === updatedAccount.id ? updatedAccount : a));
-      const updatedJournalAccounts = get().journalAccounts.map((ja) => (ja.id === updatedAccount.id ? { ...ja, name: updatedAccount.name } : ja));
-      set(() => ({ accounts: updatedAccounts, journalAccounts: updatedJournalAccounts }));
-      const { userId } = useAuthStore.getState();
-    } catch (error) {
-      console.error("Failed to update account:", error);
-    }
-  },
-
-  updateCreditCard: async (card: CreditCard): Promise<void> => {
-    const { session } = useAuthStore.getState();
-    if (!session) return;
-
-    try {
-      const response = await fetch(`${API_URL}/credit-cards/${card.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(toSnakeCase(card)),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to update credit card');
-      }
-      const updatedCard = toCamelCase(await response.json());
-      const updatedCards = get().creditCards.map((c) => (c.id === updatedCard.id ? updatedCard : c));
-      const updatedJournalAccounts = get().journalAccounts.map((ja) => (ja.id === updatedCard.id ? { ...ja, name: updatedCard.name } : ja));
-      set(() => ({ creditCards: updatedCards, journalAccounts: updatedJournalAccounts }));
-      const { userId } = useAuthStore.getState();
-    } catch (error) {
-      console.error("Failed to update credit card:", error);
-    }
-  },
-
   updateJournalAccount: async (account: JournalAccount): Promise<void> => {
     const { session } = useAuthStore.getState();
     if (!session) return;
@@ -443,52 +279,6 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
       const { userId } = useAuthStore.getState();
     } catch (error) {
       console.error("Failed to update regular journal entry:", error);
-    }
-  },
-
-  deleteAccount: async (account: Account): Promise<void> => {
-    const { session } = useAuthStore.getState();
-    if (!session) return;
-
-    try {
-      const response = await fetch(`${API_URL}/accounts/${account.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error('Failed to delete account');
-      }
-      const updatedAccounts = get().accounts.filter(a => a.id !== account.id);
-      const updatedJournalAccounts = get().journalAccounts.filter(ja => ja.id !== account.id);
-      set(() => ({ accounts: updatedAccounts, journalAccounts: updatedJournalAccounts }));
-      const { userId } = useAuthStore.getState();
-    } catch (error) {
-      console.error("Failed to delete account:", error);
-    }
-  },
-
-  deleteCreditCard: async (card: CreditCard): Promise<void> => {
-    const { session } = useAuthStore.getState();
-    if (!session) return;
-
-    try {
-      const response = await fetch(`${API_URL}/credit-cards/${card.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error('Failed to delete credit card');
-      }
-      const updatedCards = get().creditCards.filter(c => c.id !== card.id);
-      const updatedJournalAccounts = get().journalAccounts.filter(ja => ja.id !== card.id);
-      set(() => ({ creditCards: updatedCards, journalAccounts: updatedJournalAccounts }));
-      const { userId } = useAuthStore.getState();
-    } catch (error) {
-      console.error("Failed to delete credit card:", error);
     }
   },
 

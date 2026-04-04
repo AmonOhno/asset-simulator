@@ -5,12 +5,10 @@ import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { useAuthStore } from '@asset-simulator/shared';
 
-import { AccountManager } from './components/journal/AccountManager';
-import { CreditCardManager } from './components/journal/CreditCardManager';
 import { JournalAccountManager } from './components/journal/JournalAccountManager';
 import { JournalEntryForm } from './components/journal/JournalEntryForm';
-import { JournalCalendar } from './components/journal/JournalCalendar';
-import { Dashboard } from './components/journal/Dashboard';
+import { MainCalendar } from './components/MainCalendar';
+import { JournalDashboard } from './components/journal/JournalDashboard';
 import { RecurringTransactionManager } from './components/journal/RecurringTransactionManager';
 import { useFinancialStore } from '@asset-simulator/shared';
 
@@ -19,7 +17,7 @@ import { EventScheduleManager } from './components/event/EventScheduleManager';
 import { useEventsStore } from '@asset-simulator/shared';
 
 
-type Tab = 'dashboard' | 'transactions' | 'masters' | 'recurring' | 'events';
+type Tab = 'JournalDashboard' | 'transactions' | 'masters' | 'recurring' | 'events';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('transactions');
@@ -84,19 +82,12 @@ function App() {
       case 'transactions':
         return (
           <div className="row">
-            <div className="col-lg-4 input-form">
-              <div className="mb-4">
-                <JournalEntryForm />
-                <EventScheduleForm />
-              </div>
-            </div>
-            <div className="col-lg-8">
-              <JournalCalendar />
-            </div>
+            <JournalEntryForm />
+            <EventScheduleForm />
           </div>
         );
-      case 'dashboard':
-        return <Dashboard />;
+      case 'JournalDashboard':
+        return <JournalDashboard />;
       case 'recurring':
         return <RecurringTransactionManager />;
       case 'masters':
@@ -104,12 +95,6 @@ function App() {
           <div className="row">
             <div className="col-lg-4 mb-4">
               <JournalAccountManager />
-            </div>
-            <div className="col-lg-4 mb-4">
-              <AccountManager />
-            </div>
-            <div className="col-lg-4 mb-4">
-              <CreditCardManager />
             </div>
           </div>
         );
@@ -156,7 +141,7 @@ function App() {
           <button className={`nav-link ${activeTab === 'transactions' ? 'active' : ''}`} onClick={() => setActiveTab('transactions')}>取引入力</button>
         </li>
         <li className="nav-item">
-          <button className={`nav-link ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>ダッシュボード</button>
+          <button className={`nav-link ${activeTab === 'JournalDashboard' ? 'active' : ''}`} onClick={() => setActiveTab('JournalDashboard')}>ダッシュボード</button>
         </li>
         <li className="nav-item">
           <button className={`nav-link ${activeTab === 'recurring' ? 'active' : ''}`} onClick={() => setActiveTab('recurring')}>定期取引</button>
@@ -170,6 +155,9 @@ function App() {
       </ul>
 
       <main>
+        <div className="col-lg-8">
+          <MainCalendar />
+        </div>
         {renderContent()}
       </main>
 

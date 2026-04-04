@@ -4,6 +4,6 @@
 @import url('./badges.css');
 @import url('./cards.css');
 @import url('./utilities.css');
-@import url('./JournalCalendar.css');
+@import url('./MainCalendar.css');
 
 /* index.css aggregates component/global styles for simpler imports */

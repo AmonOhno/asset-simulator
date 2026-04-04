@@ -117,11 +117,11 @@ if (allDayFlg === true) {
 
 ```javascript
 // 損益計算書の日付範囲
-Key: dashboard-date-range_{userId}
+Key: JournalDashboard-date-range_{userId}
 Value: { startDate: "2026-02-01", endDate: "2026-02-28" }
 
 // 貸借対照表の基準日
-Key: dashboard-bs-as-of-date_{userId}
+Key: JournalDashboard-bs-as-of-date_{userId}
 Value: "2026-02-28"
 ```
 
@@ -377,7 +377,7 @@ const lastFetchRef = useRef<{ year: number; month: number } | null>(null);
 ### データ取得の最適化
 
 - **初回ロード**: `fetchFinancial()` を一度だけ実行
-- **月別取得**: JournalCalendar で月が変わったときのみ追加取得
+- **月別取得**: MainCalendar で月が変わったときのみ追加取得
 - **イベント取得**: activeTab 変更時に必要に応じて再取得
 
 ---

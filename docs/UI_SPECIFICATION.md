@@ -38,7 +38,7 @@
 │   (lg-4)     │           (lg-8)                         │
 ├──────────────┤                                          │
 │ 仕訳入力     │                                          │
-│ ┌──────────┐│      JournalCalendar                     │
+│ ┌──────────┐│      MainCalendar                     │
 │ │日付選択  ││      (カレンダー表示)                    │
 │ │摘要入力  ││                                          │
 │ │勘定科目  ││                                          │
@@ -56,11 +56,11 @@
 └──────────────┴──────────────────────────────────────────┘
 ```
 
-#### 2. ダッシュボード (dashboard)
+#### 2. ダッシュボード (JournalDashboard)
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│ Dashboard                                                │
+│ JournalDashboard                                                │
 │ ┌────────────────────────────────────────────────────────┐
 │ │ 日付範囲選択: [開始日] ～ [終了日]                     │
 │ ├────────────────────────────────────────────────────────┤
@@ -156,7 +156,7 @@
 
 **ナビゲーションボタン**:
 - 取引入力 (transactions)
-- ダッシュボード (dashboard)
+- ダッシュボード (JournalDashboard)
 - 定期取引 (recurring)
 - マスタ管理 (masters)
 - イベント (events)
@@ -233,7 +233,7 @@
 | 項目 | 内容 |
 |------|------|
 | **ID** | journal-calendar |
-| **コンポーネント名** | JournalCalendar |
+| **コンポーネント名** | MainCalendar |
 | **責務** | 仕訳とイベントをカレンダー表します、月別データを取得 |
 | **親** | App (transactions tab) |
 | **状態** | selectedDate, currentMonth, monthlyJournalEntries, selectedDateEntries, selectedDateEvents, editingEntry, debitAccountFilter, creditAccountFilter |
@@ -262,10 +262,10 @@
 
 | 項目 | 内容 |
 |------|------|
-| **ID** | dashboard |
-| **コンポーネント名** | Dashboard |
+| **ID** | JournalDashboard |
+| **コンポーネント名** | JournalDashboard |
 | **責務** | 貸借対照表と損益計算書を表示 |
-| **親** | App (dashboard tab) |
+| **親** | App (JournalDashboard tab) |
 | **状態** | dateRange, bsAsOfDate, bsData, plData, isLoading |
 
 **表示セクション**:
@@ -471,9 +471,9 @@
 ├─ [取引入力 (transactions)] 
 │  ├─ JournalEntryForm (col-lg-4)
 │  ├─ EventScheduleForm (col-lg-4)
-│  └─ JournalCalendar (col-lg-8)
-├─ [ダッシュボード (dashboard)]
-│  └─ Dashboard
+│  └─ MainCalendar (col-lg-8)
+├─ [ダッシュボード (JournalDashboard)]
+│  └─ JournalDashboard
 ├─ [定期取引 (recurring)]
 │  └─ RecurringTransactionManager
 ├─ [マスタ管理 (masters)]
@@ -517,7 +517,7 @@ App
 │
 ├─ useEffect (activeTab依存)
 │  ├─ 各Tabがキャッシュから必要なデータを読み込み
-│  └─ JournalCalendar: 月別データを別途取得
+│  └─ MainCalendar: 月別データを別途取得
 │
 └─ 各コンポーネント
    └─ useFinancialStore から状態を購読
@@ -547,7 +547,7 @@ JournalEntryForm
       ├─ APIへ送信
       └─ useFinancialStore 更新
          ├─ journalEntries更新
-         ├─ JournalCalendarが自動再描画
+         ├─ MainCalendarが自動再描画
          └─ Dashboard再計算
 ```
 
@@ -560,7 +560,7 @@ EventScheduleForm
       ├─ APIへ送信
       └─ useEventsStore 更新
          ├─ events更新
-         └─ EventScheduleManager、JournalCalendarが自動再描画
+         └─ EventScheduleManager、MainCalendarが自動再描画
 ```
 
 ### 定期仕訳実行フロー
