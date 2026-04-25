@@ -88,7 +88,7 @@ function App() {
             </div>
           </div>
         );
-     case 'JournalDashboard':
+      case 'JournalDashboard':
         return <JournalDashboard />;
       case 'recurring':
         return <RecurringTransactionManager />;
@@ -163,6 +163,14 @@ function App() {
                   onClick={() => setActiveTab('transactions')}
                 >
                   取引入力
+                </button>
+              </li>
+              <li>
+                <button
+                  className={`dropdown-item ${activeTab === 'JournalDashboard' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('JournalDashboard')}
+                >
+                  ダッシュボード
                 </button>
               </li>
               <li>

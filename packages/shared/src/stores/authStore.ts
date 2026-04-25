@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { createClient, Session, SupabaseClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
 
 // 環境変数の統合
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL!;
