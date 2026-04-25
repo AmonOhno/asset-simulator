@@ -1,10 +1,31 @@
 {
-  "extends": "../tsconfig.json",
   "compilerOptions": {
-    "jsx": "react-jsx"
-    ,"baseUrl": "src"
+    "target": "es2020",
+    "lib": ["dom", "dom.iterable", "es2020"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "declaration": true,
+    "declarationMap": true,
+    "baseUrl": ".",
+    "ignoreDeprecations": "6.0"
   },
   "include": [
     "src/**/*"
-  ]
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build"
+  ],
 }

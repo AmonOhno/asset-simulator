@@ -1,5 +1,3 @@
-// src/App.tsx
-
 import { useState, useEffect, useRef } from 'react';
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
@@ -16,16 +14,16 @@ import { EventScheduleForm } from './components/event/EventScheduleForm';
 import { EventScheduleManager } from './components/event/EventScheduleManager';
 import { useEventsStore } from '@asset-simulator/shared';
 
-
 type Tab = 'JournalDashboard' | 'transactions' | 'masters' | 'recurring' | 'events';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('transactions');
+  const transactionGroupActive = activeTab === 'transactions' || activeTab === 'recurring';
   const fetchFinancial = useFinancialStore((state) => state.fetchFinancial);
   const fetchEvents = useEventsStore((state) => state.fetchEvents);
   const { session, client, setSession, refreshSession, signOut } = useAuthStore();
 
-// 認証状態の監視設定
+  // 認証状態の監視設定
   useEffect(() => {
     let isMounted = true;
 
@@ -82,11 +80,15 @@ function App() {
       case 'transactions':
         return (
           <div className="row">
-            <JournalEntryForm />
-            <EventScheduleForm />
+            <div className="col-lg-4">
+              <JournalEntryForm />
+            </div>
+            <div className="col-lg-8">
+              <MainCalendar />
+            </div>
           </div>
         );
-      case 'JournalDashboard':
+     case 'JournalDashboard':
         return <JournalDashboard />;
       case 'recurring':
         return <RecurringTransactionManager />;
@@ -137,27 +139,57 @@ function App() {
       </header>
 
       <ul className="nav nav-tabs mb-3">
-        <li className="nav-item">
-          <button className={`nav-link ${activeTab === 'transactions' ? 'active' : ''}`} onClick={() => setActiveTab('transactions')}>取引入力</button>
+        <li className="nav-item dropdown">
+          <div className="btn-group">
+            <button
+              type="button"
+              className={`nav-link ${transactionGroupActive ? 'active' : ''}`}
+              onClick={() => setActiveTab('transactions')}
+            >
+              取引入力
+            </button>
+            <button
+              type="button"
+              className={`nav-link dropdown-toggle dropdown-toggle-split ${transactionGroupActive ? 'active' : ''}`}
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              <span className="visually-hidden">Toggle dropdown</span>
+            </button>
+            <ul className="dropdown-menu">
+              <li>
+                <button
+                  className={`dropdown-item ${activeTab === 'transactions' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('transactions')}
+                >
+                  取引入力
+                </button>
+              </li>
+              <li>
+                <button
+                  className={`dropdown-item ${activeTab === 'recurring' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('recurring')}
+                >
+                  定期取引
+                </button>
+              </li>
+              <li>
+                <button
+                  className={`dropdown-item ${activeTab === 'masters' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('masters')}
+                >
+                  勘定科目管理
+                </button>
+              </li>
+            </ul>
+          </div>
         </li>
         <li className="nav-item">
-          <button className={`nav-link ${activeTab === 'JournalDashboard' ? 'active' : ''}`} onClick={() => setActiveTab('JournalDashboard')}>ダッシュボード</button>
-        </li>
-        <li className="nav-item">
-          <button className={`nav-link ${activeTab === 'recurring' ? 'active' : ''}`} onClick={() => setActiveTab('recurring')}>定期取引</button>
-        </li>
-        <li className="nav-item">
-          <button className={`nav-link ${activeTab === 'masters' ? 'active' : ''}`} onClick={() => setActiveTab('masters')}>マスタ管理</button>
-        </li>
-        <li className="nav-item">
-          <button className={`nav-link ${activeTab === 'events' ? 'active' : ''}`} onClick={() => setActiveTab('events')}>イベント</button>
+          <button className={`nav-link ${activeTab === 'events' ? 'active' : ''}`} onClick={() => setActiveTab('events')}>イベント入力</button>
         </li>
       </ul>
 
       <main>
-        <div className="col-lg-8">
-          <MainCalendar />
-        </div>
         {renderContent()}
       </main>
 

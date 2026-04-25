@@ -6,7 +6,7 @@ import { useFinancialStore } from '@asset-simulator/shared';
 export const JournalEntryForm: React.FC = () => {
   const { journalAccounts, addJournalEntry } = useFinancialStore();
 
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(true);
 
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [description, setDescription] = useState('');

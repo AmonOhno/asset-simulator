@@ -13,7 +13,7 @@ export const EventScheduleForm: React.FC<EventScheduleFormProps> = ({
   onCancel
 }) => {
   const { addEvent } = useEventsStore();
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(true);
   const [title, setTitle] = useState('');
   const [allDayFlg, setAllDay] = useState(false);
   const [startDate, setStartDate] = useState('');
