@@ -119,6 +119,7 @@
 | **value** | `string` | 内部値 (YYYY-MM-DD) |
 | **onChange** | `function` | 値が変更された際の処理 |
 | **onBlur** | `function` | 入力・選択が確定し、フォーカスが外れた際の処理 |
+| **sizeVariant** | `'S' \| 'M' \| 'L' \| 'Full'` | コンポーネント幅。S(100px), M(160px), L(240px), Full(100%) |
 
 ---
 
@@ -139,6 +140,7 @@
 | **min / max** | `number` | バリデーション用の最小値・最大値 |
 | **error** | `string` | エラー時に表示するメッセージ |
 | **onBlur** | `function` | フォーカスが外れたタイミングでの確定処理 |
+| **sizeVariant** | `'S' \| 'M' \| 'L' \| 'Full'` | コンポーネント幅。S(100px), M(160px), L(240px), Full(100%) |
 
 ---
 
@@ -157,6 +159,7 @@
 | **options** | `{label, value}[]` | 選択肢の表示名と内部値のセット |
 | **value** | `string \| number` | 現在の選択値 |
 | **onChange** | `function` | 選択が変更された際の処理 |
+| **sizeVariant** | `'S' \| 'M' \| 'L' \| 'Full'` | コンポーネント幅。S(100px), M(160px), L(240px), Full(100%) |
 
 ---
 
