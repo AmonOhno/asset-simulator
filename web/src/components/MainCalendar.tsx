@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Calendar, { TileArgs } from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import '../styles/MainCalendar.css';
+import './MainCalendar.css';
 import { useFinancialStore, useEventsStore } from '@asset-simulator/shared';
 import type { CalendarJournalEntry, JournalEntry, ScheduleEvent } from '@asset-simulator/shared';
 import { JournalEntriesModal } from './journal/JournalEntriesModal';

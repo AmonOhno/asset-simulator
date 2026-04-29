@@ -1,9 +1,0 @@
-@import url('./App.css');
-@import url('./CommonStyles.css');
-@import url('./buttons.css');
-@import url('./badges.css');
-@import url('./cards.css');
-@import url('./utilities.css');
-@import url('./MainCalendar.css');
-
-/* index.css aggregates component/global styles for simpler imports */
