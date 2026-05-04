@@ -6,7 +6,7 @@ import { DataGrid } from "./components/DataGrid";
 import { sampleProfitLossRows } from "./data/financial";
 
 export function ProfitLossStatementCard() {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [startDate, setStartDate] = useState("2026-05-01");
   const [endDate, setEndDate] = useState("2026-05-31");
 

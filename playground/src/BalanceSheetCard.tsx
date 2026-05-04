@@ -6,7 +6,7 @@ import { DataGrid } from "./components/DataGrid";
 import { sampleBalanceSheetRows } from "./data/financial";
 
 export function BalanceSheetCard() {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [asOfDate, setAsOfDate] = useState("2026-05-31");
 
   const grouped = useMemo(() => {

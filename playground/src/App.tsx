@@ -10,8 +10,6 @@ import { calculateProfit, calculateNetAssets } from "./data/financial";
 
 type TabId = "transaction" | "pl-bs" | "recurring";
 
-type PlView = "none" | "profit-loss" | "balance-sheet";
-
 const tabs: { id: TabId; label: string }[] = [
   { id: "transaction", label: "取引" },
   { id: "pl-bs", label: "PL/BS" },
@@ -21,7 +19,6 @@ const tabs: { id: TabId; label: string }[] = [
 function App() {
   const [activeTab, setActiveTab] = useState<TabId>("transaction");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [plView, setPlView] = useState<PlView>("none");
 
   const { profit } = calculateProfit("2026-05-01", "2026-05-31");
   const { netAssets } = calculateNetAssets("2026-05-31");
@@ -36,7 +33,7 @@ function App() {
         return (
           <div style={{ display: "grid", gap: 24 }}>
             <CalendarCard onDateSelect={handleDateSelect} />
-            {selectedDate && <TransactionEntryCard selectedDate={selectedDate} />}
+            {selectedDate && <TransactionEntryCard selectedDate={selectedDate ? selectedDate : "2026-05-01"} />}
           </div>
         );
       case "pl-bs":
@@ -45,7 +42,6 @@ function App() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
                 gap: 16,
               }}
             >
@@ -53,17 +49,15 @@ function App() {
                 title="当期純利益"
                 value={`¥${profit.toLocaleString()}`}
                 onClick={() => setPlView("profit-loss")}
-              >
-              </PanelButton>
+              />
               <PanelButton
                 title="純資産合計"
                 value={`¥${netAssets.toLocaleString()}`}
                 onClick={() => setPlView("balance-sheet")}
-              >
-              </PanelButton>
+              />
+              <ProfitLossStatementCard />
+              <BalanceSheetCard />
             </div>
-            {plView === "profit-loss" && <ProfitLossStatementCard />}
-            {plView === "balance-sheet" && <BalanceSheetCard />}
           </div>
         );
       case "recurring":
