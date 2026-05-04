@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-type SizeVariant = "S" | "M" | "L" | "Full";
+type SizeVariant = "S" | "M" | "L" | "LL" | "Full";
 type ColorVariant = "primary" | "secondary";
 
 interface CommonButtonProps {
@@ -12,9 +12,10 @@ interface CommonButtonProps {
 }
 
 const sizeWidthMap: Record<SizeVariant, string> = {
-  S: "100px",
-  M: "160px",
-  L: "240px",
+  S: "80px",
+  M: "120px",
+  L: "160px",
+  LL: "200px",
   Full: "100%",
 };
 

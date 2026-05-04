@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 type SizeVariant = "S" | "M" | "L" | "Full";
 
 const sizeWidthMap: Record<SizeVariant, string> = {
-  S: "100px",
+  S: "140px",
   M: "160px",
   L: "240px",
   Full: "100%",

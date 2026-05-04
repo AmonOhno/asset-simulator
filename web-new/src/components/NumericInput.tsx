@@ -3,7 +3,7 @@ import { useState, type CSSProperties } from "react";
 type SizeVariant = "S" | "M" | "L" | "Full";
 
 const sizeWidthMap: Record<SizeVariant, string> = {
-  S: "100px",
+  S: "120px",
   M: "160px",
   L: "240px",
   Full: "100%",
@@ -42,6 +42,8 @@ const styles = {
     flex: 1,
     color: "#333",
     backgroundColor: "#FFFFFF",
+    width: "100%", 
+    minWidth: 0,
   } satisfies CSSProperties,
   inputError: {
     borderColor: "#DC2626",

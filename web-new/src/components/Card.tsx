@@ -53,7 +53,7 @@ const styles = {
     padding: 20,
     display: "flex",
     flexDirection: "column",
-    gap: 16,
+    gap: 10,
   } satisfies CSSProperties,
 };
 
@@ -80,8 +80,41 @@ export function Card({
 
   const bodyStyle: CSSProperties = {
     ...styles.body,
-    ...(maxHeight != null ? { overflowY: "auto", flex: 1 } : {}),
+    ...(typeof maxHeight === 'number' ? { overflowY: "auto", flex: 1 } : {}),
   };
+
+  if (!isExpanded) {
+    return (
+      <div style={containerStyle}>
+        <div
+          style={styles.header}
+          onClick={onToggle}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onToggle();
+            }
+          }}
+          aria-expanded={isExpanded}
+        >
+          <span style={styles.headerTitle}>{title}</span>
+          <span>
+            {subInfo && <span style={styles.headerSubInfo}>{subInfo}</span>}
+            <span
+              style={{
+                ...styles.chevron,
+                transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
+              }}
+            >
+              ▼
+            </span>
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={containerStyle}>
@@ -111,7 +144,7 @@ export function Card({
           </span>
         </span>
       </div>
-      {isExpanded && <div style={bodyStyle}>{children}</div>}
+      <div style={bodyStyle}>{children}</div>
     </div>
   );
 }
