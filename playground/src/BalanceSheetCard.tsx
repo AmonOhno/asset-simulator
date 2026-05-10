@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
-import { Card, CardBodyHead, CardBodyMain } from "./components/Card";
-import { DateInput } from "./components/DateInput";
-import { CommonButton } from "./components/CommonButton";
-import { DataGrid } from "./components/DataGrid";
+import { Card, CardBodyHead, CardBodyMain } from "../../web-new/src/components/Card";
+import { DateInput } from "../../web-new/src/components/DateInput";
+import { CommonButton } from "../../web-new/src/components/CommonButton";
+import { DataGrid } from "../../web-new/src/components/DataGrid";
 import { sampleBalanceSheetRows } from "./data/financial";
 
 export function BalanceSheetCard() {

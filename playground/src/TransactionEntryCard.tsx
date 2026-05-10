@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
-import { Card, CardBodyMain } from "./components/Card";
-import { DateInput } from "./components/DateInput";
-import { TextInput } from "./components/TextInput";
-import { SelectInput } from "./components/SelectInput";
-import { NumericInput } from "./components/NumericInput";
-import { CommonButton } from "./components/CommonButton";
+import { useState } from "react";
+import { Card, CardBodyMain } from "../../web-new/src/components/Card";
+import { DateInput } from "../../web-new/src/components/DateInput";
+import { TextInput } from "../../web-new/src/components/TextInput";
+import { SelectInput } from "../../web-new/src/components/SelectInput";
+import { NumericInput } from "../../web-new/src/components/NumericInput";
+import { CommonButton } from "../../web-new/src/components/CommonButton";
 
 interface TransactionEntry {
   date: string;
@@ -28,18 +28,13 @@ interface TransactionEntryCardProps {
 
 export default function TransactionEntryCard({ selectedDate }: TransactionEntryCardProps) {
   const [isExpanded, setIsExpanded] = useState(true);
-  const [date, setDate] = useState(selectedDate || "2026-05-01");
+  const [date, setDate] = useState(() => selectedDate ?? "2026-05-01");
   const [description, setDescription] = useState("");
   const [debitAccount, setDebitAccount] = useState("Cash");
   const [creditAccount, setCreditAccount] = useState("Sales");
   const [amount, setAmount] = useState(0);
   const [entries, setEntries] = useState<TransactionEntry[]>([]);
 
-  useEffect(() => {
-    if (selectedDate) {
-      setDate(selectedDate);
-    }
-  }, [selectedDate]);
 
   const registerEntry = () => {
     if (!description || amount <= 0) {

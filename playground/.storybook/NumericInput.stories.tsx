@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-import { NumericInput } from "../src/components/NumericInput";
+import { NumericInput } from "../../web-new/src/components/NumericInput";
 
 const meta = {
   title: "Components/NumericInput",

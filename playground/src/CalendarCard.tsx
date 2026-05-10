@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { Card, CardBodyHead, CardBodyMain } from "./components/Card";
-import { DataGrid } from "./components/DataGrid";
+import { Card, CardBodyHead, CardBodyMain } from "../../web-new/src/components/Card";
+import { DataGrid } from "../../web-new/src/components/DataGrid";
 import { getTransactionsForDate } from "./data/financial";
 
 interface CalendarCardProps {

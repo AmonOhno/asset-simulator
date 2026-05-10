@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Card, CardBodyHead, CardBodyMain } from "./components/Card";
-import { TextInput } from "./components/TextInput";
-import { DateInput } from "./components/DateInput";
-import { NumericInput } from "./components/NumericInput";
-import { SelectInput } from "./components/SelectInput";
-import { CommonButton } from "./components/CommonButton";
-import { DataGrid } from "./components/DataGrid";
+import { Card, CardBodyHead, CardBodyMain } from "../../web-new/src/components/Card";
+import { TextInput } from "../../web-new/src/components/TextInput";
+import { DateInput } from "../../web-new/src/components/DateInput";
+import { NumericInput } from "../../web-new/src/components/NumericInput";
+import { SelectInput } from "../../web-new/src/components/SelectInput";
+import { CommonButton } from "../../web-new/src/components/CommonButton";
+import { DataGrid } from "../../web-new/src/components/DataGrid";
 
 interface RecurringTransaction {
   name: string;

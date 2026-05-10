@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
-import { CommonButton } from "../src/components/CommonButton";
+import { CommonButton } from "../../web-new/src/components/CommonButton";
 
 const meta = {
   title: "Components/CommonButton",

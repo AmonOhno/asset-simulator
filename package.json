@@ -18,7 +18,9 @@
     "start:server": "npm run start --workspace=server",
     "test": "npx turbo run test",
     "lint": "npx turbo run lint",
-    "clean": "npx turbo run clean"
+    "clean": "npx turbo run clean",
+    "playground": "cd playground && npm run dev",
+    "storybook": "cd playground && npm run storybook"
   },
   "dependencies": {
     "turbo": "^2.5.6",

@@ -4,6 +4,7 @@ interface PanelButtonProps {
   title: string;
   value: string | number;
   onClick: () => void;
+  subText?: string;
 }
 
 const styles = {
@@ -28,6 +29,11 @@ const styles = {
     fontWeight: 800,
     color: "#0F172A",
   } satisfies CSSProperties,
+  subText: {
+    marginTop: 8,
+    fontSize: 12,
+    color: "#9CA3AF",
+  } satisfies CSSProperties,
   action: {
     marginTop: 8,
     color: "#3B82F6",
@@ -35,7 +41,7 @@ const styles = {
   } satisfies CSSProperties,
 };
 
-export function PanelButton({ title, value, onClick }: PanelButtonProps) {
+export function PanelButton({ title, value, onClick, subText }: PanelButtonProps) {
   return (
     <button
       type="button"
@@ -44,6 +50,7 @@ export function PanelButton({ title, value, onClick }: PanelButtonProps) {
     >
       <div style={styles.title}>{title}</div>
       <div style={styles.value}>{value}</div>
+      {subText && <div style={styles.subText}>{subText}</div>}
     </button>
   );
 }
