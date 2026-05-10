@@ -21,5 +21,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "playground/src", ".storybook"]
+  "include": ["src", "../web-new/.storybook/DataGrid.stories.tsx", "../web-new/.storybook/DateInput.stories.tsx", "../web-new/.storybook/NumericInput.stories.tsx", "../web-new/.storybook/SelectInput.stories.tsx", "../web-new/.storybook/TextInput.stories.tsx", "../web-new/.storybook/CommonButton.stories.tsx", "../web-new/.storybook/Card.stories.tsx"]
 }

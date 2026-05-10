@@ -19,8 +19,8 @@
     "test": "npx turbo run test",
     "lint": "npx turbo run lint",
     "clean": "npx turbo run clean",
-    "playground": "cd playground && npm run dev",
-    "storybook": "cd playground && npm run storybook"
+    "playground": "cd web-new && npm run dev",
+    "storybook": "cd web-new && npm run storybook"
   },
   "dependencies": {
     "turbo": "^2.5.6",
