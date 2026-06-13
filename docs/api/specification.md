@@ -4,15 +4,13 @@
 - [概要](#概要)
 - [認証](#認証)
 - [エンドポイント一覧](#エンドポイント一覧)
-  - [1. 口座管理（Accounts）](#1-口座管理accounts)
-  - [2. クレジットカード管理（Credit Cards）](#2-クレジットカード管理credit-cards)
-  - [3. 仕訳帳口座管理（Journal Accounts）](#3-仕訳帳口座管理journal-accounts)
-  - [4. 仕訳エントリー（Journal Entries）](#4-仕訳エントリーjournal-entries)
-  - [5. 仕訳エントリー詳細表示（Journal Entries View）](#5-仕訳エントリー詳細表示journal-entries-view)
-  - [6. 定期仕訳エントリー（Regular Journal Entries）](#6-定期仕訳エントリーregular-journal-entries)
-  - [7. 貸借対照表表示（Balance Sheet View）](#7-貸借対照表表示balance-sheet-view)
-  - [8. 損益計算書表示（Profit & Loss Statement View）](#8-損益計算書表示profit--loss-statement-view)
-  - [9. スケジュールイベント管理（Schedule Events）](#9-スケジュールイベント管理schedule-events)
+  - [1. 仕訳帳口座管理（Journal Accounts）](#1-仕訳帳口座管理journal-accounts)
+  - [2. 仕訳エントリー（Journal Entries）](#2-仕訳エントリーjournal-entries)
+  - [3. 仕訳エントリー詳細表示（Journal Entries View）](#3-仕訳エントリー詳細表示journal-entries-view)
+  - [4. 定期仕訳エントリー（Regular Journal Entries）](#4-定期仕訳エントリーregular-journal-entries)
+  - [5. 貸借対照表表示（Balance Sheet View）](#5-貸借対照表表示balance-sheet-view)
+  - [6. 損益計算書表示（Profit & Loss Statement View）](#6-損益計算書表示profit--loss-statement-view)
+  - [7. スケジュールイベント管理（Schedule Events）](#7-スケジュールイベント管理schedule-events)
 - [ヘルスチェック](#ヘルスチェック)
 - [エラーハンドリング](#エラーハンドリング)
 - [認証について](#認証について)
@@ -41,226 +39,9 @@ Authorization: Bearer <token>
 
 ## エンドポイント一覧
 
-### 1. 口座管理（Accounts）
+### 1. 仕訳帳口座管理（Journal Accounts）
 
-#### 1.1 すべての口座を取得
-| 項目 | 内容 |
-|------|------|
-| **Routing** | `/accounts` |
-| **METHOD** | GET |
-| **認証** | 必須 |
-| **クエリパラメータ** | なし |
-| **REQUEST BODY** | なし |
-
-**RESPONSE (200 OK)**
-```json
-[
-  {
-    "id": "acc_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-    "user_id": "user_id",
-    "name": "銀行口座A",
-    "institution": "○○銀行",
-    "branch_number": "001",
-    "type": "Checking",
-    "account_number": "1234567",
-    "account_holder": "山田太郎",
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z"
-  }
-]
-```
-
-**エラー (500 Internal Server Error)**
-```json
-{
-  "error": "エラーメッセージ"
-}
-```
-
----
-
-#### 1.2 新規口座を作成
-| 項目 | 内容 |
-|------|------|
-| **Routing** | `/accounts` |
-| **METHOD** | POST |
-| **認証** | 必須 |
-| **クエリパラメータ** | なし |
-
-**REQUEST BODY**
-```json
-{
-  "name": "銀行口座A",
-  "institution": "○○銀行",
-  "branch_number": "001",
-  "type": "Checking",
-  "account_number": "1234567",
-  "account_holder": "山田太郎"
-}
-```
-
-**必須フィールド**: `name`, `institution`, `branch_number`, `type`, `account_number`, `account_holder`
-
-**RESPONSE (201 Created)**
-```json
-{
-  "id": "acc_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-  "user_id": "user_id",
-  "name": "銀行口座A",
-  "institution": "○○銀行",
-  "branch_number": "001",
-  "type": "Checking",
-  "account_number": "1234567",
-  "account_holder": "山田太郎"
-}
-```
-
-**エラー (400 Bad Request)**
-```json
-{
-  "error": "Missing required fields"
-}
-```
-
----
-
-#### 1.3 口座を更新
-| 項目 | 内容 |
-|------|------|
-| **Routing** | `/accounts/:id` |
-| **METHOD** | PUT |
-| **認証** | 必須 |
-| **URL パラメータ** | `id`: 口座ID |
-
-**REQUEST BODY** (全フィールドまたは更新したいフィールドのみ)
-```json
-{
-  "name": "銀行口座A更新版",
-  "institution": "△△銀行",
-  "branch_number": "002",
-  "type": "Savings",
-  "account_number": "7654321",
-  "account_holder": "山田太郎"
-}
-```
-
-**RESPONSE (200 OK)**
-```json
-{
-  "id": "acc_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-  "user_id": "user_id",
-  "name": "銀行口座A更新版",
-  "institution": "△△銀行",
-  "branch_number": "002",
-  "type": "Savings",
-  "account_number": "7654321",
-  "account_holder": "山田太郎"
-}
-```
-
-**エラー (404 Not Found)**
-```json
-{
-  "error": "Account not found"
-}
-```
-
----
-
-### 2. クレジットカード管理（Credit Cards）
-
-#### 2.1 すべてのクレジットカードを取得
-| 項目 | 内容 |
-|------|------|
-| **Routing** | `/credit-cards` |
-| **METHOD** | GET |
-| **認証** | 必須 |
-
-**RESPONSE (200 OK)**
-```json
-[
-  {
-    "id": "card_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-    "user_id": "user_id",
-    "name": "クレジットカードA",
-    "closing_day": 20,
-    "payment_day": 10,
-    "linked_account_id": "acc_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z"
-  }
-]
-```
-
----
-
-#### 2.2 新規クレジットカードを作成
-| 項目 | 内容 |
-|------|------|
-| **Routing** | `/credit-cards` |
-| **METHOD** | POST |
-| **認証** | 必須 |
-
-**REQUEST BODY**
-```json
-{
-  "name": "クレジットカードA",
-  "closing_day": 20,
-  "payment_day": 10,
-  "linked_account_id": "acc_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-}
-```
-
-**必須フィールド**: `name`, `closing_day`, `payment_day`, `linked_account_id`
-
-**RESPONSE (201 Created)**
-```json
-{
-  "id": "card_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-  "user_id": "user_id",
-  "name": "クレジットカードA",
-  "closing_day": 20,
-  "payment_day": 10,
-  "linked_account_id": "acc_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-}
-```
-
----
-
-#### 2.3 クレジットカードを更新
-| 項目 | 内容 |
-|------|------|
-| **Routing** | `/credit-cards/:id` |
-| **METHOD** | PUT |
-| **認証** | 必須 |
-| **URL パラメータ** | `id`: カードID |
-
-**REQUEST BODY** (更新したいフィールド)
-```json
-{
-  "name": "クレジットカードA更新版",
-  "closing_day": 25,
-  "payment_day": 15
-}
-```
-
-**RESPONSE (200 OK / 404 Not Found)**
-```json
-{
-  "id": "card_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-  "user_id": "user_id",
-  "name": "クレジットカードA更新版",
-  "closing_day": 25,
-  "payment_day": 15,
-  "linked_account_id": "acc_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-}
-```
-
----
-
-### 3. 仕訳帳口座管理（Journal Accounts）
-
-#### 3.1 すべての仕訳帳口座を取得
+#### 1.1 すべての仕訳帳口座を取得
 | 項目 | 内容 |
 |------|------|
 | **Routing** | `/journal-accounts` |
@@ -292,7 +73,7 @@ Authorization: Bearer <token>
 
 ---
 
-#### 3.2 新規仕訳帳口座を作成
+#### 1.2 新規仕訳帳口座を作成
 | 項目 | 内容 |
 |------|------|
 | **Routing** | `/journal-accounts` |
@@ -325,7 +106,7 @@ Authorization: Bearer <token>
 
 ---
 
-#### 3.3 仕訳帳口座を更新
+#### 1.3 仕訳帳口座を更新
 | 項目 | 内容 |
 |------|------|
 | **Routing** | `/journal-accounts/:id` |
@@ -355,9 +136,9 @@ Authorization: Bearer <token>
 
 ---
 
-### 4. 仕訳エントリー（Journal Entries）
+### 2. 仕訳エントリー（Journal Entries）
 
-#### 4.1 仕訳エントリーを取得
+#### 2.1 仕訳エントリーを取得
 | 項目 | 内容 |
 |------|------|
 | **Routing** | `/journal-entries` |
@@ -387,7 +168,7 @@ Authorization: Bearer <token>
 
 ---
 
-#### 4.2 新規仕訳エントリーを作成
+#### 2.2 新規仕訳エントリーを作成
 | 項目 | 内容 |
 |------|------|
 | **Routing** | `/journal-entries` |
@@ -424,7 +205,7 @@ Authorization: Bearer <token>
 
 ---
 
-#### 4.3 仕訳エントリーを更新
+#### 2.3 仕訳エントリーを更新
 | 項目 | 内容 |
 |------|------|
 | **Routing** | `/journal-entries/:id` |
@@ -460,9 +241,9 @@ Authorization: Bearer <token>
 
 ---
 
-### 5. 仕訳エントリー詳細表示（Journal Entries View）
+### 3. 仕訳エントリー詳細表示（Journal Entries View）
 
-#### 5.1 詳細な仕訳エントリー一覧を取得
+#### 3.1 詳細な仕訳エントリー一覧を取得
 | 項目 | 内容 |
 |------|------|
 | **Routing** | `/journal-entries/view` |
@@ -490,9 +271,9 @@ Authorization: Bearer <token>
 
 ---
 
-### 6. 定期仕訳エントリー（Regular Journal Entries）
+### 4. 定期仕訳エントリー（Regular Journal Entries）
 
-#### 6.1 すべての定期仕訳エントリーを取得
+#### 4.1 すべての定期仕訳エントリーを取得
 | 項目 | 内容 |
 |------|------|
 | **Routing** | `/regular-journal-entries` |
@@ -532,7 +313,7 @@ Authorization: Bearer <token>
 
 ---
 
-#### 6.2 新規定期仕訳エントリーを作成
+#### 4.2 新規定期仕訳エントリーを作成
 | 項目 | 内容 |
 |------|------|
 | **Routing** | `/regular-journal-entries` |
@@ -580,7 +361,7 @@ Authorization: Bearer <token>
 
 ---
 
-#### 6.3 定期仕訳エントリーを更新
+#### 4.3 定期仕訳エントリーを更新
 | 項目 | 内容 |
 |------|------|
 | **Routing** | `/regular-journal-entries/:id` |
@@ -608,7 +389,7 @@ Authorization: Bearer <token>
 
 ---
 
-#### 6.4 定期仕訳エントリーを削除
+#### 4.4 定期仕訳エントリーを削除
 | 項目 | 内容 |
 |------|------|
 | **Routing** | `/regular-journal-entries/:id` |
@@ -632,7 +413,7 @@ Authorization: Bearer <token>
 
 ---
 
-#### 6.5 定期仕訳エントリーを実行
+#### 4.5 定期仕訳エントリーを実行
 | 項目 | 内容 |
 |------|------|
 | **Routing** | `/regular-journal-entries/execute/:id` |
@@ -679,9 +460,9 @@ Authorization: Bearer <token>
 
 ---
 
-### 7. 貸借対照表表示（Balance Sheet View）
+### 5. 貸借対照表表示（Balance Sheet View）
 
-#### 7.1 貸借対照表を取得
+#### 5.1 貸借対照表を取得
 | 項目 | 内容 |
 |------|------|
 | **Routing** | `/balance-sheet-view` |
@@ -711,9 +492,9 @@ Authorization: Bearer <token>
 
 ---
 
-### 8. 損益計算書表示（Profit & Loss Statement View）
+### 6. 損益計算書表示（Profit & Loss Statement View）
 
-#### 8.1 損益計算書を取得
+#### 6.1 損益計算書を取得
 | 項目 | 内容 |
 |------|------|
 | **Routing** | `/profit-loss-statement-view` |
@@ -743,9 +524,9 @@ Authorization: Bearer <token>
 
 ---
 
-### 9. スケジュールイベント管理（Schedule Events）
+### 7. スケジュールイベント管理（Schedule Events）
 
-#### 9.1 すべてのスケジュールイベントを取得
+#### 7.1 すべてのスケジュールイベントを取得
 | 項目 | 内容 |
 |------|------|
 | **Routing** | `/schedule-events` |
@@ -784,7 +565,7 @@ Authorization: Bearer <token>
 
 ---
 
-#### 9.2 新規スケジュールイベントを作成
+#### 7.2 新規スケジュールイベントを作成
 | 項目 | 内容 |
 |------|------|
 | **Routing** | `/schedule-events` |
@@ -838,7 +619,7 @@ Authorization: Bearer <token>
 
 ---
 
-#### 9.3 スケジュールイベントを更新
+#### 7.3 スケジュールイベントを更新
 | 項目 | 内容 |
 |------|------|
 | **Routing** | `/schedule-events/:id` |
@@ -889,7 +670,7 @@ Authorization: Bearer <token>
 
 ---
 
-#### 9.4 スケジュールイベントを削除
+#### 7.4 スケジュールイベントを削除
 | 項目 | 内容 |
 |------|------|
 | **Routing** | `/schedule-events/:id` |

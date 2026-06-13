@@ -4,34 +4,6 @@
 title Asset Simulator - Database Entity Relationship Diagram
 
 ' --- Entities ---
-entity "accounts" as accounts {
-  * id : string <<PK>>
-  --
-  * name : string
-  * institution : string
-  * branch_number : string
-  * type : string
-  * account_number : string
-  * account_holder : string
-  * user_id : string <<FK>>
-  --
-  created_at : timestamp
-  updated_at : timestamp
-}
-
-entity "credit_cards" as credit_cards {
-  * id : string <<PK>>
-  --
-  * name : string
-  * closing_day : integer
-  * payment_day : integer
-  * linked_account_id : string <<FK>>
-  * user_id : string <<FK>>
-  --
-  created_at : timestamp
-  updated_at : timestamp
-}
-
 entity "journal_accounts" as journal_accounts {
   * id : string <<PK>>
   --

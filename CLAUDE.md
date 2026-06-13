@@ -84,14 +84,25 @@ npx tsc --noEmit -p server/tsconfig.json           # 型チェック（server）
 
 ## ドキュメント一覧（docs/）
 
+索引: `docs/README.md`
+
 | ファイル | 内容 |
 |---------|------|
-| `API_SPECIFICATION.md` | エンドポイント仕様（リクエスト/レスポンス形式） |
-| `UI_SPECIFICATION.md` | 画面構成・コンポーネント仕様・データフロー |
-| `UI_FORM_VALIDATION_AND_STORAGE.md` | フォームバリデーション詳細仕様 |
-| `system_architecture.puml` | システムアーキテクチャ図（PlantUML） |
-| `database_er_diagram.puml` | DB ER 図（PlantUML） |
-| `COMPONENT_LIST.csv` | コンポーネント一覧 |
+| `docs/architecture/overview.md` | システム概要・技術スタック・アーキテクチャ方針 |
+| `docs/architecture/system_architecture.puml` | システムアーキテクチャ図（PlantUML） |
+| `docs/feature/overview.md` | 機能一覧・画面遷移概要 |
+| `docs/feature/journal_entry.md` | 仕訳入力機能設計 |
+| `docs/feature/regular_journal.md` | 定期仕訳機能設計 |
+| `docs/feature/financial_statement.md` | 財務諸表（BS/PL）表示機能設計 |
+| `docs/feature/account_management.md` | 口座・勘定科目管理機能設計 |
+| `docs/feature/event_schedule.md` | スケジュールイベント機能設計 |
+| `docs/ui/specification.md` | 画面構成・コンポーネント仕様・データフロー |
+| `docs/ui/form_validation.md` | フォームバリデーション詳細仕様 |
+| `docs/ui/component_list.csv` | コンポーネント一覧 |
+| `docs/ui/component_design.md` | モバイル向けコンポーネント設計（開発中） |
+| `docs/api/specification.md` | エンドポイント仕様（リクエスト/レスポンス形式） |
+| `docs/database/er_diagram.puml` | DB ER 図（PlantUML） |
+| `docs/database/schema.md` | テーブル定義・カラム説明 |
 
 ## 対象外タスク（別タスクで対応予定）
 
