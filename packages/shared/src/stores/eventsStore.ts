@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { StateCreator } from 'zustand';
-import { API_URL, toCamelCase, toSnakeCase } from '../types/common';
+import { API_URL } from '../types/common';
+import { toCamelCase, toSnakeCase } from '../utils/caseConvert';
 import {
   ScheduleEvent
 } from '../types/common';

@@ -22,19 +22,15 @@ router.get('/', authMiddleware, async (req, res) => {
     
     console.log('Using startDate:', startDate, 'endDate:', endDate);
 
-    // fn_profit_loss(p_start_date, p_end_date) 関数を呼び出し
     const { data, error } = await supabase
-      .rpc('fn_profit_loss', { p_start_date: startDate, p_end_date: endDate });
+      .rpc('fn_profit_loss', { p_start_date: startDate, p_end_date: endDate, p_user_id: user_id });
 
-    
     if (error) {
       console.error('Error calling fn_profit_loss:', error);
       throw error;
     }
 
-    // ユーザーIDでフィルタリング（関数の結果から）
-    const filtered = (data || []).filter((row: any) => row.user_id === user_id);
-    const camelCased = toCamelCase(filtered);
+    const camelCased = toCamelCase(data || []);
 
     console.log('Profit/loss statement fetched successfully:', camelCased.length, 'rows');
     res.json(camelCased);

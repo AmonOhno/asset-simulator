@@ -34,7 +34,8 @@ setupIonicReact({ mode: 'ios' });
 
 const App: React.FC = () => {
   const { session, client, setSession, refreshSession } = useAuthStore();
-  const fetchFinancial = useFinancialStore((s) => s.fetchFinancial);
+  const getJournalAccounts = useFinancialStore((s) => s.getJournalAccounts);
+  const getRegularJournalEntries = useFinancialStore((s) => s.getRegularJournalEntries);
   const fetchEvents = useEventsStore((s) => s.fetchEvents);
 
   // 認証状態の監視
@@ -62,11 +63,12 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!session) return;
     if (!hasFetchedRef.current) {
-      fetchFinancial();
+      getJournalAccounts();
+      getRegularJournalEntries();
       hasFetchedRef.current = true;
     }
     fetchEvents();
-  }, [session, fetchEvents, fetchFinancial]);
+  }, [session, fetchEvents, getJournalAccounts, getRegularJournalEntries]);
 
   if (!session) {
     return (

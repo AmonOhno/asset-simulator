@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import type { StateCreator } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { API_URL, toCamelCase, toSnakeCase } from '../types/common';
+import { API_URL } from '../types/common';
+import { toCamelCase, toSnakeCase } from '../utils/caseConvert';
 import {
   Account,
   CreditCard,
@@ -23,7 +24,6 @@ interface FinancialState {
   regularJournalEntries: RecurringTransaction[];
 
   // GET Actions
-  fetchFinancial: () => Promise<void>; // 全データを取得
   getJournalAccounts: () => Promise<JournalAccount[]>;
   getCalendarJournalEntries: (startDate: string, endDate: string) => Promise<CalendarJournalEntry[]>; // カレンダー用VIEW
   getRegularJournalEntries: () => Promise<RecurringTransaction[]>;
@@ -63,11 +63,6 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
   journalAccounts: [],
   journalEntries: [],
   regularJournalEntries: [],
-
-  // --- Actions ---
-  fetchFinancial: async (): Promise<void> => {
-    get().getJournalAccounts();
-  },
 
   // --- CRUD Actions ---
   getJournalAccounts: async (): Promise<JournalAccount[]> => {
@@ -364,9 +359,8 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
         throw new Error('Failed to execute regular journal entry');
       }
       
-      // 新しい仕訳エントリと更新された定期取引を取得するため、データを再取得
-      const { fetchFinancial } = get();
-      await fetchFinancial();
+      await get().getJournalAccounts();
+      await get().getRegularJournalEntries();
     } catch (error) {
       console.error("Failed to execute regular journal entry:", error);
     }
@@ -389,9 +383,8 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
       
       const result = await response.json();
       
-      // データを再取得して表示を更新
-      const { fetchFinancial } = get();
-      await fetchFinancial();
+      await get().getJournalAccounts();
+      await get().getRegularJournalEntries();
       
       return {
         executed: result.executed,

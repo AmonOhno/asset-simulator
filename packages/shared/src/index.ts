@@ -1,7 +1,7 @@
 export * from './stores/authStore';
 export * from './stores/financialStore';
 export * from './stores/eventsStore';
-export { toCamelCase, toSnakeCase } from './types/common';
+export { toCamelCase, toSnakeCase } from './utils/caseConvert';
 export type {
     Account,
     CreditCard,

@@ -15,18 +15,15 @@ router.get('/', authMiddleware, async (req, res) => {
     const asOfDate = (req.query.asOfDate as string) || new Date().toISOString().split('T')[0];
     console.log('Using asOfDate:', asOfDate);
 
-    // fn_balance_sheet(p_end_date) 関数を呼び出し
     const { data, error } = await supabase
-      .rpc('fn_balance_sheet', { p_end_date: asOfDate });
+      .rpc('fn_balance_sheet', { p_end_date: asOfDate, p_user_id: user_id });
 
     if (error) {
       console.error('Error calling fn_balance_sheet:', error);
       throw error;
     }
 
-    // ユーザーIDでフィルタリング（関数の結果から）
-    const filtered = (data || []).filter((row: any) => row.user_id === user_id);
-    const camelCased = toCamelCase(filtered);
+    const camelCased = toCamelCase(data || []);
 
     console.log('Balance sheet fetched successfully:', camelCased.length, 'rows');
     res.json(camelCased);
