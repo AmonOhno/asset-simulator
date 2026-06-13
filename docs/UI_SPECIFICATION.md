@@ -151,7 +151,7 @@
 **イベント処理**:
 - `setActiveTab()`: タブ切り替え時にコンテンツを更新
 - `setSession()`: ログイン/ログアウト時のセッション管理
-- `fetchFinancial()`: ログイン時に金融・勘定科目データを取得
+- `getJournalAccounts()` / `getRegularJournalEntries()`: ログイン時に金融・勘定科目データを取得
 - `fetchEvents()`: ログイン時およびイベント登録・更新時にイベントデータを取得
 
 **ナビゲーションボタン**:
@@ -512,7 +512,7 @@
 ```
 App 
 ├─ useEffect (session依存)
-│  └─ fetchFinancial() 一度だけ実行
+│  └─ getJournalAccounts() + getRegularJournalEntries() 一度だけ実行
 │     └─ キャッシュに金融データを保存
 │
 ├─ useEffect (activeTab依存)
@@ -608,4 +608,4 @@ RecurringTransactionManager
 
 ## 更新日時
 
-最終更新: 2026-02-28
+最終更新: 2026-06-14
