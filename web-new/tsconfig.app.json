@@ -7,6 +7,11 @@
     "types": ["vite/client"],
     "skipLibCheck": true,
 
+    /* Path mapping: 実行時は vite alias でソース参照、型検査はビルド済み dist 宣言を参照 */
+    "paths": {
+      "@asset-simulator/shared": ["../packages/shared/dist/index"]
+    },
+
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,

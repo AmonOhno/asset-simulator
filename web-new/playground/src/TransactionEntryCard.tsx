@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useFinancialStore } from "@asset-simulator/shared";
 import { Card, CardBodyMain } from "../../src/components/Card";
 import { DateInput } from "../../src/components/DateInput";
 import { TextInput } from "../../src/components/TextInput";
@@ -6,54 +7,75 @@ import { SelectInput } from "../../src/components/SelectInput";
 import { NumericInput } from "../../src/components/NumericInput";
 import { CommonButton } from "../../src/components/CommonButton";
 
-interface TransactionEntry {
-  date: string;
-  description: string;
-  debitAccount: string;
-  creditAccount: string;
-  amount: number;
-}
-
-const accountOptions = [
-  { label: "現金", value: "Cash" },
-  { label: "売上高", value: "Sales" },
-  { label: "支払家賃", value: "Rent Expense" },
-  { label: "通信費", value: "Utilities" },
-  { label: "買掛金", value: "Accounts Payable" },
-];
-
 interface TransactionEntryCardProps {
   selectedDate?: string | null;
+  onEntryAdded?: () => void;
 }
 
-export default function TransactionEntryCard({ selectedDate }: TransactionEntryCardProps) {
+const PLACEHOLDER = { label: "選択してください", value: "" };
+
+export default function TransactionEntryCard({ selectedDate, onEntryAdded }: TransactionEntryCardProps) {
+  const journalAccounts = useFinancialStore((s) => s.journalAccounts);
+  const addJournalEntry = useFinancialStore((s) => s.addJournalEntry);
+  const getJournalAccounts = useFinancialStore((s) => s.getJournalAccounts);
+
   const [isExpanded, setIsExpanded] = useState(true);
-  const [date, setDate] = useState(() => selectedDate ?? "2026-05-01");
+  const [date, setDate] = useState(() => selectedDate ?? new Date().toLocaleDateString("sv-SE"));
   const [description, setDescription] = useState("");
-  const [debitAccount, setDebitAccount] = useState("Cash");
-  const [creditAccount, setCreditAccount] = useState("Sales");
+  const [debitAccountId, setDebitAccountId] = useState("");
+  const [creditAccountId, setCreditAccountId] = useState("");
   const [amount, setAmount] = useState(0);
-  const [entries, setEntries] = useState<TransactionEntry[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [count, setCount] = useState(0);
 
+  const accountOptions = useMemo(
+    () => [PLACEHOLDER, ...journalAccounts.map((acc) => ({ label: acc.name, value: acc.id }))],
+    [journalAccounts]
+  );
 
-  const registerEntry = () => {
-    if (!description || amount <= 0) {
+  const registerEntry = async () => {
+    if (!date) {
+      alert("日付を入力してください");
+      return;
+    }
+    if (!description) {
+      alert("摘要を入力してください");
+      return;
+    }
+    if (!debitAccountId) {
+      alert("借方勘定科目を選択してください");
+      return;
+    }
+    if (!creditAccountId || creditAccountId === debitAccountId) {
+      alert("貸方勘定科目を選択してください（借方と異なる科目）");
+      return;
+    }
+    if (!amount || amount <= 0) {
+      alert("金額を正しく入力してください");
       return;
     }
 
-    setEntries((prev) => [
-      ...prev,
-      { date, description, debitAccount, creditAccount, amount },
-    ]);
-
-    setDescription("");
-    setAmount(0);
+    setSubmitting(true);
+    try {
+      await addJournalEntry({ date, description, debitAccountId, creditAccountId, amount, user_id: "" });
+      // 変更したリソースのみリフレッシュ（勘定科目の残高更新）
+      await getJournalAccounts();
+      onEntryAdded?.();
+      setDescription("");
+      setAmount(0);
+      setCount((prev) => prev + 1);
+    } catch (error) {
+      console.error("Failed to register journal entry:", error);
+      alert("取引の登録に失敗しました。通信を確認してください。");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <Card
       title={`${date} の取引入力`}
-      subInfo={`${entries.length} 件の登録`}
+      subInfo={`${count} 件登録済み`}
       isExpanded={isExpanded}
       onToggle={() => setIsExpanded((prev) => !prev)}
     >
@@ -70,22 +92,22 @@ export default function TransactionEntryCard({ selectedDate }: TransactionEntryC
           </div>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <div className="column" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <div style={{fontSize: 14, textAlign: "left"}}>借方</div>
-                <SelectInput
+              <div style={{ fontSize: 14, textAlign: "left" }}>借方</div>
+              <SelectInput
                 options={accountOptions}
-                value={debitAccount}
-                onChange={setDebitAccount}
+                value={debitAccountId}
+                onChange={setDebitAccountId}
                 sizeVariant="S"
-                />
+              />
             </div>
             <div className="column" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <div style={{fontSize: 14, textAlign: "left"}}>借方</div>
-                <SelectInput
+              <div style={{ fontSize: 14, textAlign: "left" }}>貸方</div>
+              <SelectInput
                 options={accountOptions}
-                value={creditAccount}
-                onChange={setCreditAccount}
+                value={creditAccountId}
+                onChange={setCreditAccountId}
                 sizeVariant="S"
-                />
+              />
             </div>
             <NumericInput
               value={amount}
@@ -94,7 +116,11 @@ export default function TransactionEntryCard({ selectedDate }: TransactionEntryC
               sizeVariant="M"
             />
           </div>
-          <CommonButton label="登録" sizeVariant="S" onClick={registerEntry} />
+          <CommonButton
+            label={submitting ? "登録中..." : "登録"}
+            sizeVariant="S"
+            onClick={registerEntry}
+          />
         </div>
       </CardBodyMain>
     </Card>

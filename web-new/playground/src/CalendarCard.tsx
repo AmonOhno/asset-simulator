@@ -1,11 +1,18 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useFinancialStore } from "@asset-simulator/shared";
+import type { CalendarJournalEntry } from "@asset-simulator/shared";
 import { Card, CardBodyHead, CardBodyMain } from "../../src/components/Card";
 import { DataGrid } from "../../src/components/DataGrid";
-import { getTransactionsForDate } from "./data/financial";
 
 interface CalendarCardProps {
   onDateDoubleClick?: (date: string) => void;
   onDateSelect?: (date: string) => void;
+  /** 値が変わると当月の取引を再取得する（取引登録後の即時反映用） */
+  refreshSignal?: number;
+}
+
+function fmt(date: Date): string {
+  return date.toLocaleDateString("sv-SE");
 }
 
 function getMonthDays(year: number, month: number) {
@@ -25,25 +32,57 @@ function getWeekdayLabels() {
   return ["日", "月", "火", "水", "木", "金", "土"];
 }
 
-export default function CalendarCard({ onDateDoubleClick, onDateSelect }: CalendarCardProps) {
+export default function CalendarCard({ onDateDoubleClick, onDateSelect, refreshSignal }: CalendarCardProps) {
+  const getCalendarJournalEntries = useFinancialStore((s) => s.getCalendarJournalEntries);
+
   const [monthOffset, setMonthOffset] = useState(0);
   const today = new Date();
   const currentMonth = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
-  const [selectedDate, setSelectedDate] = useState(() => today.toLocaleDateString('sv-SE'));
+  const [selectedDate, setSelectedDate] = useState(() => fmt(today));
+  const [entries, setEntries] = useState<CalendarJournalEntry[]>([]);
 
-  const days = useMemo(() => getMonthDays(currentMonth.getFullYear(), currentMonth.getMonth()), [currentMonth]);
+  const monthStart = fmt(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1));
+  const monthEnd = fmt(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0));
+
+  useEffect(() => {
+    let isMounted = true;
+    getCalendarJournalEntries(monthStart, monthEnd).then((rows) => {
+      if (isMounted) setEntries(rows);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [monthStart, monthEnd, refreshSignal, getCalendarJournalEntries]);
+
+  const days = getMonthDays(currentMonth.getFullYear(), currentMonth.getMonth());
   const firstWeekday = currentMonth.getDay();
-
   const selected = selectedDate;
 
-  // 選択された日付の取引数を取得
-  const transactionCount = getTransactionsForDate(selected).length;
-    const filtered = useMemo(() => getTransactionsForDate(selected), [selected]);
+  const countByDate = useMemo(() => {
+    const map: Record<string, number> = {};
+    entries.forEach((e) => {
+      map[e.date] = (map[e.date] ?? 0) + 1;
+    });
+    return map;
+  }, [entries]);
+
+  const filtered = useMemo(
+    () =>
+      entries
+        .filter((e) => e.date === selected)
+        .map((e) => ({
+          description: e.description,
+          debitAccount: e.debitAccountName,
+          creditAccount: e.creditAccountName,
+          amount: e.amount,
+        })),
+    [entries, selected]
+  );
 
   return (
     <Card
       title="取引カレンダー"
-      subInfo={`選択日: ${selected} (${transactionCount}件)`}
+      subInfo={`選択日: ${selected} (${filtered.length}件)`}
       isExpanded
       onToggle={() => undefined}
     >
@@ -107,10 +146,10 @@ export default function CalendarCard({ onDateDoubleClick, onDateSelect }: Calend
             <div key={`blank-${index}`} />
           ))}
           {days.map((date) => {
-            const iso = date.toLocaleDateString('sv-SE');
-            const isToday = iso === today.toLocaleDateString('sv-SE');
+            const iso = fmt(date);
+            const isToday = iso === fmt(today);
             const isSelected = iso === selected;
-            const dayTransactionCount = getTransactionsForDate(iso).length;
+            const dayTransactionCount = countByDate[iso] ?? 0;
             return (
               <button
                 key={iso}
@@ -149,18 +188,16 @@ export default function CalendarCard({ onDateDoubleClick, onDateSelect }: Calend
           })}
         </div>
         <div style={{ marginTop: 16, fontSize: 14, color: "#4B5563" }}>
-                <DataGrid
-                  data={filtered}
-                  columns={[
-                    // { label: "日付", key: "date", width: 100 },
-                    { label: "摘要", key: "description", width: 160 },
-                    { label: "借方", key: "debitAccount", width: 140 },
-                    { label: "貸方", key: "creditAccount", width: 140 },
-                    { label: "金額", key: "amount", width: 120, align: "right" },
-                  ]}
-                  colorVariant="gray"
-                />
-        
+          <DataGrid
+            data={filtered}
+            columns={[
+              { label: "摘要", key: "description", width: 160 },
+              { label: "借方", key: "debitAccount", width: 140 },
+              { label: "貸方", key: "creditAccount", width: 140 },
+              { label: "金額", key: "amount", width: 120, align: "right" },
+            ]}
+            colorVariant="gray"
+          />
           選択した日付の取引を入力・確認できます。ダブルタップで取引入力へ。
         </div>
       </CardBodyMain>

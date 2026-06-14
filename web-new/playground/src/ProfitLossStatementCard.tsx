@@ -1,13 +1,14 @@
 import { useMemo, useState } from "react";
+import type { ProfitLossView } from "@asset-simulator/shared";
 import { Card, CardBodyHead, CardBodyMain } from "../../src/components/Card";
 import { DateInput } from "../../src/components/DateInput";
 import { CommonButton } from "../../src/components/CommonButton";
 import { DataGrid } from "../../src/components/DataGrid";
-import { sampleProfitLossRows } from "./data/financial";
 
 type Props = {
   appliedStartDate: string;
   appliedEndDate: string;
+  rows: ProfitLossView[];
   onApply: (startDate: string, endDate: string) => void;
 };
 
@@ -31,27 +32,16 @@ function getPeriodPresets() {
   };
 }
 
-export function ProfitLossStatementCard({ appliedStartDate, appliedEndDate, onApply }: Props) {
+export function ProfitLossStatementCard({ appliedStartDate, appliedEndDate, rows, onApply }: Props) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [pendingStart, setPendingStart] = useState(appliedStartDate);
   const [pendingEnd, setPendingEnd] = useState(appliedEndDate);
 
-  const grouped = useMemo(() => {
-    const filtered = sampleProfitLossRows.filter(
-      (row) => row.date >= appliedStartDate && row.date <= appliedEndDate
-    );
-
-    const summary: Record<string, { account: string; category: string; amount: number }> = {};
-    filtered.forEach((item) => {
-      const key = `${item.account}-${item.category}`;
-      if (!summary[key]) {
-        summary[key] = { account: item.account, category: item.category, amount: 0 };
-      }
-      summary[key].amount += item.amount;
-    });
-
-    return Object.values(summary);
-  }, [appliedStartDate, appliedEndDate]);
+  // サーバー集計済みの ProfitLossView を表示用の行へマッピング
+  const grouped = useMemo(
+    () => rows.map((row) => ({ account: row.name, category: row.category, amount: row.sumAmount })),
+    [rows]
+  );
 
   const revenueTotal = grouped
     .filter((row) => row.category === "Revenue")

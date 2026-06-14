@@ -1,75 +1,110 @@
 import { useState } from "react";
+import { useFinancialStore } from "@asset-simulator/shared";
+import type { AccountCategory } from "@asset-simulator/shared";
 import { Card, CardBodyHead, CardBodyMain } from "../../src/components/Card";
 import { TextInput } from "../../src/components/TextInput";
 import { SelectInput } from "../../src/components/SelectInput";
 import { CommonButton } from "../../src/components/CommonButton";
-import { DataGrid } from "../../src/components/DataGrid";
 
-interface AccountMaster {
-  code: string;
-  name: string;
-  type: string;
-}
-
-const accountTypes = [
+const accountTypes: { label: string; value: AccountCategory }[] = [
   { label: "資産", value: "Asset" },
   { label: "負債", value: "Liability" },
+  { label: "純資産", value: "Equity" },
   { label: "収益", value: "Revenue" },
   { label: "費用", value: "Expense" },
 ];
 
-export function AccountMasterCard() {
-  const [isExpanded, setIsExpanded] = useState(true);
-  const [code, setCode] = useState("");
-  const [name, setName] = useState("");
-  const [type, setType] = useState("Asset");
-  const [accounts, setAccounts] = useState<AccountMaster[]>([
-    { code: "101", name: "現金", type: "Asset" },
-    { code: "201", name: "買掛金", type: "Liability" },
-    { code: "401", name: "売上", type: "Revenue" },
-  ]);
+const categoryLabel: Record<string, string> = {
+  Asset: "資産",
+  Liability: "負債",
+  Equity: "純資産",
+  Revenue: "収益",
+  Expense: "費用",
+};
 
-  const addAccount = () => {
-    if (!code || !name) {
+export function AccountMasterCard() {
+  const journalAccounts = useFinancialStore((s) => s.journalAccounts);
+  const addJournalAccount = useFinancialStore((s) => s.addJournalAccount);
+  const deleteJournalAccount = useFinancialStore((s) => s.deleteJournalAccount);
+
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [name, setName] = useState("");
+  const [category, setCategory] = useState<AccountCategory>("Asset");
+  const [busy, setBusy] = useState(false);
+
+  const addAccount = async () => {
+    if (!name) {
+      alert("勘定科目名を入力してください");
       return;
     }
-    setAccounts((prev) => [...prev, { code, name, type }]);
-    setCode("");
-    setName("");
+    setBusy(true);
+    try {
+      await addJournalAccount({ name, category, balance: 0, user_id: "" });
+      setName("");
+    } catch (error) {
+      console.error("Failed to add journal account:", error);
+      alert("勘定科目の追加に失敗しました。通信を確認してください。");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
     <Card
       title="勘定科目マスタ管理"
-      subInfo={`${accounts.length} 件登録済み`}
+      subInfo={`${journalAccounts.length} 件登録済み`}
       isExpanded={isExpanded}
       onToggle={() => setIsExpanded((prev) => !prev)}
     >
       <CardBodyHead>
         <div style={{ display: "grid", gap: 16 }}>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <TextInput placeholder="科目コード" value={code} onChange={setCode} sizeVariant="M" />
             <TextInput placeholder="科目名" value={name} onChange={setName} sizeVariant="L" />
             <SelectInput
               options={accountTypes}
-              value={type}
-              onChange={setType}
+              value={category}
+              onChange={(v) => setCategory(v as AccountCategory)}
               sizeVariant="M"
             />
           </div>
-          <CommonButton label="勘定科目を追加" onClick={addAccount} />
+          <CommonButton label={busy ? "追加中..." : "勘定科目を追加"} onClick={addAccount} />
         </div>
       </CardBodyHead>
       <CardBodyMain>
-        <DataGrid
-          data={accounts}
-          columns={[
-            { label: "コード", key: "code", width: 100 },
-            { label: "科目名", key: "name", width: 220 },
-            { label: "タイプ", key: "type", width: 120, align: "center" },
-          ]}
-          colorVariant="gray"
-        />
+        <div style={{ display: "grid", gap: 8 }}>
+          {journalAccounts.length === 0 && (
+            <div style={{ color: "#6B7280", fontSize: 14 }}>登録された勘定科目はありません。</div>
+          )}
+          {journalAccounts.map((acc) => (
+            <div
+              key={acc.id}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 12,
+                padding: "10px 12px",
+                border: "1px solid #E5E7EB",
+                borderRadius: 8,
+                flexWrap: "wrap",
+              }}
+            >
+              <div style={{ display: "grid", gap: 2 }}>
+                <div style={{ fontWeight: 700, fontSize: 14 }}>{acc.name}</div>
+                <div style={{ fontSize: 12, color: "#6B7280" }}>
+                  {categoryLabel[acc.category] ?? acc.category} ・ 残高 ¥{acc.balance.toLocaleString()}
+                </div>
+              </div>
+              <CommonButton
+                label="削除"
+                sizeVariant="S"
+                fontSize="S"
+                colorVariant="secondary"
+                onClick={() => deleteJournalAccount(acc)}
+              />
+            </div>
+          ))}
+        </div>
       </CardBodyMain>
     </Card>
   );

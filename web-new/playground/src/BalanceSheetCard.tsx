@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
+import type { BalanceSheetView } from "@asset-simulator/shared";
 import { Card, CardBodyHead, CardBodyMain } from "../../src/components/Card";
 import { DateInput } from "../../src/components/DateInput";
 import { CommonButton } from "../../src/components/CommonButton";
 import { DataGrid } from "../../src/components/DataGrid";
-import { sampleBalanceSheetRows } from "./data/financial";
 
 type Props = {
   appliedAsOfDate: string;
+  rows: BalanceSheetView[];
   onApply: (date: string) => void;
 };
 
@@ -28,23 +29,15 @@ function getDatePresets() {
   };
 }
 
-export function BalanceSheetCard({ appliedAsOfDate, onApply }: Props) {
+export function BalanceSheetCard({ appliedAsOfDate, rows, onApply }: Props) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [pendingDate, setPendingDate] = useState(appliedAsOfDate);
 
-  const grouped = useMemo(() => {
-    const filtered = sampleBalanceSheetRows.filter((row) => row.date <= appliedAsOfDate);
-
-    // 各勘定科目の最新スナップショットを取得
-    const latestByAccount: Record<string, { account: string; category: string; amount: number; date: string }> = {};
-    filtered.forEach((row) => {
-      if (!latestByAccount[row.account] || row.date > latestByAccount[row.account].date) {
-        latestByAccount[row.account] = row;
-      }
-    });
-
-    return Object.values(latestByAccount).map(({ account, category, amount }) => ({ account, category, amount }));
-  }, [appliedAsOfDate]);
+  // サーバー集計済みの BalanceSheetView を表示用の行へマッピング
+  const grouped = useMemo(
+    () => rows.map((row) => ({ account: row.name, category: row.category, amount: row.sumAmount })),
+    [rows]
+  );
 
   const assetsTotal = grouped
     .filter((row) => row.category === "Asset")

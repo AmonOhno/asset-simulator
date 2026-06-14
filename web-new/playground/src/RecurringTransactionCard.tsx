@@ -1,141 +1,209 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useFinancialStore } from "@asset-simulator/shared";
+import type { RecurrenceFrequency, RecurringTransaction } from "@asset-simulator/shared";
 import { Card, CardBodyHead, CardBodyMain } from "../../src/components/Card";
 import { TextInput } from "../../src/components/TextInput";
 import { DateInput } from "../../src/components/DateInput";
 import { NumericInput } from "../../src/components/NumericInput";
 import { SelectInput } from "../../src/components/SelectInput";
 import { CommonButton } from "../../src/components/CommonButton";
-import { DataGrid } from "../../src/components/DataGrid";
 
-interface RecurringTransaction {
-  name: string;
-  startDate: string;
-  frequency: string;
-  debitAccount: string;
-  creditAccount: string;
-  amount: number;
-  active: string;
-}
+const PLACEHOLDER = { label: "選択してください", value: "" };
 
-const accountOptions = [
-  { label: "Cash", value: "Cash" },
-  { label: "Rent Expense", value: "Rent Expense" },
-  { label: "Utilities", value: "Utilities" },
-  { label: "Accounts Payable", value: "Accounts Payable" },
-  { label: "Sales", value: "Sales" },
+const frequencyOptions: { label: string; value: RecurrenceFrequency }[] = [
+  { label: "月次", value: "monthly" },
+  { label: "年次", value: "yearly" },
+  { label: "都度", value: "free" },
 ];
 
-const frequencyOptions = [
-  { label: "月次", value: "Monthly" },
-  { label: "四半期", value: "Quarterly" },
-  { label: "年次", value: "Yearly" },
-];
-
-const activeOptions = [
-  { label: "有効", value: "Active" },
-  { label: "無効", value: "Inactive" },
-];
+const frequencyLabel: Record<string, string> = {
+  monthly: "月次",
+  yearly: "年次",
+  weekly: "週次",
+  free: "都度",
+};
 
 export function RecurringTransactionCard() {
+  const journalAccounts = useFinancialStore((s) => s.journalAccounts);
+  const regularJournalEntries = useFinancialStore((s) => s.regularJournalEntries);
+  const addRegularJournalEntry = useFinancialStore((s) => s.addRegularJournalEntry);
+  const deleteRegularJournalEntry = useFinancialStore((s) => s.deleteRegularJournalEntry);
+  const executeRegularJournalEntry = useFinancialStore((s) => s.executeRegularJournalEntry);
+  const executeDueRegularJournalEntries = useFinancialStore((s) => s.executeDueRegularJournalEntries);
+
   const [isExpanded, setIsExpanded] = useState(true);
   const [name, setName] = useState("");
-  const [startDate, setStartDate] = useState("2026-05-01");
-  const [frequency, setFrequency] = useState("Monthly");
-  const [debitAccount, setDebitAccount] = useState("Rent Expense");
-  const [creditAccount, setCreditAccount] = useState("Cash");
+  const [startDate, setStartDate] = useState(() => new Date().toLocaleDateString("sv-SE"));
+  const [frequency, setFrequency] = useState<RecurrenceFrequency>("monthly");
+  const [dateOfMonth, setDateOfMonth] = useState(1);
+  const [dateOfYear, setDateOfYear] = useState("01-01");
+  const [debitAccountId, setDebitAccountId] = useState("");
+  const [creditAccountId, setCreditAccountId] = useState("");
   const [amount, setAmount] = useState(0);
-  const [active, setActive] = useState("Active");
-  const [items, setItems] = useState<RecurringTransaction[]>([]);
+  const [busy, setBusy] = useState(false);
 
-  const addRecurring = () => {
-    if (!name || amount <= 0) {
+  const accountOptions = useMemo(
+    () => [PLACEHOLDER, ...journalAccounts.map((acc) => ({ label: acc.name, value: acc.id }))],
+    [journalAccounts]
+  );
+  const accountName = useMemo(() => {
+    const map: Record<string, string> = {};
+    journalAccounts.forEach((acc) => {
+      map[acc.id] = acc.name;
+    });
+    return map;
+  }, [journalAccounts]);
+
+  const addRecurring = async () => {
+    if (!name) {
+      alert("取引名称を入力してください");
+      return;
+    }
+    if (!debitAccountId) {
+      alert("借方勘定科目を選択してください");
+      return;
+    }
+    if (!creditAccountId || creditAccountId === debitAccountId) {
+      alert("貸方勘定科目を選択してください（借方と異なる科目）");
+      return;
+    }
+    if (!amount || amount <= 0) {
+      alert("金額を正しく入力してください");
+      return;
+    }
+    if (frequency === "monthly" && (dateOfMonth < 1 || dateOfMonth > 31)) {
+      alert("月次の場合は実行日(1〜31)を入力してください");
+      return;
+    }
+    if (frequency === "yearly" && !/^\d{2}-\d{2}$/.test(dateOfYear)) {
+      alert("年次の場合は実行日(MM-DD)を入力してください");
       return;
     }
 
-    setItems((prev) => [
-      ...prev,
-      { name, startDate, frequency, debitAccount, creditAccount, amount, active },
-    ]);
+    setBusy(true);
+    try {
+      const entry: Omit<RecurringTransaction, "id"> = {
+        name,
+        description: name,
+        debitAccountId,
+        creditAccountId,
+        amount,
+        frequency,
+        startDate,
+        dateOfMonth,
+        dateOfYear,
+        holidayDivOfMonth: "none",
+        user_id: "",
+      };
+      await addRegularJournalEntry(entry);
+      setName("");
+      setAmount(0);
+    } catch (error) {
+      console.error("Failed to add regular journal entry:", error);
+      alert("定期取引の保存に失敗しました。通信を確認してください。");
+    } finally {
+      setBusy(false);
+    }
+  };
 
-    setName("");
-    setAmount(0);
+  const runDue = async () => {
+    setBusy(true);
+    try {
+      const result = await executeDueRegularJournalEntries();
+      alert(`期限到来の定期取引を ${result.executed} 件実行しました`);
+    } catch (error) {
+      console.error("Failed to execute due regular journal entries:", error);
+      alert("期限到来分の実行に失敗しました。");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
     <Card
       title="定期取引管理"
-      subInfo={`${items.length} 件登録されています`}
+      subInfo={`${regularJournalEntries.length} 件登録されています`}
       isExpanded={isExpanded}
       onToggle={() => setIsExpanded((prev) => !prev)}
     >
       <CardBodyHead>
         <div style={{ display: "grid", gap: 16 }}>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <SelectInput
-                options={activeOptions}
-                value={active}
-                onChange={setActive}
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <div style={{ fontSize: 14, textAlign: "left" }}>周期</div>
+              <SelectInput
+                options={frequencyOptions}
+                value={frequency}
+                onChange={(v) => setFrequency(v as RecurrenceFrequency)}
                 sizeVariant="S"
-            />
-            <SelectInput
-              options={frequencyOptions}
-              value={frequency}
-              onChange={setFrequency}
-              sizeVariant="S"
-            />
+              />
+            </div>
+            {frequency === "monthly" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <div style={{ fontSize: 14, textAlign: "left" }}>実行日(1〜31)</div>
+                <NumericInput value={dateOfMonth} min={1} max={31} onBlur={setDateOfMonth} sizeVariant="S" />
+              </div>
+            )}
+            {frequency === "yearly" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <div style={{ fontSize: 14, textAlign: "left" }}>実行日(MM-DD)</div>
+                <TextInput placeholder="01-01" value={dateOfYear} onChange={setDateOfYear} sizeVariant="S" />
+              </div>
+            )}
           </div>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <DateInput value={startDate} onChange={setStartDate} sizeVariant="M" />
-            <TextInput
-              placeholder="取引名称"
-              value={name}
-              onChange={setName}
-              sizeVariant="Full"
-            />
-          </div> 
+            <TextInput placeholder="取引名称" value={name} onChange={setName} sizeVariant="Full" />
+          </div>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <div className="column" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <div style={{fontSize: 14, textAlign: "left"}}>借方</div>
-                <SelectInput
-                options={accountOptions}
-                value={debitAccount}
-                onChange={setDebitAccount}
-                sizeVariant="S"
-                />
+              <div style={{ fontSize: 14, textAlign: "left" }}>借方</div>
+              <SelectInput options={accountOptions} value={debitAccountId} onChange={setDebitAccountId} sizeVariant="S" />
             </div>
             <div className="column" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                <div style={{fontSize: 14, textAlign: "left"}}>借方</div>
-                <SelectInput
-                options={accountOptions}
-                value={creditAccount}
-                onChange={setCreditAccount}
-                sizeVariant="S"
-                />
+              <div style={{ fontSize: 14, textAlign: "left" }}>貸方</div>
+              <SelectInput options={accountOptions} value={creditAccountId} onChange={setCreditAccountId} sizeVariant="S" />
             </div>
-            <NumericInput
-              value={amount}
-              unit="円"
-              onBlur={setAmount}
-              sizeVariant="M"
-            />
+            <NumericInput value={amount} unit="円" onBlur={setAmount} sizeVariant="M" />
           </div>
-          <CommonButton label="定期取引を保存" onClick={addRecurring} />
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <CommonButton label={busy ? "処理中..." : "定期取引を保存"} onClick={addRecurring} />
+            <CommonButton label="期限到来分を実行" colorVariant="secondary" onClick={runDue} />
+          </div>
         </div>
       </CardBodyHead>
       <CardBodyMain>
-        <DataGrid
-          data={items}
-          columns={[
-            { label: "名称", key: "name", width: 180 },
-            { label: "開始日", key: "startDate", width: 100 },
-            { label: "頻度", key: "frequency", width: 100 },
-            { label: "借方", key: "debitAccount", width: 120 },
-            { label: "貸方", key: "creditAccount", width: 120 },
-            { label: "金額", key: "amount", width: 100, align: "right" },
-            { label: "状態", key: "active", width: 80, align: "center" },
-          ]}
-          colorVariant="gray"
-        />
+        <div style={{ display: "grid", gap: 8 }}>
+          {regularJournalEntries.length === 0 && (
+            <div style={{ color: "#6B7280", fontSize: 14 }}>登録された定期取引はありません。</div>
+          )}
+          {regularJournalEntries.map((item) => (
+            <div
+              key={item.id}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 12,
+                padding: "10px 12px",
+                border: "1px solid #E5E7EB",
+                borderRadius: 8,
+                flexWrap: "wrap",
+              }}
+            >
+              <div style={{ display: "grid", gap: 2 }}>
+                <div style={{ fontWeight: 700, fontSize: 14 }}>{item.name}</div>
+                <div style={{ fontSize: 12, color: "#6B7280" }}>
+                  {frequencyLabel[item.frequency] ?? item.frequency} ・ {accountName[item.debitAccountId] ?? item.debitAccountId} / {accountName[item.creditAccountId] ?? item.creditAccountId} ・ ¥{item.amount.toLocaleString()}
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <CommonButton label="実行" sizeVariant="S" fontSize="S" onClick={() => executeRegularJournalEntry(item)} />
+                <CommonButton label="削除" sizeVariant="S" fontSize="S" colorVariant="secondary" onClick={() => deleteRegularJournalEntry(item)} />
+              </div>
+            </div>
+          ))}
+        </div>
       </CardBodyMain>
     </Card>
   );
