@@ -1,12 +1,26 @@
 import type { CSSProperties } from "react";
 
 type SizeVariant = "S" | "M" | "L" | "Full";
+type FontSizeVariant = "S" | "M" | "L";
 
 const sizeWidthMap: Record<SizeVariant, string> = {
   S: "140px",
   M: "160px",
   L: "240px",
   Full: "100%",
+};
+
+const sizeHeightMap: Record<SizeVariant, string> = {
+  S: "32px",
+  M: "44px",
+  L: "56px",
+  Full: "44px",
+};
+
+const fontSizeMap: Record<FontSizeVariant, number> = {
+  S: 14,
+  M: 16,
+  L: 18,
 };
 
 interface SelectOption {
@@ -19,6 +33,7 @@ interface SelectInputProps {
   value: string | number;
   onChange: (value: string) => void;
   sizeVariant?: SizeVariant;
+  fontSize?: FontSizeVariant;
 }
 
 const styles = {
@@ -27,8 +42,6 @@ const styles = {
     width: "100%",
   } satisfies CSSProperties,
   select: {
-    height: 44,
-    fontSize: 16,
     padding: "0 36px 0 12px",
     borderRadius: 8,
     border: "1px solid #D1D5DB",
@@ -67,10 +80,16 @@ function ChevronDownIcon() {
   );
 }
 
-export function SelectInput({ options, value, onChange, sizeVariant = "Full" }: SelectInputProps) {
+export function SelectInput({ options, value, onChange, sizeVariant = "Full", fontSize = "M" }: SelectInputProps) {
   const wrapperStyle: CSSProperties = {
     ...styles.wrapper,
     width: sizeWidthMap[sizeVariant],
+  };
+
+  const selectStyle: CSSProperties = {
+    ...styles.select,
+    height: sizeHeightMap[sizeVariant],
+    fontSize: fontSizeMap[fontSize],
   };
 
   return (
@@ -78,7 +97,7 @@ export function SelectInput({ options, value, onChange, sizeVariant = "Full" }: 
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        style={styles.select}
+        style={selectStyle}
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>

@@ -1,12 +1,26 @@
 import { useState, type CSSProperties } from "react";
 
 type SizeVariant = "S" | "M" | "L" | "Full";
+type FontSizeVariant = "S" | "M" | "L";
 
 const sizeWidthMap: Record<SizeVariant, string> = {
   S: "120px",
   M: "160px",
   L: "240px",
   Full: "100%",
+};
+
+const sizeHeightMap: Record<SizeVariant, string> = {
+  S: "32px",
+  M: "44px",
+  L: "56px",
+  Full: "44px",
+};
+
+const fontSizeMap: Record<FontSizeVariant, number> = {
+  S: 14,
+  M: 16,
+  L: 18,
 };
 
 interface NumericInputProps {
@@ -17,6 +31,7 @@ interface NumericInputProps {
   error?: string;
   onBlur?: (value: number) => void;
   sizeVariant?: SizeVariant;
+  fontSize?: FontSizeVariant;
 }
 
 const styles = {
@@ -32,7 +47,6 @@ const styles = {
     gap: 8,
   } satisfies CSSProperties,
   input: {
-    height: 44,
     fontSize: 16,
     padding: "0 12px",
     borderRadius: 8,
@@ -68,6 +82,7 @@ export function NumericInput({
   error,
   onBlur,
   sizeVariant = "Full",
+  fontSize = "M",
 }: NumericInputProps) {
   const [localValue, setLocalValue] = useState(String(value));
 
@@ -98,6 +113,8 @@ export function NumericInput({
           onBlur={handleBlur}
           style={{
             ...styles.input,
+            height: sizeHeightMap[sizeVariant],
+            fontSize: fontSizeMap[fontSize],
             ...(error ? styles.inputError : {}),
           }}
         />

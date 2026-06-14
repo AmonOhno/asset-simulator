@@ -7,16 +7,32 @@ interface CommonButtonProps {
   label: string;
   sizeVariant?: SizeVariant;
   colorVariant?: ColorVariant;
+  /** font size variant: S | M | L */
+  fontSize?: "S" | "M" | "L";
   icon?: string;
   onClick?: () => void;
 }
 
 const sizeWidthMap: Record<SizeVariant, string> = {
-  S: "80px",
+  S: "60px",
   M: "120px",
   L: "160px",
   LL: "200px",
   Full: "100%",
+};
+
+const sizeHeightMap: Record<SizeVariant, string> = {
+  S: "32px",
+  M: "48px",
+  L: "64px",
+  LL: "48px",
+  Full: "48px",
+};
+
+const fontSizeMap: Record<"S" | "M" | "L", number> = {
+  S: 14,
+  M: 16,
+  L: 18,
 };
 
 const colorStyles: Record<ColorVariant, CSSProperties> = {
@@ -33,8 +49,6 @@ const colorStyles: Record<ColorVariant, CSSProperties> = {
 };
 
 const baseStyle: CSSProperties = {
-  height: 48,
-  fontSize: 16,
   fontWeight: 700,
   borderRadius: 8,
   cursor: "pointer",
@@ -50,6 +64,7 @@ export function CommonButton({
   label,
   sizeVariant = "M",
   colorVariant = "primary",
+  fontSize = "M",
   icon,
   onClick,
 }: CommonButtonProps) {
@@ -57,6 +72,8 @@ export function CommonButton({
     ...baseStyle,
     ...colorStyles[colorVariant],
     width: sizeWidthMap[sizeVariant],
+    height: sizeHeightMap[sizeVariant],
+    fontSize: fontSizeMap[fontSize],
   };
 
   return (

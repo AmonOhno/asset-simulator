@@ -22,19 +22,54 @@ export interface TransactionRow {
 }
 
 export const sampleProfitLossRows: ProfitLossRow[] = [
+  // March 2026
+  { account: "売上", category: "Revenue", amount: 280000, date: "2026-03-01" },
+  { account: "人件費", category: "Expense", amount: 120000, date: "2026-03-02" },
+  { account: "家賃", category: "Expense", amount: 60000, date: "2026-03-05" },
+  { account: "通信費", category: "Expense", amount: 12000, date: "2026-03-07" },
+  // April 2026
+  { account: "売上", category: "Revenue", amount: 310000, date: "2026-04-01" },
+  { account: "人件費", category: "Expense", amount: 120000, date: "2026-04-02" },
+  { account: "家賃", category: "Expense", amount: 60000, date: "2026-04-05" },
+  { account: "通信費", category: "Expense", amount: 12000, date: "2026-04-07" },
+  { account: "広告費", category: "Expense", amount: 20000, date: "2026-04-15" },
+  // May 2026
   { account: "売上", category: "Revenue", amount: 320000, date: "2026-05-01" },
   { account: "売上", category: "Revenue", amount: 170000, date: "2026-05-10" },
   { account: "人件費", category: "Expense", amount: 120000, date: "2026-05-02" },
   { account: "家賃", category: "Expense", amount: 60000, date: "2026-05-05" },
   { account: "通信費", category: "Expense", amount: 12000, date: "2026-05-07" },
+  // June 2026 (〜14日)
+  { account: "売上", category: "Revenue", amount: 150000, date: "2026-06-05" },
+  { account: "人件費", category: "Expense", amount: 120000, date: "2026-06-02" },
+  { account: "家賃", category: "Expense", amount: 60000, date: "2026-06-05" },
 ];
 
 export const sampleBalanceSheetRows: BalanceSheetRow[] = [
+  // 2026-03-31 snapshot
+  { account: "現金", category: "Asset", amount: 180000, date: "2026-03-31" },
+  { account: "売掛金", category: "Asset", amount: 120000, date: "2026-03-31" },
+  { account: "買掛金", category: "Liability", amount: 90000, date: "2026-03-31" },
+  { account: "未払費用", category: "Liability", amount: 20000, date: "2026-03-31" },
+  { account: "資本金", category: "Liability", amount: 190000, date: "2026-03-31" },
+  // 2026-04-30 snapshot
+  { account: "現金", category: "Asset", amount: 220000, date: "2026-04-30" },
+  { account: "売掛金", category: "Asset", amount: 150000, date: "2026-04-30" },
+  { account: "買掛金", category: "Liability", amount: 120000, date: "2026-04-30" },
+  { account: "未払費用", category: "Liability", amount: 28000, date: "2026-04-30" },
+  { account: "資本金", category: "Liability", amount: 222000, date: "2026-04-30" },
+  // 2026-05-31 snapshot
   { account: "現金", category: "Asset", amount: 260000, date: "2026-05-31" },
   { account: "売掛金", category: "Asset", amount: 180000, date: "2026-05-31" },
   { account: "買掛金", category: "Liability", amount: 150000, date: "2026-05-31" },
   { account: "未払費用", category: "Liability", amount: 32000, date: "2026-05-31" },
-  { account: "資本金", category: "Liability", amount: 260000, date: "2026-05-31" },
+  { account: "資本金", category: "Liability", amount: 258000, date: "2026-05-31" },
+  // 2026-06-14 snapshot
+  { account: "現金", category: "Asset", amount: 230000, date: "2026-06-14" },
+  { account: "売掛金", category: "Asset", amount: 200000, date: "2026-06-14" },
+  { account: "買掛金", category: "Liability", amount: 160000, date: "2026-06-14" },
+  { account: "未払費用", category: "Liability", amount: 30000, date: "2026-06-14" },
+  { account: "資本金", category: "Liability", amount: 240000, date: "2026-06-14" },
 ];
 
 export const sampleTransactionRows: TransactionRow[] = [
@@ -70,12 +105,21 @@ export function calculateProfit(startDate: string, endDate: string) {
 }
 
 export function calculateNetAssets(asOfDate: string) {
-  const filtered = sampleBalanceSheetRows.filter((row) => row.date === asOfDate);
+  const filtered = sampleBalanceSheetRows.filter((row) => row.date <= asOfDate);
 
-  const assetsTotal = filtered
+  // 各勘定科目の最新スナップショットを取得
+  const latestByAccount: Record<string, BalanceSheetRow> = {};
+  filtered.forEach((row) => {
+    if (!latestByAccount[row.account] || row.date > latestByAccount[row.account].date) {
+      latestByAccount[row.account] = row;
+    }
+  });
+  const latest = Object.values(latestByAccount);
+
+  const assetsTotal = latest
     .filter((row) => row.category === "Asset")
     .reduce((sum, row) => sum + row.amount, 0);
-  const liabilityTotal = filtered
+  const liabilityTotal = latest
     .filter((row) => row.category === "Liability")
     .reduce((sum, row) => sum + row.amount, 0);
 

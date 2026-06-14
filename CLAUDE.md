@@ -18,18 +18,6 @@ asset-simulator/
 └── web-new/        # Storybook / Playground (開発用)
 ```
 
-## よく使うコマンド
-
-```bash
-npm run dev          # サーバー + Web を同時起動
-npm run dev:server   # サーバーのみ
-npm run dev:web      # Web のみ
-npm run build        # 全パッケージビルド
-npm run playground   # Storybook / Playground 起動
-npx tsc --noEmit -p packages/shared/tsconfig.json  # 型チェック（shared）
-npx tsc --noEmit -p server/tsconfig.json           # 型チェック（server）
-```
-
 ## アーキテクチャ
 
 ### State 管理（packages/shared/src/stores/）
@@ -70,8 +58,6 @@ npx tsc --noEmit -p server/tsconfig.json           # 型チェック（server）
 
 | リソース | プレフィックス | 例 |
 |---------|--------------|---|
-| 金融口座 | `acc_` | `acc_<uuid>` |
-| クレジットカード | `card_` | `card_<uuid>` |
 | 勘定科目 | `jacc_` | `jacc_<uuid>` |
 | 仕訳エントリー | `je_` | `je_<uuid>` |
 | 定期仕訳 | `reg_` | `reg_<uuid>` |

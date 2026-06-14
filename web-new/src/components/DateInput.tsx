@@ -1,12 +1,26 @@
 import type { CSSProperties } from "react";
 
 type SizeVariant = "S" | "M" | "L" | "Full";
+type FontSizeVariant = "S" | "M" | "L";
 
 const sizeWidthMap: Record<SizeVariant, string> = {
-  S: "140px",
+  S: "130px",
   M: "160px",
   L: "240px",
   Full: "100%",
+};
+
+const sizeHeightMap: Record<SizeVariant, string> = {
+  S: "32px",
+  M: "44px",
+  L: "56px",
+  Full: "44px",
+};
+
+const fontSizeMap: Record<FontSizeVariant, number> = {
+  S: 14,
+  M: 16,
+  L: 18,
 };
 
 interface DateInputProps {
@@ -14,6 +28,7 @@ interface DateInputProps {
   onChange: (value: string) => void;
   onBlur?: () => void;
   sizeVariant?: SizeVariant;
+  fontSize?: FontSizeVariant;
 }
 
 const DATE_MIN = "2000-01-01";
@@ -21,8 +36,6 @@ const DATE_MAX = "2100-12-31";
 
 const styles = {
   input: {
-    height: 44,
-    fontSize: 16,
     padding: "0 12px",
     borderRadius: 8,
     border: "1px solid #D1D5DB",
@@ -33,10 +46,12 @@ const styles = {
   } satisfies CSSProperties,
 };
 
-export function DateInput({ value, onChange, onBlur, sizeVariant = "Full" }: DateInputProps) {
+export function DateInput({ value, onChange, onBlur, sizeVariant = "Full", fontSize = "M" }: DateInputProps) {
   const inputStyle: CSSProperties = {
     ...styles.input,
     width: sizeWidthMap[sizeVariant],
+    height: sizeHeightMap[sizeVariant],
+    fontSize: fontSizeMap[fontSize],
   };
 
   return (

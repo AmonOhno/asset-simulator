@@ -5,23 +5,46 @@ import { CommonButton } from "../../src/components/CommonButton";
 import { DataGrid } from "../../src/components/DataGrid";
 import { sampleBalanceSheetRows } from "./data/financial";
 
-export function BalanceSheetCard() {
+type Props = {
+  appliedAsOfDate: string;
+  onApply: (date: string) => void;
+};
+
+function fmt(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function getDatePresets() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const mo = now.getMonth();
+  return {
+    today: fmt(now),
+    thisMonthEnd: fmt(new Date(y, mo + 1, 0)),
+    lastMonthEnd: fmt(new Date(y, mo, 0)),
+  };
+}
+
+export function BalanceSheetCard({ appliedAsOfDate, onApply }: Props) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [asOfDate, setAsOfDate] = useState("2026-05-31");
+  const [pendingDate, setPendingDate] = useState(appliedAsOfDate);
 
   const grouped = useMemo(() => {
-    const filtered = sampleBalanceSheetRows.filter((row) => row.date === asOfDate);
+    const filtered = sampleBalanceSheetRows.filter((row) => row.date <= appliedAsOfDate);
 
-    const summary: Record<string, { account: string; category: string; amount: number }> = {};
-    filtered.forEach((item) => {
-      if (!summary[item.account]) {
-        summary[item.account] = { account: item.account, category: item.category, amount: 0 };
+    // 各勘定科目の最新スナップショットを取得
+    const latestByAccount: Record<string, { account: string; category: string; amount: number; date: string }> = {};
+    filtered.forEach((row) => {
+      if (!latestByAccount[row.account] || row.date > latestByAccount[row.account].date) {
+        latestByAccount[row.account] = row;
       }
-      summary[item.account].amount += item.amount;
     });
 
-    return Object.values(summary);
-  }, [asOfDate]);
+    return Object.values(latestByAccount).map(({ account, category, amount }) => ({ account, category, amount }));
+  }, [appliedAsOfDate]);
 
   const assetsTotal = grouped
     .filter((row) => row.category === "Asset")
@@ -31,17 +54,31 @@ export function BalanceSheetCard() {
     .reduce((sum, item) => sum + item.amount, 0);
   const summeryTotal = assetsTotal - liabilityTotal;
 
+  const presets = getDatePresets();
+
+  const applyPreset = (date: string) => {
+    setPendingDate(date);
+    onApply(date);
+  };
+
   return (
     <Card
       title="貸借対照表【BS】"
-      subInfo={asOfDate}
+      subInfo={appliedAsOfDate}
       isExpanded={isExpanded}
       onToggle={() => setIsExpanded((prev) => !prev)}
     >
       <CardBodyHead>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <DateInput value={asOfDate} onChange={setAsOfDate} sizeVariant="M" />
-          <CommonButton label="基準日反映" onClick={() => undefined} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <CommonButton label="今日" sizeVariant="S" fontSize="S" colorVariant="secondary" onClick={() => applyPreset(presets.today)} />
+            <CommonButton label="今月末" sizeVariant="S" fontSize="S" colorVariant="secondary" onClick={() => applyPreset(presets.thisMonthEnd)} />
+            <CommonButton label="先月末" sizeVariant="S" fontSize="S" colorVariant="secondary" onClick={() => applyPreset(presets.lastMonthEnd)} />
+          </div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+            <DateInput value={pendingDate} onChange={setPendingDate} sizeVariant="M" />
+            <CommonButton label="基準日反映" onClick={() => onApply(pendingDate)} />
+          </div>
         </div>
       </CardBodyHead>
       <CardBodyMain>

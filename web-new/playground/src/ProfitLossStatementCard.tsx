@@ -5,14 +5,40 @@ import { CommonButton } from "../../src/components/CommonButton";
 import { DataGrid } from "../../src/components/DataGrid";
 import { sampleProfitLossRows } from "./data/financial";
 
-export function ProfitLossStatementCard() {
+type Props = {
+  appliedStartDate: string;
+  appliedEndDate: string;
+  onApply: (startDate: string, endDate: string) => void;
+};
+
+function fmt(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function getPeriodPresets() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const mo = now.getMonth();
+  const q = Math.floor(mo / 3);
+  return {
+    thisMonth: [fmt(new Date(y, mo, 1)), fmt(new Date(y, mo + 1, 0))] as [string, string],
+    lastMonth: [fmt(new Date(y, mo - 1, 1)), fmt(new Date(y, mo, 0))] as [string, string],
+    thisQuarter: [fmt(new Date(y, q * 3, 1)), fmt(new Date(y, q * 3 + 3, 0))] as [string, string],
+    thisYear: [`${y}-01-01`, `${y}-12-31`] as [string, string],
+  };
+}
+
+export function ProfitLossStatementCard({ appliedStartDate, appliedEndDate, onApply }: Props) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [startDate, setStartDate] = useState("2026-05-01");
-  const [endDate, setEndDate] = useState("2026-05-31");
+  const [pendingStart, setPendingStart] = useState(appliedStartDate);
+  const [pendingEnd, setPendingEnd] = useState(appliedEndDate);
 
   const grouped = useMemo(() => {
     const filtered = sampleProfitLossRows.filter(
-      (row) => row.date >= startDate && row.date <= endDate
+      (row) => row.date >= appliedStartDate && row.date <= appliedEndDate
     );
 
     const summary: Record<string, { account: string; category: string; amount: number }> = {};
@@ -25,7 +51,7 @@ export function ProfitLossStatementCard() {
     });
 
     return Object.values(summary);
-  }, [startDate, endDate]);
+  }, [appliedStartDate, appliedEndDate]);
 
   const revenueTotal = grouped
     .filter((row) => row.category === "Revenue")
@@ -37,19 +63,35 @@ export function ProfitLossStatementCard() {
 
   const profit = revenueTotal - expenseTotal;
 
+  const presets = getPeriodPresets();
+
+  const applyPreset = (start: string, end: string) => {
+    setPendingStart(start);
+    setPendingEnd(end);
+    onApply(start, end);
+  };
+
   return (
     <Card
       title="損益計算書【PL】"
-      subInfo={`${startDate} 〜 ${endDate}`}
+      subInfo={`${appliedStartDate} 〜 ${appliedEndDate}`}
       isExpanded={isExpanded}
       onToggle={() => setIsExpanded((prev) => !prev)}
     >
       <CardBodyHead>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <DateInput value={startDate} onChange={setStartDate} sizeVariant="S" />
-          <span style={{ alignSelf: "center" }}>~</span>
-          <DateInput value={endDate} onChange={setEndDate} sizeVariant="S" />
-          <CommonButton label="期間反映" onClick={() => undefined} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <CommonButton label="今月" fontSize="S" sizeVariant="S" colorVariant="secondary" onClick={() => applyPreset(...presets.thisMonth)} />
+            <CommonButton label="先月" fontSize="S" sizeVariant="S" colorVariant="secondary" onClick={() => applyPreset(...presets.lastMonth)} />
+            <CommonButton label="3ヶ月" fontSize="S" sizeVariant="S" colorVariant="secondary" onClick={() => applyPreset(...presets.thisQuarter)} />
+            <CommonButton label="今年" fontSize="S" sizeVariant="S" colorVariant="secondary" onClick={() => applyPreset(...presets.thisYear)} />
+          </div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+            <DateInput value={pendingStart} onChange={setPendingStart} sizeVariant="S" />
+            <span style={{ alignSelf: "center", color: "#6B7280" }}>〜</span>
+            <DateInput value={pendingEnd} onChange={setPendingEnd} sizeVariant="S" />
+            <CommonButton label="期間反映" onClick={() => onApply(pendingStart, pendingEnd)} />
+          </div>
         </div>
       </CardBodyHead>
       <CardBodyMain>

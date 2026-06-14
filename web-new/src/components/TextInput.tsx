@@ -1,10 +1,12 @@
 import type { CSSProperties } from "react";
 
 type SizeVariant = "S" | "M" | "L" | "Full";
+type FontSizeVariant = "S" | "M" | "L";
 
 interface TextInputProps {
   placeholder: string;
   sizeVariant?: SizeVariant;
+  fontSize?: FontSizeVariant;
   value: string;
   onBlur?: () => void;
   onChange?: (value: string) => void;
@@ -17,9 +19,21 @@ const sizeWidthMap: Record<SizeVariant, string> = {
   Full: "100%",
 };
 
+const sizeHeightMap: Record<SizeVariant, string> = {
+  S: "32px",
+  M: "44px",
+  L: "56px",
+  Full: "44px",
+};
+
+const fontSizeMap: Record<FontSizeVariant, number> = {
+  S: 14,
+  M: 16,
+  L: 18,
+};
+
 const styles = {
   input: {
-    height: 44,
     fontSize: 16,
     padding: "0 12px",
     borderRadius: 8,
@@ -36,6 +50,7 @@ const styles = {
 export function TextInput({
   placeholder,
   sizeVariant = "Full",
+  fontSize = "M",
   value,
   onBlur,
   onChange,
@@ -43,6 +58,8 @@ export function TextInput({
   const inputStyle: CSSProperties = {
     ...styles.input,
     width: sizeWidthMap[sizeVariant],
+    height: sizeHeightMap[sizeVariant],
+    fontSize: fontSizeMap[fontSize],
   };
 
   return (

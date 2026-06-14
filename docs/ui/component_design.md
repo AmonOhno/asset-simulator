@@ -69,16 +69,16 @@
 ### 基本デザイン仕様
 | 項目 | 数値 / 指定 | 備考 |
 | :--- | :--- | :--- |
-| **Height** | 48px | モバイルでのタップ領域を確保 |
-| **Font Size** | 16px (Bold) | 視認性重視 |
+| **Height** | S / M / L variant (S: 32px, M: 48px, L: 64px) | `sizeVariant` によって高さを切替。モバイルでのタップ領域を確保 |
 | **Border Radius** | 8px | |
 
 ### 開発用 Props 仕様
 | Props名 | 型 | 説明 |
 | :--- | :--- | :--- |
 | **label** | `string` | ボタンに表示するテキスト |
-| **sizeVariant** | `'S' \| 'M' \| 'L' \| 'Full'` | 幅を指定。S(100px), M(160px), L(240px), Full(100%) |
+| **sizeVariant** | `'S' \| 'M' \| 'L' \| 'LL' \| 'Full'` | 幅・高さを指定。幅: S(60px), M(120px), L(160px), LL(200px), Full(100%)。高さ: S(32px), M(48px), L(64px), LL/Full(48px) |
 | **colorVariant**| `'primary' \| 'secondary'` | ブランドカラーか補助カラーかの切り替え |
+| **fontSize** | `'S' \| 'M' \| 'L'` | フォントサイズのバリアント。S=14px, M=16px, L=18px |
 | **icon** | `string` | アイコン名（ライブラリ内の名前を指定） |
 | **onClick** | `function` | クリック時に実行される関数 |
 
@@ -109,7 +109,7 @@
 ### 基本デザイン仕様
 | 項目 | 数値 / 指定 | 備考 |
 | :--- | :--- | :--- |
-| **Height** | 44px | |
+| **Height** | S / M / L / Full variant (S: 32px, M: 44px, L: 56px, Full: 44px) | `sizeVariant` によって高さを切替 |
 | **Date Range** | **2000-01-01 ~ 2100-12-31** | アプリ内共通の固定範囲 |
 | **Format** | YYYY/MM/DD | **時刻・曜日は非表示（日付のみ）** |
 
@@ -119,7 +119,8 @@
 | **value** | `string` | 内部値 (YYYY-MM-DD) |
 | **onChange** | `function` | 値が変更された際の処理 |
 | **onBlur** | `function` | 入力・選択が確定し、フォーカスが外れた際の処理 |
-| **sizeVariant** | `'S' \| 'M' \| 'L' \| 'Full'` | コンポーネント幅。S(100px), M(160px), L(240px), Full(100%) |
+| **sizeVariant** | `'S' \| 'M' \| 'L' \| 'Full'` | コンポーネント幅・高さ。幅: S(130px), M(160px), L(240px), Full(100%)。高さ: S(32px), M(44px), L(56px), Full(44px) |
+| **fontSize** | `'S' \| 'M' \| 'L'` | フォントサイズのバリアント。S=14px, M=16px, L=18px |
 
 ---
 
@@ -129,6 +130,7 @@
 ### 基本デザイン仕様
 | 項目 | 数値 / 指定 | 備考 |
 | :--- | :--- | :--- |
+| **Height** | S / M / L / Full variant (S: 32px, M: 44px, L: 56px, Full: 44px) | `sizeVariant` によって高さを切替 |
 | **Text Align** | Right | 数値の桁を揃えるため右寄せ |
 | **Input Mode** | decimal | スマホで数値キーボードを自動起動 |
 
@@ -140,7 +142,8 @@
 | **min / max** | `number` | バリデーション用の最小値・最大値 |
 | **error** | `string` | エラー時に表示するメッセージ |
 | **onBlur** | `function` | フォーカスが外れたタイミングでの確定処理 |
-| **sizeVariant** | `'S' \| 'M' \| 'L' \| 'Full'` | コンポーネント幅。S(100px), M(160px), L(240px), Full(100%) |
+| **sizeVariant** | `'S' \| 'M' \| 'L' \| 'Full'` | コンポーネント幅・高さ。幅: S(120px), M(160px), L(240px), Full(100%)。高さ: S(32px), M(44px), L(56px), Full(44px) |
+| **fontSize** | `'S' \| 'M' \| 'L'` | フォントサイズのバリアント。S=14px, M=16px, L=18px |
 
 ---
 
@@ -151,7 +154,7 @@
 | 項目 | 数値 / 指定 | 備考 |
 | :--- | :--- | :--- |
 | **Appearance** | `none` | ブラウザ標準の矢印を非表示にし、独自SVGを表示 |
-| **Height** | 44px | |
+| **Height** | S / M / L / Full variant (S: 32px, M: 44px, L: 56px, Full: 44px) | `sizeVariant` によって高さを切替 |
 
 ### 開発用 Props 仕様
 | Props名 | 型 | 説明 |
@@ -159,7 +162,8 @@
 | **options** | `{label, value}[]` | 選択肢の表示名と内部値のセット |
 | **value** | `string \| number` | 現在の選択値 |
 | **onChange** | `function` | 選択が変更された際の処理 |
-| **sizeVariant** | `'S' \| 'M' \| 'L' \| 'Full'` | コンポーネント幅。S(100px), M(160px), L(240px), Full(100%) |
+| **sizeVariant** | `'S' \| 'M' \| 'L' \| 'Full'` | コンポーネント幅・高さ。幅: S(140px), M(160px), L(240px), Full(100%)。高さ: S(32px), M(44px), L(56px), Full(44px) |
+| **fontSize** | `'S' \| 'M' \| 'L'` | フォントサイズのバリアント。S=14px, M=16px, L=18px |
 
 ---
 
@@ -167,15 +171,17 @@
 ### 基本デザイン仕様
 | 項目 | 数値 / 指定 | 備考 |
 | :--- | :--- | :--- |
-| **Font Size** | 16px | iOSでのフォーカス時自動ズームを防止 |
+| **Height** | S / M / L / Full variant (S: 32px, M: 44px, L: 56px, Full: 44px) | `sizeVariant` によって高さを切替 |
+| **Font Size** | S / M / L variant (S: 14px, M: 16px, L: 18px) | `fontSize` によって切替。M=16px はiOSの自動ズーム防止推奨 |
 
 ### 開発用 Props 仕様
 | Props名 | 型 | 説明 |
 | :--- | :--- | :--- |
-| **label** | `string` | 項目名 |
-| **sizeVariant** | `'S' \| 'M' \| 'L' \| 'Full'` | コンポーネント幅。S(100px), M(160px), L(240px), Full(100%) |
-| **labelVariant**| `'top' \| 'left'` | ラベルの配置方向（上並び または 横並び） |
+| **placeholder** | `string` | プレースホルダーテキスト |
+| **sizeVariant** | `'S' \| 'M' \| 'L' \| 'Full'` | コンポーネント幅・高さ。幅: S(120px), M(160px), L(240px), Full(100%)。高さ: S(32px), M(44px), L(56px), Full(44px) |
+| **fontSize** | `'S' \| 'M' \| 'L'` | フォントサイズのバリアント。S=14px, M=16px, L=18px |
 | **value** | `string` | 入力テキスト |
+| **onChange** | `function` | 値が変更された際の処理 |
 | **onBlur** | `function` | フォーカスが外れた際の確定処理 |
 
 

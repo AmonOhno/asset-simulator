@@ -1,4 +1,4 @@
-import { useState, useRef } from "react"; // useRefを追加
+import { useState, useRef } from "react";
 import "./App.css";
 import CalendarCard from "./CalendarCard";
 import TransactionEntryCard from "./TransactionEntryCard";
@@ -17,18 +17,38 @@ const tabs: { id: TabId; label: string }[] = [
   { id: "recurring", label: "定期取引" },
 ];
 
+function getDefaultDates() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const mo = now.getMonth();
+  const fmt = (d: Date) => {
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${d.getFullYear()}-${m}-${day}`;
+  };
+  return {
+    plStart: fmt(new Date(y, mo, 1)),
+    plEnd: fmt(new Date(y, mo + 1, 0)),
+    bsAsOf: fmt(now),
+  };
+}
+
+const defaults = getDefaultDates();
+
 function App() {
   const [activeTab, setActiveTab] = useState<TabId>("transaction");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  // カードへの参照を作成
+  const [plStartDate, setPlStartDate] = useState(defaults.plStart);
+  const [plEndDate, setPlEndDate] = useState(defaults.plEnd);
+  const [bsAsOfDate, setBsAsOfDate] = useState(defaults.bsAsOf);
+
   const plCardRef = useRef<HTMLDivElement>(null);
   const bsCardRef = useRef<HTMLDivElement>(null);
 
-  const { profit } = calculateProfit("2026-05-01", "2026-05-31");
-  const { netAssets } = calculateNetAssets("2026-05-31");
+  const { profit } = calculateProfit(plStartDate, plEndDate);
+  const { netAssets } = calculateNetAssets(bsAsOfDate);
 
-  // setPlViewの実装
   const setPlView = (view: PlViewType) => {
     if (view === "profit-loss") {
       plCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -62,20 +82,28 @@ function App() {
               <PanelButton
                 title="当期純利益"
                 value={`¥${profit.toLocaleString()}`}
+                subText={`${plStartDate} 〜 ${plEndDate}`}
                 onClick={() => setPlView("profit-loss")}
               />
               <PanelButton
                 title="純資産合計"
                 value={`¥${netAssets.toLocaleString()}`}
+                subText={`基準日: ${bsAsOfDate}`}
                 onClick={() => setPlView("balance-sheet")}
               />
-              
-              {/* スクロール先としてrefを付与 */}
+
               <div ref={plCardRef}>
-                <ProfitLossStatementCard />
+                <ProfitLossStatementCard
+                  appliedStartDate={plStartDate}
+                  appliedEndDate={plEndDate}
+                  onApply={(s, e) => { setPlStartDate(s); setPlEndDate(e); }}
+                />
               </div>
               <div ref={bsCardRef}>
-                <BalanceSheetCard />
+                <BalanceSheetCard
+                  appliedAsOfDate={bsAsOfDate}
+                  onApply={(d) => setBsAsOfDate(d)}
+                />
               </div>
             </div>
           </div>
@@ -109,7 +137,6 @@ function App() {
               onClick={() => {
                 setActiveTab(tab.id);
                 setSelectedDate(null);
-                // 必要に応じてここで初期化
               }}
             >
               {tab.label}
