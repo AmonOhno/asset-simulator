@@ -1,11 +1,10 @@
 import { create } from 'zustand';
 import type { StateCreator } from 'zustand';
-import { API_URL } from '../types/common';
 import { toCamelCase, toSnakeCase } from '../utils/caseConvert';
 import {
   ScheduleEvent
 } from '../types/common';
-import { useAuthStore } from './authStore';
+import { useAuthStore, supabase } from './authStore';
 
 interface EventsState {
   events: ScheduleEvent[];
@@ -23,18 +22,16 @@ const eventsStore: StateCreator<EventsState> = (set, get) => ({
 
   // イベント一覧の取得
   fetchEvents: async () => {
-    const { session } = useAuthStore.getState();
-    if (!session) return;
+    const { userId } = useAuthStore.getState();
+    if (!userId) return;
 
     try {
-      const response = await fetch(`${API_URL}/schedule-events`, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      });
-      if (!response.ok) throw new Error('Failed to fetch schedule events');
-      const data = await response.json();
-      set({ events: data.map(toCamelCase) });
+      const { data, error } = await supabase
+        .from('schedule_events')
+        .select('*')
+        .eq('user_id', userId);
+      if (error) throw error;
+      set({ events: toCamelCase(data || []) });
     } catch (error) {
       console.error("Error fetching schedule events:", error);
     }
@@ -42,21 +39,29 @@ const eventsStore: StateCreator<EventsState> = (set, get) => ({
 
   // イベントの追加
   addEvent: async (event: Omit<ScheduleEvent, 'eventId' | 'createdAt'>) => {
-    const { session } = useAuthStore.getState();
-    if (!session) return;
+    const { userId } = useAuthStore.getState();
+    if (!userId) return;
 
     try {
-      const response = await fetch(`${API_URL}/schedule-events`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(toSnakeCase(event))
-      });
-      if (!response.ok) throw new Error('Failed to add schedule event');
-      const newEvent = await response.json();
-      set((state) => ({ events: [...state.events, toCamelCase(newEvent)] }));
+      const newEvent = {
+        event_id: `event_${crypto.randomUUID()}`,
+        user_id: userId,
+        title: event.title,
+        all_day_flg: event.allDayFlg,
+        start_date: event.startDate,
+        start_time: event.startTime || null,
+        end_date: event.endDate,
+        end_time: event.endTime || null,
+        description: event.description || '',
+        created_at: new Date().toISOString(),
+      };
+      const { data, error } = await supabase
+        .from('schedule_events')
+        .insert([newEvent])
+        .select()
+        .single();
+      if (error) throw error;
+      set((state) => ({ events: [...state.events, toCamelCase(data)] }));
     } catch (error) {
       console.error("Error adding schedule event:", error);
     }
@@ -64,24 +69,30 @@ const eventsStore: StateCreator<EventsState> = (set, get) => ({
 
   // イベントの更新
   updateEvent: async (event: ScheduleEvent) => {
-    const { session } = useAuthStore.getState();
-    if (!session) return;
+    const { userId } = useAuthStore.getState();
+    if (!userId) return;
 
     try {
-      const response = await fetch(`${API_URL}/schedule-events/${event.eventId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(toSnakeCase(event))
-      });
-      if (!response.ok) throw new Error('Failed to update schedule event');
-      const updated = await response.json();
+      const { data, error } = await supabase
+        .from('schedule_events')
+        .update({
+          title: event.title,
+          all_day_flg: event.allDayFlg,
+          start_date: event.startDate,
+          start_time: event.startTime || null,
+          end_date: event.endDate,
+          end_time: event.endTime || null,
+          description: event.description || '',
+        })
+        .eq('event_id', event.eventId)
+        .eq('user_id', userId)
+        .select()
+        .single();
+      if (error) throw error;
       set((state) => ({
-        events: state.events.map(e =>
-          e.eventId === event.eventId ? toCamelCase(updated) : e
-        )
+        events: state.events.map((e) =>
+          e.eventId === event.eventId ? toCamelCase(data) : e
+        ),
       }));
     } catch (error) {
       console.error("Error updating schedule event:", error);
@@ -90,36 +101,24 @@ const eventsStore: StateCreator<EventsState> = (set, get) => ({
 
   // イベントの削除
   deleteEvent: async (eventId) => {
-    const { session } = useAuthStore.getState();
-    if (!session) return;
+    const { userId } = useAuthStore.getState();
+    if (!userId) return;
 
     try {
-      console.log('削除API呼び出し:', `${API_URL}/schedule-events/${eventId}`);
-      const response = await fetch(`${API_URL}/schedule-events/${eventId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      });
-      console.log('削除APIレスポンス:', response.status, response.statusText);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('削除APIエラー:', errorText);
-        throw new Error(`Failed to delete schedule event: ${response.status} ${errorText}`);
-      }
-      
-      const result = await response.json();
-      console.log('削除API結果:', result);
-      
+      const { error } = await supabase
+        .from('schedule_events')
+        .delete()
+        .eq('event_id', eventId)
+        .eq('user_id', userId);
+      if (error) throw error;
       set((state) => ({
-        events: state.events.filter(event => event.eventId !== eventId)
+        events: state.events.filter((event) => event.eventId !== eventId),
       }));
     } catch (error) {
       console.error("Error deleting schedule event:", error);
-      throw error; // エラーを再スローして上位でキャッチできるようにする
+      throw error;
     }
-  }
+  },
 });
 
 export const useEventsStore = create<EventsState>(eventsStore);

@@ -1,12 +1,5 @@
 // src/types/common.ts
 
-// APIのベースURL設定
-export const API_URL: string =
-  process.env.NODE_ENV !== 'production'
-    ? 'http://localhost:3001/api'
-    : 'https://asset-simulator-server.onrender.com/api';
-
-
 // --- マスタデータ定義 ---
 
 /**
