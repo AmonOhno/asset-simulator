@@ -5,7 +5,8 @@
   "packageManager": "npm@10.9.0",
   "workspaces": [
     "web",
-    "packages/*"
+    "packages/*",
+    "client"
   ],
   "scripts": {
     "dev": "npm run dev:web",
