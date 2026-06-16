@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.firecrawl.dev)",
+      "WebFetch(domain:www.ui-skills.com)",
+      "WebFetch(domain:uxplanet.org)",
+      "WebFetch(domain:pasqualepillitteri.it)",
+      "Bash(gh api *)",
+      "Bash(npm run *)",
+      "Bash(curl -s http://localhost:5174)",
+      "Bash(pkill -f \"vite --port 5174\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5175)",
+      "Bash(pkill -f \"vite --port 5175\")",
+      "Bash(npx vite *)"
+    ]
+  },
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true
+  }
+}

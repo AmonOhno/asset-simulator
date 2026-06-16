@@ -1,0 +1,52 @@
+name: Deploy client to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - 'packages/shared/**'
+      - '.github/workflows/deploy-client.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - 'packages/shared/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # ルートの workspace install で packages/shared の依存 (zustand 等) をホイスト
+      - name: Install workspace dependencies
+        run: npm install
+
+      # client は workspace 外なので個別にインストール
+      - name: Install client dependencies
+        run: npm install --prefix=client
+
+      - name: Build client
+        run: npm run build:client
+        env:
+          REACT_APP_SUPABASE_URL: ${{ secrets.REACT_APP_SUPABASE_URL }}
+          REACT_APP_SUPABASE_ANON_KEY: ${{ secrets.REACT_APP_SUPABASE_ANON_KEY }}
+
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: ${{ vars.CF_PAGES_PROJECT_NAME }}
+          directory: client/dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}

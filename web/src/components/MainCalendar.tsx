@@ -2,6 +2,8 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Calendar, { TileArgs } from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import './MainCalendar.css';
+import './utilities.css';
+import './cards.css';
 import { useFinancialStore, useEventsStore } from '@asset-simulator/shared';
 import type { CalendarJournalEntry, JournalEntry, ScheduleEvent } from '@asset-simulator/shared';
 import { JournalEntriesModal } from './journal/JournalEntriesModal';
@@ -418,11 +420,17 @@ useEffect(() => {
                       
                       return (
                         <div key={entry.id} className={`journal-entry-item ${isExpenseEntry ? 'expense-entry' : ''} ${isRevenueEntry ? 'revenue-entry' : ''}`}>
+                          <div className="entry-accounts">
+                            <span className={`entry-debit me-2 ${debitCategory === 'Expense' ? 'expense' : ''}`}>
+                              借方: {entry.debitAccountName}
+                            </span>
+                            <span className={`entry-credit ms-2 ${creditCategory === 'Revenue' ? 'revenue' : ''}`}>
+                              貸方: {entry.creditAccountName}
+                            </span>
+                          </div>
                           <div className="entry-description d-flex justify-content-between align-items-start">
-                            <div>
-                              {entry.description}
-                              {isExpenseEntry && <span className="entry-type-badge expense ms-2">費用</span>}
-                              {isRevenueEntry && <span className="entry-type-badge revenue ms-2">収益</span>}
+                            <div className="entry-amount">
+                              ¥{entry.amount.toLocaleString()}
                             </div>
                             <button
                               className="btn btn-sm btn-outline-primary"
@@ -430,17 +438,6 @@ useEffect(() => {
                             >
                               編集
                             </button>
-                          </div>
-                                <div className="entry-accounts">
-                                  <span className={`entry-debit me-2 ${debitCategory === 'Expense' ? 'expense' : ''}`}>
-                                    借方: {entry.debitAccountName}
-                                  </span>
-                                  <span className={`entry-credit ms-2 ${creditCategory === 'Revenue' ? 'revenue' : ''}`}>
-                                    貸方: {entry.creditAccountName}
-                                  </span>
-                                </div>
-                          <div className="entry-amount">
-                            ¥{entry.amount.toLocaleString()}
                           </div>
                         </div>
                       );

@@ -17,7 +17,9 @@
     "lint": "npx turbo run lint",
     "clean": "npx turbo run clean",
     "playground": "cd web-new && npm run dev",
-    "storybook": "cd web-new && npm run storybook"
+    "storybook": "cd web-new && npm run storybook",
+    "dev:client": "cd client && npm run dev",
+    "build:client": "cd client && npm run build"
   },
   "dependencies": {
     "turbo": "^2.5.6",

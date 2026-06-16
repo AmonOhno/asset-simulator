@@ -145,3 +145,10 @@ local/
 
 # Libruary files
 docs/lib
+
+# Claude Code — スキル・設定
+# skills/ の内容は外部から取得するためコミット不要。skills-lock.json と settings.json はコミット対象
+.claude/skills/**/*
+!.claude/skills/*SKILL.md
+# settings.local.json はローカル固有設定（グローバル gitignore に加えてプロジェクトでも除外）
+.claude/settings.local.json
