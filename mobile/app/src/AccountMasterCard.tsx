@@ -92,7 +92,7 @@ export function AccountMasterCard() {
               <div style={{ display: "grid", gap: 2 }}>
                 <div style={{ fontWeight: 700, fontSize: 14 }}>{acc.name}</div>
                 <div style={{ fontSize: 12, color: "#6B7280" }}>
-                  {categoryLabel[acc.category] ?? acc.category} ・ 残高 ¥{acc.balance.toLocaleString()}
+                  {categoryLabel[acc.category] ?? acc.category}
                 </div>
               </div>
               <CommonButton
