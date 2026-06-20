@@ -3,20 +3,27 @@
 ## プロジェクト概要
 
 家計・資産のシミュレーターアプリ。複式簿記の仕訳を記録し、貸借対照表・損益計算書を表示する。
-Turborepo モノレポ構成。バックエンドは Supabase (PostgreSQL)、サーバーは Express。
+Turborepo モノレポ構成。バックエンドは Supabase (PostgreSQL)。API サーバーは廃止済み（Zustand ストアで直接 RPC 呼び出し）。
 
 ## ディレクトリ構成
 
 ```
 asset-simulator/
-├── web/            # React ウェブアプリ
-├── mobile/         # Ionic/React ネイティブアプリ
-├── server/         # Express API サーバー (port 3001)
+├── client/         # エントリーポイント（デバイス判定 → desktop/mobile 振り分け）
+├── desktop/        # PC/タブレット版 UI (React 18 + CRA)
+├── mobile/         # モバイル版コンポーネントライブラリ + アプリ (React 19 + Vite + Storybook)
+│   ├── src/        # コンポーネントライブラリ（Storybook 対象）
+│   └── playground/ # モバイルアプリ本体
 ├── packages/
 │   └── shared/     # 共有型・ユーティリティ・Zustand ストア
-├── docs/           # 設計ドキュメント
-└── web-new/        # Storybook / Playground (開発用)
+└── docs/           # 設計ドキュメント
 ```
+
+### client/ の振り分けロジック
+
+`client/src/utils/deviceDetect.ts` でデバイスを判定し、2 つの UI に振り分ける：
+- PC / タブレット (iPad 含む) → `desktop/src/App`（`@web` alias）
+- スマートフォン → `mobile/playground/src/App`（`@mobile` alias）
 
 ## アーキテクチャ
 
@@ -40,12 +47,10 @@ asset-simulator/
 
 `types/common.ts` に変換関数を追加しないこと。
 
-### API サーバー（server/src/）
+### Supabase RPC 規則
 
-- ルート: `server/src/routes/` — Express Router ごとにファイル分割
-- 認証: `authMiddleware` を全ルートに適用（`req.user?.id` でユーザーID取得）
-- Supabase RPC 引数の命名規則: `p_` プレフィックス（例: `p_user_id`, `p_end_date`）
-- RPC には必ず `p_user_id` を渡してDB側でフィルタ。サーバー側JSフィルタは使わない
+- RPC 引数の命名規則: `p_` プレフィックス（例: `p_user_id`, `p_end_date`）
+- RPC には必ず `p_user_id` を渡して DB 側でフィルタ。JS 側フィルタは使わない
 
 ### ケース変換
 

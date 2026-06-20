@@ -4,21 +4,21 @@
   "private": true,
   "packageManager": "npm@10.9.0",
   "workspaces": [
-    "web",
+    "desktop",
     "packages/*",
     "client"
   ],
   "scripts": {
-    "dev": "npm run dev:web",
-    "dev:web": "npx turbo run dev --filter=web",
+    "dev": "npm run dev:desktop",
+    "dev:desktop": "npx turbo run dev --filter=desktop",
     "build": "npx turbo run build",
-    "start": "npm run start:web",
-    "start:web": "npm run start --workspace=web",
+    "start": "npm run start:desktop",
+    "start:desktop": "npm run start --workspace=desktop",
     "test": "npx turbo run test",
     "lint": "npx turbo run lint",
     "clean": "npx turbo run clean",
-    "playground": "cd web-new && npm run dev",
-    "storybook": "cd web-new && npm run storybook",
+    "playground": "cd mobile && npm run dev",
+    "storybook": "cd mobile && npm run storybook",
     "dev:client": "cd client && npm run dev",
     "build:client": "cd client && npm run build"
   },
