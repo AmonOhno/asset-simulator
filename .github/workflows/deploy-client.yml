@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - 'client/**'
+      - 'desktop/**'
+      - 'mobile/app/**'
+      - 'mobile/components/**'
       - 'packages/shared/**'
       - '.github/workflows/deploy-client.yml'
 
