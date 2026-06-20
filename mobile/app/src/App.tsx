@@ -150,7 +150,7 @@ function App() {
       case "transaction":
         return (
           <div style={{ display: "grid", gap: 24 }}>
-            <CalendarCard onDateSelect={handleDateSelect} refreshSignal={entriesVersion} />
+            <CalendarCard onDateSelect={handleDateSelect} refreshSignal={entriesVersion} onEntryChanged={() => setEntriesVersion((v) => v + 1)} />
             {selectedDate && (
               <TransactionEntryCard
                 key={selectedDate}

@@ -7,11 +7,6 @@ on:
       - 'client/**'
       - 'packages/shared/**'
       - '.github/workflows/deploy-client.yml'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'client/**'
-      - 'packages/shared/**'
 
 jobs:
   deploy:
