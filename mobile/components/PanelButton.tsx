@@ -9,7 +9,8 @@ interface PanelButtonProps {
 
 const styles = {
   container: {
-    width: 358,
+    width: "100%",
+    maxWidth: 358,
     borderRadius: 20,
     border: "1px solid #E5E7EB",
     background: "#FFFFFF",
