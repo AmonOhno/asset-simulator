@@ -4,7 +4,7 @@ import {
   useFinancialStore,
   useEventsStore,
 } from "@asset-simulator/shared";
-import type { ProfitLossView, BalanceSheetView } from "@asset-simulator/shared";
+import type { ProfitLossView, BalanceSheetView, CalendarJournalEntry } from "@asset-simulator/shared";
 import "./App.css";
 import CalendarCard from "./CalendarCard";
 import TransactionEntryCard from "./TransactionEntryCard";
@@ -88,6 +88,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<TabId>("transaction");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [entryDialogDate, setEntryDialogDate] = useState<string | null>(null);
+  const [editingEntry, setEditingEntry] = useState<CalendarJournalEntry | null>(null);
   const [entriesVersion, setEntriesVersion] = useState(0);
 
   const [plStartDate, setPlStartDate] = useState(defaults.plStart);
@@ -148,7 +149,18 @@ function App() {
   };
 
   const handleDateDoubleClick = (date: string) => {
+    setEditingEntry(null);
     setEntryDialogDate(date);
+  };
+
+  const handleEditEntry = (entry: CalendarJournalEntry) => {
+    setEntryDialogDate(null);
+    setEditingEntry(entry);
+  };
+
+  const closeEntryDialog = () => {
+    setEntryDialogDate(null);
+    setEditingEntry(null);
   };
 
   const renderContent = () => {
@@ -159,6 +171,7 @@ function App() {
             <CalendarCard
               onDateSelect={handleDateSelect}
               onDateDoubleClick={handleDateDoubleClick}
+              onEditEntry={handleEditEntry}
               refreshSignal={entriesVersion}
               onEntryChanged={() => setEntriesVersion((v) => v + 1)}
             />
@@ -241,17 +254,26 @@ function App() {
         ))}
       </nav>
       <Dialog
-        isOpen={entryDialogDate != null}
-        onClose={() => setEntryDialogDate(null)}
-        title="取引入力"
+        isOpen={entryDialogDate != null || editingEntry != null}
+        onClose={closeEntryDialog}
+        title={editingEntry ? "取引編集" : "取引入力"}
       >
-        {entryDialogDate && (
+        {editingEntry ? (
+          <TransactionEntryCard
+            key={editingEntry.id}
+            entry={editingEntry}
+            onEntryUpdated={() => {
+              setEntriesVersion((v) => v + 1);
+              closeEntryDialog();
+            }}
+          />
+        ) : entryDialogDate ? (
           <TransactionEntryCard
             key={entryDialogDate}
             selectedDate={entryDialogDate}
             onEntryAdded={() => setEntriesVersion((v) => v + 1)}
           />
-        )}
+        ) : null}
       </Dialog>
     </main>
   );
