@@ -17,7 +17,7 @@
     "test": "npx turbo run test",
     "lint": "npx turbo run lint",
     "clean": "npx turbo run clean",
-    "playground": "cd mobile && npm run dev",
+    "dev:mobile": "cd mobile && npm run dev",
     "storybook": "cd mobile && npm run storybook",
     "dev:client": "cd client && npm run dev",
     "build:client": "cd client && npm run build"

@@ -1,9 +1,9 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useMemo, useState } from "react";
-import { Card, CardBodyHead, CardBodyMain } from "../../src/components/Card";
-import { DateInput } from "../../src/components/DateInput";
-import { CommonButton } from "../../src/components/CommonButton";
-import { DataGrid } from "../../src/components/DataGrid";
+import { Card, CardBodyHead, CardBodyMain } from "@mobile-components/Card";
+import { DateInput } from "@mobile-components/DateInput";
+import { CommonButton } from "@mobile-components/CommonButton";
+import { DataGrid } from "@mobile-components/DataGrid";
 function fmt(d) {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, "0");

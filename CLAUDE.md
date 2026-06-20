@@ -12,8 +12,9 @@ asset-simulator/
 ├── client/         # エントリーポイント（デバイス判定 → desktop/mobile 振り分け）
 ├── desktop/        # PC/タブレット版 UI (React 18 + CRA)
 ├── mobile/         # モバイル版コンポーネントライブラリ + アプリ (React 19 + Vite + Storybook)
-│   ├── src/        # コンポーネントライブラリ（Storybook 対象）
-│   └── playground/ # モバイルアプリ本体
+│   ├── app/        # モバイルアプリ本体（Zustand 結線・認証ゲート付き）
+│   ├── components/ # コンポーネントライブラリ（Storybook 対象）
+│   └── src/        # Storybook エントリー用スキャフォールド
 ├── packages/
 │   └── shared/     # 共有型・ユーティリティ・Zustand ストア
 └── docs/           # 設計ドキュメント
@@ -23,7 +24,7 @@ asset-simulator/
 
 `client/src/utils/deviceDetect.ts` でデバイスを判定し、2 つの UI に振り分ける：
 - PC / タブレット (iPad 含む) → `desktop/src/App`（`@web` alias）
-- スマートフォン → `mobile/playground/src/App`（`@mobile` alias）
+- スマートフォン → `mobile/app/src/App`（`@mobile` alias）
 
 ## アーキテクチャ
 

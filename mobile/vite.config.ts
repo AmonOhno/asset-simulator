@@ -7,19 +7,17 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
   return {
-    root: 'playground',
-    publicDir: 'playground/public',
+    root: 'app',
+    publicDir: 'app/public',
     plugins: [react()],
     resolve: {
       alias: {
-        // shared パッケージの CJS dist ではなくソース TS を直接参照し、Vite で変換する
         '@asset-simulator/shared': path.resolve(__dirname, '../packages/shared/src/index.ts'),
+        '@mobile-components': path.resolve(__dirname, './components'),
       },
-      // packages/shared の node_modules に別の React が存在する場合に2インスタンス化を防ぐ
       dedupe: ['react', 'react-dom', 'zustand'],
     },
     define: {
-      // shared パッケージが process.env.REACT_APP_* を参照するため、Vite 用にマッピング
       'process.env.REACT_APP_SUPABASE_URL': JSON.stringify(env.REACT_APP_SUPABASE_URL),
       'process.env.REACT_APP_SUPABASE_ANON_KEY': JSON.stringify(env.REACT_APP_SUPABASE_ANON_KEY),
       'process.env.NODE_ENV': JSON.stringify(mode),

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-import { SelectInput } from "../src/components/SelectInput";
+import { SelectInput } from "../components/SelectInput";
 
 const planOptions = [
   { label: "積立投資", value: "tsumitate" },

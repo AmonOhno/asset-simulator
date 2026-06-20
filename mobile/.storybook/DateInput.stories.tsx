@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
-import { DateInput } from "../src/components/DateInput";
+import { DateInput } from "../components/DateInput";
 
 const meta = {
   title: "Components/DateInput",

@@ -1,8 +1,8 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useEffect, useMemo, useState } from "react";
 import { useFinancialStore } from "@asset-simulator/shared";
-import { Card, CardBodyHead, CardBodyMain } from "../../src/components/Card";
-import { DataGrid } from "../../src/components/DataGrid";
+import { Card, CardBodyHead, CardBodyMain } from "@mobile-components/Card";
+import { DataGrid } from "@mobile-components/DataGrid";
 function fmt(date) {
     return date.toLocaleDateString("sv-SE");
 }

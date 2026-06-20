@@ -1,12 +1,12 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useMemo, useState } from "react";
 import { useFinancialStore } from "@asset-simulator/shared";
-import { Card, CardBodyHead, CardBodyMain } from "../../src/components/Card";
-import { TextInput } from "../../src/components/TextInput";
-import { DateInput } from "../../src/components/DateInput";
-import { NumericInput } from "../../src/components/NumericInput";
-import { SelectInput } from "../../src/components/SelectInput";
-import { CommonButton } from "../../src/components/CommonButton";
+import { Card, CardBodyHead, CardBodyMain } from "@mobile-components/Card";
+import { TextInput } from "@mobile-components/TextInput";
+import { DateInput } from "@mobile-components/DateInput";
+import { NumericInput } from "@mobile-components/NumericInput";
+import { SelectInput } from "@mobile-components/SelectInput";
+import { CommonButton } from "@mobile-components/CommonButton";
 const PLACEHOLDER = { label: "選択してください", value: "" };
 const frequencyOptions = [
     { label: "月次", value: "monthly" },

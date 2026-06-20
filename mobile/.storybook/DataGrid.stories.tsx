@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { DataGrid } from "../src/components/DataGrid";
+import { DataGrid } from "../components/DataGrid";
 
 interface SampleRow {
   year: string;

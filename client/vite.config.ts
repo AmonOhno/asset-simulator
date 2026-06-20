@@ -11,8 +11,8 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@asset-simulator/shared': path.resolve(__dirname, '../packages/shared/src/index.ts'),
         '@web': path.resolve(__dirname, '../desktop/src/'),
-        '@mobile': path.resolve(__dirname, '../mobile/playground/src/'),
-        '@mobile-components': path.resolve(__dirname, '../mobile/src/components/'),
+        '@mobile': path.resolve(__dirname, '../mobile/app/src/'),
+        '@mobile-components': path.resolve(__dirname, '../mobile/components/'),
       },
       dedupe: ['react', 'react-dom', 'zustand'],
     },

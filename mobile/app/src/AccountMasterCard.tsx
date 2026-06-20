@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useFinancialStore } from "@asset-simulator/shared";
 import type { AccountCategory } from "@asset-simulator/shared";
-import { Card, CardBodyHead, CardBodyMain } from "../../src/components/Card";
-import { TextInput } from "../../src/components/TextInput";
-import { SelectInput } from "../../src/components/SelectInput";
-import { CommonButton } from "../../src/components/CommonButton";
+import { Card, CardBodyHead, CardBodyMain } from "@mobile-components/Card";
+import { TextInput } from "@mobile-components/TextInput";
+import { SelectInput } from "@mobile-components/SelectInput";
+import { CommonButton } from "@mobile-components/CommonButton";
 
 const accountTypes: { label: string; value: AccountCategory }[] = [
   { label: "資産", value: "Asset" },

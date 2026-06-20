@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useFinancialStore } from "@asset-simulator/shared";
 import type { CalendarJournalEntry } from "@asset-simulator/shared";
-import { Card, CardBodyHead, CardBodyMain } from "../../src/components/Card";
-import { DataGrid } from "../../src/components/DataGrid";
+import { Card, CardBodyHead, CardBodyMain } from "@mobile-components/Card";
+import { DataGrid } from "@mobile-components/DataGrid";
 
 interface CalendarCardProps {
   onDateDoubleClick?: (date: string) => void;

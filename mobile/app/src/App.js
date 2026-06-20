@@ -8,8 +8,8 @@ import { RecurringTransactionCard } from "./RecurringTransactionCard";
 import { AccountMasterCard } from "./AccountMasterCard";
 import { ProfitLossStatementCard } from "./ProfitLossStatementCard";
 import { BalanceSheetCard } from "./BalanceSheetCard";
-import { PanelButton } from "../../src/components/PanelButton";
-import { CommonButton } from "../../src/components/CommonButton";
+import { PanelButton } from "@mobile-components/PanelButton";
+import { CommonButton } from "@mobile-components/CommonButton";
 import LoginScreen from "./LoginScreen";
 const tabs = [
     { id: "transaction", label: "取引" },

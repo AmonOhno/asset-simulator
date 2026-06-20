@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import type { BalanceSheetView } from "@asset-simulator/shared";
-import { Card, CardBodyHead, CardBodyMain } from "../../src/components/Card";
-import { DateInput } from "../../src/components/DateInput";
-import { CommonButton } from "../../src/components/CommonButton";
-import { DataGrid } from "../../src/components/DataGrid";
+import { Card, CardBodyHead, CardBodyMain } from "@mobile-components/Card";
+import { DateInput } from "@mobile-components/DateInput";
+import { CommonButton } from "@mobile-components/CommonButton";
+import { DataGrid } from "@mobile-components/DataGrid";
 
 type Props = {
   appliedAsOfDate: string;

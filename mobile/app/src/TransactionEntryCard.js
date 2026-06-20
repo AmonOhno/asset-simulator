@@ -1,12 +1,12 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useMemo, useState } from "react";
 import { useFinancialStore } from "@asset-simulator/shared";
-import { Card, CardBodyMain } from "../../src/components/Card";
-import { DateInput } from "../../src/components/DateInput";
-import { TextInput } from "../../src/components/TextInput";
-import { SelectInput } from "../../src/components/SelectInput";
-import { NumericInput } from "../../src/components/NumericInput";
-import { CommonButton } from "../../src/components/CommonButton";
+import { Card, CardBodyMain } from "@mobile-components/Card";
+import { DateInput } from "@mobile-components/DateInput";
+import { TextInput } from "@mobile-components/TextInput";
+import { SelectInput } from "@mobile-components/SelectInput";
+import { NumericInput } from "@mobile-components/NumericInput";
+import { CommonButton } from "@mobile-components/CommonButton";
 const PLACEHOLDER = { label: "選択してください", value: "" };
 export default function TransactionEntryCard({ selectedDate, onEntryAdded }) {
     const journalAccounts = useFinancialStore((s) => s.journalAccounts);
