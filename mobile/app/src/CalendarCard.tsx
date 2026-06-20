@@ -2,14 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useFinancialStore } from "@asset-simulator/shared";
 import type { CalendarJournalEntry } from "@asset-simulator/shared";
 import { Card, CardBodyHead, CardBodyMain } from "@mobile-components/Card";
-import { TextInput } from "@mobile-components/TextInput";
-import { SelectInput } from "@mobile-components/SelectInput";
-import { NumericInput } from "@mobile-components/NumericInput";
 import { CommonButton } from "@mobile-components/CommonButton";
 
 interface CalendarCardProps {
   onDateDoubleClick?: (date: string) => void;
   onDateSelect?: (date: string) => void;
+  /** 取引リストの「編集」押下時に呼ばれる（新規入力と同じダイアログで編集する） */
+  onEditEntry?: (entry: CalendarJournalEntry) => void;
   /** 値が変わると当月の取引を再取得する（取引登録後の即時反映用） */
   refreshSignal?: number;
   onEntryChanged?: () => void;
@@ -36,13 +35,9 @@ function getWeekdayLabels() {
   return ["日", "月", "火", "水", "木", "金", "土"];
 }
 
-const PLACEHOLDER = { label: "選択してください", value: "" };
-
-export default function CalendarCard({ onDateDoubleClick, onDateSelect, refreshSignal, onEntryChanged }: CalendarCardProps) {
+export default function CalendarCard({ onDateDoubleClick, onDateSelect, onEditEntry, refreshSignal, onEntryChanged }: CalendarCardProps) {
   const getCalendarJournalEntries = useFinancialStore((s) => s.getCalendarJournalEntries);
-  const updateJournalEntry = useFinancialStore((s) => s.updateJournalEntry);
   const deleteJournalEntry = useFinancialStore((s) => s.deleteJournalEntry);
-  const journalAccounts = useFinancialStore((s) => s.journalAccounts);
 
   const [monthOffset, setMonthOffset] = useState(0);
   const today = new Date();
@@ -52,18 +47,6 @@ export default function CalendarCard({ onDateDoubleClick, onDateSelect, refreshS
 
   const monthStart = fmt(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1));
   const monthEnd = fmt(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0));
-
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editDescription, setEditDescription] = useState("");
-  const [editDebitAccountId, setEditDebitAccountId] = useState("");
-  const [editCreditAccountId, setEditCreditAccountId] = useState("");
-  const [editAmount, setEditAmount] = useState(0);
-  const [saving, setSaving] = useState(false);
-
-  const accountOptions = useMemo(
-    () => [PLACEHOLDER, ...journalAccounts.map((acc) => ({ label: acc.name, value: acc.id }))],
-    [journalAccounts]
-  );
 
   const refreshEntries = async () => {
     const rows = await getCalendarJournalEntries(monthStart, monthEnd);
@@ -96,48 +79,6 @@ export default function CalendarCard({ onDateDoubleClick, onDateSelect, refreshS
     () => entries.filter((e) => e.date === selected),
     [entries, selected]
   );
-
-  const startEdit = (entry: CalendarJournalEntry) => {
-    setEditingId(entry.id);
-    setEditDescription(entry.description);
-    setEditDebitAccountId(entry.debitAccountId);
-    setEditCreditAccountId(entry.creditAccountId);
-    setEditAmount(entry.amount);
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-  };
-
-  const handleUpdate = async (entry: CalendarJournalEntry) => {
-    if (!editDebitAccountId || !editCreditAccountId || editDebitAccountId === editCreditAccountId) {
-      alert("借方・貸方に異なる勘定科目を選択してください");
-      return;
-    }
-    if (!editAmount || editAmount <= 0) {
-      alert("金額を正しく入力してください");
-      return;
-    }
-    setSaving(true);
-    try {
-      await updateJournalEntry({
-        id: entry.id,
-        date: entry.date,
-        description: editDescription,
-        debitAccountId: editDebitAccountId,
-        creditAccountId: editCreditAccountId,
-        amount: editAmount,
-        user_id: entry.userId,
-      });
-      setEditingId(null);
-      await refreshEntries();
-      onEntryChanged?.();
-    } catch {
-      alert("更新に失敗しました");
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleDelete = async (entry: CalendarJournalEntry) => {
     if (!confirm("この取引を削除しますか？")) return;
@@ -236,7 +177,6 @@ export default function CalendarCard({ onDateDoubleClick, onDateSelect, refreshS
                 onClick={() => {
                   setSelectedDate(iso);
                   onDateSelect?.(iso);
-                  setEditingId(null);
                 }}
                 onDoubleClick={() => onDateDoubleClick?.(iso)}
                 style={{
@@ -269,63 +209,32 @@ export default function CalendarCard({ onDateDoubleClick, onDateSelect, refreshS
         </div>
         <div style={{ marginTop: 16, fontSize: 14, color: "#4B5563" }}>
           {filteredEntries.length === 0 ? (
-            <div style={{ color: "#9CA3AF", fontSize: 13 }}>この日の取引はありません。下の「取引入力」から登録できます。</div>
+            <div style={{ color: "#9CA3AF", fontSize: 13 }}>この日の取引はありません。日付をダブルタップして登録できます。</div>
           ) : (
             <div style={{ display: "grid", gap: 8 }}>
-              {filteredEntries.map((entry) =>
-                editingId === entry.id ? (
-                  <div
-                    key={entry.id}
-                    style={{
-                      border: "1.5px solid #3B82F6",
-                      borderRadius: 8,
-                      padding: 12,
-                      display: "grid",
-                      gap: 8,
-                      background: "#F0F7FF",
-                    }}
-                  >
-                    <TextInput placeholder="摘要" value={editDescription} onChange={setEditDescription} sizeVariant="Full" />
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                        <div style={{ fontSize: 12, color: "#6B7280" }}>借方</div>
-                        <SelectInput options={accountOptions} value={editDebitAccountId} onChange={setEditDebitAccountId} sizeVariant="S" />
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                        <div style={{ fontSize: 12, color: "#6B7280" }}>貸方</div>
-                        <SelectInput options={accountOptions} value={editCreditAccountId} onChange={setEditCreditAccountId} sizeVariant="S" />
-                      </div>
-                      <NumericInput value={editAmount} unit="円" onBlur={setEditAmount} sizeVariant="M" />
-                    </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <CommonButton label={saving ? "保存中..." : "保存"} sizeVariant="M" onClick={() => handleUpdate(entry)} />
-                      <CommonButton label="キャンセル" sizeVariant="M" colorVariant="secondary" onClick={cancelEdit} />
-                    </div>
+              {filteredEntries.map((entry) => (
+                <div
+                  key={entry.id}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    gap: 8,
+                    padding: "8px 4px",
+                    borderBottom: "1px solid #F3F4F6",
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.description}</div>
+                    <div style={{ color: "#6B7280", fontSize: 12 }}>{entry.debitAccountName} → {entry.creditAccountName}</div>
+                    <div style={{ color: "#374151", fontSize: 13 }}>¥{entry.amount.toLocaleString()}</div>
                   </div>
-                ) : (
-                  <div
-                    key={entry.id}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                      gap: 8,
-                      padding: "8px 4px",
-                      borderBottom: "1px solid #F3F4F6",
-                    }}
-                  >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.description}</div>
-                      <div style={{ color: "#6B7280", fontSize: 12 }}>{entry.debitAccountName} → {entry.creditAccountName}</div>
-                      <div style={{ color: "#374151", fontSize: 13 }}>¥{entry.amount.toLocaleString()}</div>
-                    </div>
-                    <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-                      <CommonButton label="編集" sizeVariant="S" fontSize="S" colorVariant="secondary" onClick={() => startEdit(entry)} />
-                      <CommonButton label="削除" sizeVariant="S" fontSize="S" colorVariant="secondary" onClick={() => handleDelete(entry)} />
-                    </div>
+                  <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                    <CommonButton label="編集" sizeVariant="S" fontSize="S" colorVariant="secondary" onClick={() => onEditEntry?.(entry)} />
+                    <CommonButton label="削除" sizeVariant="S" fontSize="S" colorVariant="secondary" onClick={() => handleDelete(entry)} />
                   </div>
-                )
-              )}
+                </div>
+              ))}
             </div>
           )}
         </div>

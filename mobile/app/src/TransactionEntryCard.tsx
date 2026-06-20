@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useFinancialStore } from "@asset-simulator/shared";
+import type { CalendarJournalEntry } from "@asset-simulator/shared";
 import { Card, CardBodyMain } from "@mobile-components/Card";
 import { DateInput } from "@mobile-components/DateInput";
 import { TextInput } from "@mobile-components/TextInput";
@@ -9,22 +10,35 @@ import { CommonButton } from "@mobile-components/CommonButton";
 
 interface TransactionEntryCardProps {
   selectedDate?: string | null;
+  /** 指定された場合は編集モードになり、登録の代わりに更新を行う */
+  entry?: CalendarJournalEntry | null;
   onEntryAdded?: () => void;
+  onEntryUpdated?: () => void;
 }
 
 const PLACEHOLDER = { label: "選択してください", value: "" };
 
-export default function TransactionEntryCard({ selectedDate, onEntryAdded }: TransactionEntryCardProps) {
+export default function TransactionEntryCard({
+  selectedDate,
+  entry,
+  onEntryAdded,
+  onEntryUpdated,
+}: TransactionEntryCardProps) {
   const journalAccounts = useFinancialStore((s) => s.journalAccounts);
   const addJournalEntry = useFinancialStore((s) => s.addJournalEntry);
+  const updateJournalEntry = useFinancialStore((s) => s.updateJournalEntry);
   const getJournalAccounts = useFinancialStore((s) => s.getJournalAccounts);
 
+  const isEditMode = entry != null;
+
   const [isExpanded, setIsExpanded] = useState(true);
-  const [date, setDate] = useState(() => selectedDate ?? new Date().toLocaleDateString("sv-SE"));
-  const [description, setDescription] = useState("");
-  const [debitAccountId, setDebitAccountId] = useState("");
-  const [creditAccountId, setCreditAccountId] = useState("");
-  const [amount, setAmount] = useState(0);
+  const [date, setDate] = useState(
+    () => entry?.date ?? selectedDate ?? new Date().toLocaleDateString("sv-SE")
+  );
+  const [description, setDescription] = useState(() => entry?.description ?? "");
+  const [debitAccountId, setDebitAccountId] = useState(() => entry?.debitAccountId ?? "");
+  const [creditAccountId, setCreditAccountId] = useState(() => entry?.creditAccountId ?? "");
+  const [amount, setAmount] = useState(() => entry?.amount ?? 0);
   const [submitting, setSubmitting] = useState(false);
   const [count, setCount] = useState(0);
 
@@ -33,27 +47,32 @@ export default function TransactionEntryCard({ selectedDate, onEntryAdded }: Tra
     [journalAccounts]
   );
 
-  const registerEntry = async () => {
+  const validate = () => {
     if (!date) {
       alert("日付を入力してください");
-      return;
+      return false;
     }
     if (!description) {
       alert("摘要を入力してください");
-      return;
+      return false;
     }
     if (!debitAccountId) {
       alert("借方勘定科目を選択してください");
-      return;
+      return false;
     }
     if (!creditAccountId || creditAccountId === debitAccountId) {
       alert("貸方勘定科目を選択してください（借方と異なる科目）");
-      return;
+      return false;
     }
     if (!amount || amount <= 0) {
       alert("金額を正しく入力してください");
-      return;
+      return false;
     }
+    return true;
+  };
+
+  const registerEntry = async () => {
+    if (!validate()) return;
 
     setSubmitting(true);
     try {
@@ -72,10 +91,35 @@ export default function TransactionEntryCard({ selectedDate, onEntryAdded }: Tra
     }
   };
 
+  const updateEntry = async () => {
+    if (!entry || !validate()) return;
+
+    setSubmitting(true);
+    try {
+      await updateJournalEntry({
+        id: entry.id,
+        date,
+        description,
+        debitAccountId,
+        creditAccountId,
+        amount,
+        user_id: entry.userId,
+      });
+      // 変更したリソースのみリフレッシュ（勘定科目の残高更新）
+      await getJournalAccounts();
+      onEntryUpdated?.();
+    } catch (error) {
+      console.error("Failed to update journal entry:", error);
+      alert("取引の更新に失敗しました。通信を確認してください。");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <Card
-      title={`${date} の取引入力`}
-      subInfo={`${count} 件登録済み`}
+      title={isEditMode ? `${date} の取引編集` : `${date} の取引入力`}
+      subInfo={isEditMode ? undefined : `${count} 件登録済み`}
       isExpanded={isExpanded}
       onToggle={() => setIsExpanded((prev) => !prev)}
     >
@@ -117,9 +161,17 @@ export default function TransactionEntryCard({ selectedDate, onEntryAdded }: Tra
             />
           </div>
           <CommonButton
-            label={submitting ? "登録中..." : "登録"}
+            label={
+              isEditMode
+                ? submitting
+                  ? "更新中..."
+                  : "更新"
+                : submitting
+                  ? "登録中..."
+                  : "登録"
+            }
             sizeVariant="S"
-            onClick={registerEntry}
+            onClick={isEditMode ? updateEntry : registerEntry}
           />
         </div>
       </CardBodyMain>
