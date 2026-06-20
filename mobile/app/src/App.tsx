@@ -14,6 +14,7 @@ import { ProfitLossStatementCard } from "./ProfitLossStatementCard";
 import { BalanceSheetCard } from "./BalanceSheetCard";
 import { PanelButton } from "@mobile-components/PanelButton";
 import { CommonButton } from "@mobile-components/CommonButton";
+import { Dialog } from "@mobile-components/Dialog";
 import LoginScreen from "./LoginScreen";
 
 type TabId = "transaction" | "pl-bs" | "recurring" | "accounts";
@@ -86,6 +87,7 @@ function App() {
 
   const [activeTab, setActiveTab] = useState<TabId>("transaction");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [entryDialogDate, setEntryDialogDate] = useState<string | null>(null);
   const [entriesVersion, setEntriesVersion] = useState(0);
 
   const [plStartDate, setPlStartDate] = useState(defaults.plStart);
@@ -145,19 +147,21 @@ function App() {
     setSelectedDate(date);
   };
 
+  const handleDateDoubleClick = (date: string) => {
+    setEntryDialogDate(date);
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case "transaction":
         return (
           <div style={{ display: "grid", gap: 24 }}>
-            <CalendarCard onDateSelect={handleDateSelect} refreshSignal={entriesVersion} onEntryChanged={() => setEntriesVersion((v) => v + 1)} />
-            {selectedDate && (
-              <TransactionEntryCard
-                key={selectedDate}
-                selectedDate={selectedDate}
-                onEntryAdded={() => setEntriesVersion((v) => v + 1)}
-              />
-            )}
+            <CalendarCard
+              onDateSelect={handleDateSelect}
+              onDateDoubleClick={handleDateDoubleClick}
+              refreshSignal={entriesVersion}
+              onEntryChanged={() => setEntriesVersion((v) => v + 1)}
+            />
           </div>
         );
       case "pl-bs":
@@ -236,6 +240,19 @@ function App() {
           </button>
         ))}
       </nav>
+      <Dialog
+        isOpen={entryDialogDate != null}
+        onClose={() => setEntryDialogDate(null)}
+        title="取引入力"
+      >
+        {entryDialogDate && (
+          <TransactionEntryCard
+            key={entryDialogDate}
+            selectedDate={entryDialogDate}
+            onEntryAdded={() => setEntriesVersion((v) => v + 1)}
+          />
+        )}
+      </Dialog>
     </main>
   );
 }
