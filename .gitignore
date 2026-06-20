@@ -146,6 +146,13 @@ local/
 # Libruary files
 docs/lib
 
+# Compiled output inside TS source dirs (tsc 誤出力の再混入防止)
+# .tsx/.ts ソースと同名の .js が vite の解決順で優先され、修正が反映されない事故を防ぐ
+client/src/**/*.js
+mobile/app/src/**/*.js
+mobile/components/**/*.js
+packages/shared/src/**/*.js
+
 # Claude Code — スキル・設定
 # skills/ の内容は外部から取得するためコミット不要。skills-lock.json と settings.json はコミット対象
 .claude/skills/**/*
