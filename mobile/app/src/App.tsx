@@ -214,30 +214,28 @@ function App() {
   }
 
   return (
-    <main style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "#F3F4F6", color: "#111827" }}>
-      <header style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", padding: "32px 32px 16px", borderBottom: "1px solid #E5E7EB" }}>
-        <h1 style={{ margin: 0, fontSize: 34, marginBottom: 18, color: "#4B5563" }}>取引管理ダッシュボード</h1>
-        <CommonButton label="ログアウト" sizeVariant="S" colorVariant="secondary" onClick={signOut} />
+    <main style={{ display: "flex", flexDirection: "column", height: "100dvh", overflow: "hidden", background: "#F3F4F6", color: "#111827" }}>
+      <header style={{ flexShrink: 0, display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: "12px 20px", borderBottom: "1px solid #E5E7EB" }}>
+        <h1 style={{ margin: 0, fontSize: 34, color: "#4B5563" }}>取引管理ダッシュボード</h1>
+        <CommonButton label="ログアウト" sizeVariant="M" colorVariant="secondary" onClick={signOut} />
       </header>
-      <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden", maxHeight: "calc(100vh - 120px)" }}>
-        <div style={{ display: "flex", flexDirection: "row", flex: 1, overflowY: "auto", padding: 20 }}>
-          <div style={{ maxWidth: 900, width: "100%" }}>{renderContent()}</div>
-        </div>
-        <nav style={{ display: "flex", flexDirection: "row", overflowX: "auto", borderTop: "1px solid #E5E7EB", background: "#FFFFFF" }}>
-          {tabs.map((tab) => (
-            <button
-              style={{ padding: "20px 24px", minHeight: 60, border: "none", borderBottom: activeTab === tab.id ? "3px solid #3B82F6" : "3px solid transparent", background: activeTab === tab.id ? "#EFF6FF" : "transparent", color: activeTab === tab.id ? "#1F2937" : "#6B7280", fontSize: 15, fontWeight: activeTab === tab.id ? 600 : 400, whiteSpace: "nowrap", minWidth: "fit-content", cursor: "pointer", transition: "all 0.2s ease" }}
-              key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id);
-                setSelectedDate(null);
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
+      <div style={{ flex: 1, overflowY: "auto", padding: 20 }}>
+        <div style={{ maxWidth: 900, width: "100%" }}>{renderContent()}</div>
       </div>
+      <nav style={{ flexShrink: 0, display: "flex", flexDirection: "row", overflowX: "auto", borderTop: "1px solid #E5E7EB", background: "#FFFFFF" }}>
+        {tabs.map((tab) => (
+          <button
+            style={{ padding: "16px 24px", border: "none", borderBottom: activeTab === tab.id ? "3px solid #3B82F6" : "3px solid transparent", background: activeTab === tab.id ? "#EFF6FF" : "transparent", color: activeTab === tab.id ? "#1F2937" : "#6B7280", fontSize: 15, fontWeight: activeTab === tab.id ? 600 : 400, whiteSpace: "nowrap", minWidth: "fit-content", cursor: "pointer", transition: "all 0.2s ease" }}
+            key={tab.id}
+            onClick={() => {
+              setActiveTab(tab.id);
+              setSelectedDate(null);
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </nav>
     </main>
   );
 }
