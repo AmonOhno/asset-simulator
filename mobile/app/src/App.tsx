@@ -217,7 +217,7 @@ function App() {
     <main style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "#F3F4F6", color: "#111827" }}>
       <header style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", padding: "32px 32px 16px", borderBottom: "1px solid #E5E7EB" }}>
         <h1 style={{ margin: 0, fontSize: 34, marginBottom: 18, color: "#4B5563" }}>取引管理ダッシュボード</h1>
-        <CommonButton label="ログアウト" sizeVariant="S" colorVariant="secondary" onClick={signOut} />
+        <CommonButton label="ログアウト" sizeVariant="M" colorVariant="secondary" onClick={signOut} />
       </header>
       <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden", maxHeight: "calc(100vh - 120px)" }}>
         <div style={{ display: "flex", flexDirection: "row", flex: 1, overflowY: "auto", padding: 20 }}>
