@@ -96,10 +96,8 @@ asset-simulator/
 | `docs/database/er_diagram.puml` | DB ER 図（PlantUML） |
 | `docs/database/schema.md` | テーブル定義・カラム説明 |
 
-## 対象外タスク（別タスクで対応予定）
+## Issue駆動開発
 
-- エラーレスポンスの統一（エラーコード導入）
-- LocalStorage persist の古いデータ対策（バージョニング）
-- `journalEntries` の DELETE エンドポイント
-- ページネーション実装
-- タイムゾーン対応
+- 開発はGitHub Issueを起点に行う
+- 実装前にIssueの **Done条件** を必ず確認し、すべて満たした時点で作業完了とする
+- スコープ・カテゴリ定義・ブランチ規約は `.github/CONTRIBUTING.md` を参照
