@@ -64,8 +64,8 @@ export default function TransactionEntryCard({
       alert("貸方勘定科目を選択してください（借方と異なる科目）");
       return false;
     }
-    if (!amount || amount <= 0) {
-      alert("金額を正しく入力してください");
+    if (!amount) {
+      alert("金額を入力してください（0 以外）");
       return false;
     }
     return true;
@@ -156,6 +156,8 @@ export default function TransactionEntryCard({
             <NumericInput
               value={amount}
               unit="円"
+              placeholder="0"
+              allowNegative
               onBlur={setAmount}
               sizeVariant="M"
             />

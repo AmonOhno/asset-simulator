@@ -224,7 +224,7 @@ export default function CalendarCard({ onDateDoubleClick, onDateSelect, onEditEn
                     borderBottom: "1px solid #F3F4F6",
                   }}
                 >
-                  <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+                  <div style={{ flex: 1, minWidth: 0, maxWidth: "calc(100% - 140px)", overflow: "hidden" }}>
                     <div style={{ fontWeight: 600, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.description}</div>
                     <div style={{ color: "#6B7280", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{entry.debitAccountName} → {entry.creditAccountName}</div>
                     <div style={{ color: "#374151", fontSize: 13 }}>¥{entry.amount.toLocaleString()}</div>
