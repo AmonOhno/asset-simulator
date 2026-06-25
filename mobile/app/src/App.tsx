@@ -271,7 +271,10 @@ function App() {
           <TransactionEntryCard
             key={entryDialogDate}
             selectedDate={entryDialogDate}
-            onEntryAdded={() => setEntriesVersion((v) => v + 1)}
+            onEntryAdded={() => {
+              setEntriesVersion((v) => v + 1);
+              closeEntryDialog();
+            }}
           />
         ) : null}
       </Dialog>

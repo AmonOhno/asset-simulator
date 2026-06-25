@@ -18,6 +18,9 @@ function fmt(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+// 区分の表示順（貸借対照表: 資産→負債→純資産）
+const CATEGORY_ORDER: Record<string, number> = { Asset: 0, Liability: 1, Equity: 2 };
+
 function getDatePresets() {
   const now = new Date();
   const y = now.getFullYear();
@@ -31,11 +34,17 @@ function getDatePresets() {
 
 export function BalanceSheetCard({ appliedAsOfDate, rows, onApply }: Props) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [pendingDate, setPendingDate] = useState(appliedAsOfDate);
 
-  // サーバー集計済みの BalanceSheetView を表示用の行へマッピング
+  // サーバー集計済みの BalanceSheetView を表示用の行へマッピング（区分→勘定科目でソート）
   const grouped = useMemo(
-    () => rows.map((row) => ({ account: row.name, category: row.category, amount: row.sumAmount })),
+    () =>
+      rows
+        .map((row) => ({ account: row.name, category: row.category, amount: row.sumAmount }))
+        .sort(
+          (a, b) =>
+            (CATEGORY_ORDER[a.category] ?? 99) - (CATEGORY_ORDER[b.category] ?? 99) ||
+            a.account.localeCompare(b.account, "ja")
+        ),
     [rows]
   );
 
@@ -50,7 +59,6 @@ export function BalanceSheetCard({ appliedAsOfDate, rows, onApply }: Props) {
   const presets = getDatePresets();
 
   const applyPreset = (date: string) => {
-    setPendingDate(date);
     onApply(date);
   };
 
@@ -69,8 +77,7 @@ export function BalanceSheetCard({ appliedAsOfDate, rows, onApply }: Props) {
             <CommonButton label="先月末" sizeVariant="S" fontSize="S" colorVariant="secondary" onClick={() => applyPreset(presets.lastMonthEnd)} />
           </div>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-            <DateInput value={pendingDate} onChange={setPendingDate} sizeVariant="M" />
-            <CommonButton label="基準日反映" onClick={() => onApply(pendingDate)} />
+            <DateInput value={appliedAsOfDate} onChange={(v: string) => onApply(v)} sizeVariant="M" />
           </div>
         </div>
       </CardBodyHead>

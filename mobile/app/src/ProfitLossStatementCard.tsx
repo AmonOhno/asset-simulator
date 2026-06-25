@@ -19,6 +19,9 @@ function fmt(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+// 区分の表示順（損益計算書: 収益→費用）
+const CATEGORY_ORDER: Record<string, number> = { Revenue: 0, Expense: 1 };
+
 function getPeriodPresets() {
   const now = new Date();
   const y = now.getFullYear();
@@ -34,12 +37,17 @@ function getPeriodPresets() {
 
 export function ProfitLossStatementCard({ appliedStartDate, appliedEndDate, rows, onApply }: Props) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [pendingStart, setPendingStart] = useState(appliedStartDate);
-  const [pendingEnd, setPendingEnd] = useState(appliedEndDate);
 
-  // サーバー集計済みの ProfitLossView を表示用の行へマッピング
+  // サーバー集計済みの ProfitLossView を表示用の行へマッピング（区分→勘定科目でソート）
   const grouped = useMemo(
-    () => rows.map((row) => ({ account: row.name, category: row.category, amount: row.sumAmount })),
+    () =>
+      rows
+        .map((row) => ({ account: row.name, category: row.category, amount: row.sumAmount }))
+        .sort(
+          (a, b) =>
+            (CATEGORY_ORDER[a.category] ?? 99) - (CATEGORY_ORDER[b.category] ?? 99) ||
+            a.account.localeCompare(b.account, "ja")
+        ),
     [rows]
   );
 
@@ -56,8 +64,6 @@ export function ProfitLossStatementCard({ appliedStartDate, appliedEndDate, rows
   const presets = getPeriodPresets();
 
   const applyPreset = (start: string, end: string) => {
-    setPendingStart(start);
-    setPendingEnd(end);
     onApply(start, end);
   };
 
@@ -77,10 +83,9 @@ export function ProfitLossStatementCard({ appliedStartDate, appliedEndDate, rows
             <CommonButton label="今年" fontSize="S" sizeVariant="S" colorVariant="secondary" onClick={() => applyPreset(...presets.thisYear)} />
           </div>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-            <DateInput value={pendingStart} onChange={setPendingStart} sizeVariant="S" />
+            <DateInput value={appliedStartDate} onChange={(v: string) => onApply(v, appliedEndDate)} sizeVariant="S" />
             <span style={{ alignSelf: "center", color: "#6B7280" }}>〜</span>
-            <DateInput value={pendingEnd} onChange={setPendingEnd} sizeVariant="S" />
-            <CommonButton label="期間反映" onClick={() => onApply(pendingStart, pendingEnd)} />
+            <DateInput value={appliedEndDate} onChange={(v: string) => onApply(appliedStartDate, v)} sizeVariant="S" />
           </div>
         </div>
       </CardBodyHead>
