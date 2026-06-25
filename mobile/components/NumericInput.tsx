@@ -29,6 +29,10 @@ interface NumericInputProps {
   min?: number;
   max?: number;
   error?: string;
+  /** 表示用プレースホルダー。指定すると value が 0 のとき入力欄を空にして背面テキストを表示する */
+  placeholder?: string;
+  /** マイナス値の入力を許可する（モバイル向けに符号反転ボタンを表示） */
+  allowNegative?: boolean;
   onBlur?: (value: number) => void;
   sizeVariant?: SizeVariant;
   fontSize?: FontSizeVariant;
@@ -67,6 +71,18 @@ const styles = {
     color: "#666",
     whiteSpace: "nowrap",
   } satisfies CSSProperties,
+  signButton: {
+    flexShrink: 0,
+    width: 36,
+    alignSelf: "stretch",
+    borderRadius: 8,
+    border: "1px solid #D1D5DB",
+    backgroundColor: "#F9FAFB",
+    color: "#374151",
+    fontSize: 18,
+    fontWeight: 700,
+    cursor: "pointer",
+  } satisfies CSSProperties,
   errorText: {
     fontSize: 12,
     color: "#DC2626",
@@ -80,21 +96,33 @@ export function NumericInput({
   min,
   max,
   error,
+  placeholder,
+  allowNegative = false,
   onBlur,
   sizeVariant = "Full",
   fontSize = "M",
 }: NumericInputProps) {
-  const [localValue, setLocalValue] = useState(String(value));
+  // placeholder 指定時は 0 を空欄として表示し、背面テキストを見せる
+  const display = (n: number) => (placeholder != null && n === 0 ? "" : String(n));
+  const [localValue, setLocalValue] = useState(() => display(value));
 
-  const handleBlur = () => {
-    let parsed = parseFloat(localValue);
+  const commit = (raw: string) => {
+    let parsed = parseFloat(raw);
     if (isNaN(parsed)) {
-      parsed = value;
+      parsed = placeholder != null ? 0 : value;
     }
     if (min != null && parsed < min) parsed = min;
     if (max != null && parsed > max) parsed = max;
-    setLocalValue(String(parsed));
+    setLocalValue(display(parsed));
     onBlur?.(parsed);
+  };
+
+  const handleBlur = () => commit(localValue);
+
+  const toggleSign = () => {
+    const parsed = parseFloat(localValue);
+    if (isNaN(parsed) || parsed === 0) return;
+    commit(String(-parsed));
   };
 
   const wrapperStyle: CSSProperties = {
@@ -105,9 +133,20 @@ export function NumericInput({
   return (
     <div style={wrapperStyle}>
       <div style={styles.inputRow}>
+        {allowNegative && (
+          <button
+            type="button"
+            aria-label="符号を反転"
+            onClick={toggleSign}
+            style={{ ...styles.signButton, height: sizeHeightMap[sizeVariant] }}
+          >
+            ±
+          </button>
+        )}
         <input
           type="text"
-          inputMode="decimal"
+          inputMode={allowNegative ? "text" : "decimal"}
+          placeholder={placeholder}
           value={localValue}
           onChange={(e) => setLocalValue(e.target.value)}
           onBlur={handleBlur}
