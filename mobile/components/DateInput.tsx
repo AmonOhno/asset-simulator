@@ -27,6 +27,7 @@ interface DateInputProps {
   value: string;
   onChange: (value: string) => void;
   onBlur?: () => void;
+  readOnly?: boolean;
   sizeVariant?: SizeVariant;
   fontSize?: FontSizeVariant;
 }
@@ -46,12 +47,13 @@ const styles = {
   } satisfies CSSProperties,
 };
 
-export function DateInput({ value, onChange, onBlur, sizeVariant = "Full", fontSize = "M" }: DateInputProps) {
+export function DateInput({ value, onChange, onBlur, readOnly = false, sizeVariant = "Full", fontSize = "M" }: DateInputProps) {
   const inputStyle: CSSProperties = {
     ...styles.input,
     width: sizeWidthMap[sizeVariant],
     height: sizeHeightMap[sizeVariant],
     fontSize: fontSizeMap[fontSize],
+    ...(readOnly ? { backgroundColor: "#F3F4F6", color: "#6B7280" } : {}),
   };
 
   return (
@@ -60,6 +62,7 @@ export function DateInput({ value, onChange, onBlur, sizeVariant = "Full", fontS
       value={value}
       min={DATE_MIN}
       max={DATE_MAX}
+      readOnly={readOnly}
       onChange={(e) => onChange(e.target.value)}
       onBlur={onBlur}
       style={inputStyle}
