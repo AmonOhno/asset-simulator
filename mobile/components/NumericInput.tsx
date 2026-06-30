@@ -145,7 +145,8 @@ export function NumericInput({
         )}
         <input
           type="text"
-          inputMode={allowNegative ? "text" : "decimal"}
+          // 金額入力は数字のみ。マイナスは ± ボタンで入力するためテンキーで十分
+          inputMode="numeric"
           placeholder={placeholder}
           value={localValue}
           onChange={(e) => setLocalValue(e.target.value)}
