@@ -15,6 +15,7 @@ import { BalanceSheetCard } from "./BalanceSheetCard";
 import { PanelButton } from "@mobile-components/PanelButton";
 import { CommonButton } from "@mobile-components/CommonButton";
 import { Dialog } from "@mobile-components/Dialog";
+import { computePeriodRange, DEFAULT_PERIOD_SETTINGS } from "@mobile-components/periodSelector.utils";
 import LoginScreen from "./LoginScreen";
 
 type TabId = "transaction" | "pl-bs" | "recurring" | "accounts";
@@ -29,16 +30,16 @@ const tabs: { id: TabId; label: string }[] = [
 
 function getDefaultDates() {
   const now = new Date();
-  const y = now.getFullYear();
-  const mo = now.getMonth();
   const fmt = (d: Date) => {
     const m = String(d.getMonth() + 1).padStart(2, "0");
     const day = String(d.getDate()).padStart(2, "0");
     return `${d.getFullYear()}-${m}-${day}`;
   };
+  // PL の期間初期値は「月単位・開始日 25 日」（例: 2026/06/25〜2026/07/24）
+  const plRange = computePeriodRange("month", DEFAULT_PERIOD_SETTINGS, now)!;
   return {
-    plStart: fmt(new Date(y, mo, 1)),
-    plEnd: fmt(new Date(y, mo + 1, 0)),
+    plStart: plRange.startDate,
+    plEnd: plRange.endDate,
     bsAsOf: fmt(now),
   };
 }

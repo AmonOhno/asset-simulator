@@ -1,8 +1,7 @@
 import { useMemo, useState } from "react";
 import type { ProfitLossView } from "@asset-simulator/shared";
 import { Card, CardBodyHead, CardBodyMain } from "@mobile-components/Card";
-import { DateInput } from "@mobile-components/DateInput";
-import { CommonButton } from "@mobile-components/CommonButton";
+import { PeriodSelector } from "@mobile-components/PeriodSelector";
 import { DataGrid } from "@mobile-components/DataGrid";
 
 type Props = {
@@ -12,28 +11,8 @@ type Props = {
   onApply: (startDate: string, endDate: string) => void;
 };
 
-function fmt(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
 // 区分の表示順（損益計算書: 収益→費用）
 const CATEGORY_ORDER: Record<string, number> = { Revenue: 0, Expense: 1 };
-
-function getPeriodPresets() {
-  const now = new Date();
-  const y = now.getFullYear();
-  const mo = now.getMonth();
-  const q = Math.floor(mo / 3);
-  return {
-    thisMonth: [fmt(new Date(y, mo, 1)), fmt(new Date(y, mo + 1, 0))] as [string, string],
-    lastMonth: [fmt(new Date(y, mo - 1, 1)), fmt(new Date(y, mo, 0))] as [string, string],
-    thisQuarter: [fmt(new Date(y, q * 3, 1)), fmt(new Date(y, q * 3 + 3, 0))] as [string, string],
-    thisYear: [`${y}-01-01`, `${y}-12-31`] as [string, string],
-  };
-}
 
 export function ProfitLossStatementCard({ appliedStartDate, appliedEndDate, rows, onApply }: Props) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -61,12 +40,6 @@ export function ProfitLossStatementCard({ appliedStartDate, appliedEndDate, rows
 
   const profit = revenueTotal - expenseTotal;
 
-  const presets = getPeriodPresets();
-
-  const applyPreset = (start: string, end: string) => {
-    onApply(start, end);
-  };
-
   return (
     <Card
       title="損益計算書【PL】"
@@ -75,19 +48,10 @@ export function ProfitLossStatementCard({ appliedStartDate, appliedEndDate, rows
       onToggle={() => setIsExpanded((prev) => !prev)}
     >
       <CardBodyHead>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            <CommonButton label="今月" fontSize="S" sizeVariant="S" colorVariant="secondary" onClick={() => applyPreset(...presets.thisMonth)} />
-            <CommonButton label="先月" fontSize="S" sizeVariant="S" colorVariant="secondary" onClick={() => applyPreset(...presets.lastMonth)} />
-            <CommonButton label="3ヶ月" fontSize="S" sizeVariant="S" colorVariant="secondary" onClick={() => applyPreset(...presets.thisQuarter)} />
-            <CommonButton label="今年" fontSize="S" sizeVariant="S" colorVariant="secondary" onClick={() => applyPreset(...presets.thisYear)} />
-          </div>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-            <DateInput value={appliedStartDate} onChange={(v: string) => onApply(v, appliedEndDate)} sizeVariant="S" />
-            <span style={{ alignSelf: "center", color: "#6B7280" }}>〜</span>
-            <DateInput value={appliedEndDate} onChange={(v: string) => onApply(appliedStartDate, v)} sizeVariant="S" />
-          </div>
-        </div>
+        <PeriodSelector
+          range={{ startDate: appliedStartDate, endDate: appliedEndDate }}
+          onChange={(r) => onApply(r.startDate, r.endDate)}
+        />
       </CardBodyHead>
       <CardBodyMain>
         <DataGrid
