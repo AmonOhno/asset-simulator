@@ -15,11 +15,11 @@ import { BalanceSheetCard } from "./BalanceSheetCard";
 import { PanelButton } from "@mobile-components/PanelButton";
 import { CommonButton } from "@mobile-components/CommonButton";
 import { Dialog } from "@mobile-components/Dialog";
+import { PeriodSelector } from "@mobile-components/PeriodSelector";
 import { computePeriodRange, DEFAULT_PERIOD_SETTINGS } from "@mobile-components/periodSelector.utils";
 import LoginScreen from "./LoginScreen";
 
 type TabId = "transaction" | "pl-bs" | "recurring" | "accounts";
-type PlViewType = "profit-loss" | "balance-sheet" | "none";
 
 const tabs: { id: TabId; label: string }[] = [
   { id: "transaction", label: "取引" },
@@ -99,8 +99,9 @@ function App() {
   const [plRows, setPlRows] = useState<ProfitLossView[]>([]);
   const [bsRows, setBsRows] = useState<BalanceSheetView[]>([]);
 
-  const plCardRef = useRef<HTMLDivElement>(null);
-  const bsCardRef = useRef<HTMLDivElement>(null);
+  // 各パネルのサマリーリストの表示/非表示
+  const [isProfitOpen, setIsProfitOpen] = useState(false);
+  const [isNetAssetsOpen, setIsNetAssetsOpen] = useState(false);
 
   // PL/BS ビューはサーバー集計を取得（日付変更・取引登録時に再取得）
   useEffect(() => {
@@ -137,12 +138,12 @@ function App() {
     return assets - liabilities;
   }, [bsRows]);
 
-  const setPlView = (view: PlViewType) => {
-    if (view === "profit-loss") {
-      plCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    } else if (view === "balance-sheet") {
-      bsCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+  // ダッシュボード最上部の期間指定。
+  // PL は指定期間、BS の基準日は期間の終了日に同期し、各パネルの金額表示を更新する。
+  const handleDashboardPeriodChange = (startDate: string, endDate: string) => {
+    setPlStartDate(startDate);
+    setPlEndDate(endDate);
+    setBsAsOfDate(endDate);
   };
 
   const handleDateSelect = (date: string) => {
@@ -180,22 +181,35 @@ function App() {
         );
       case "pl-bs":
         return (
-          <div style={{ display: "grid", gap: 24 }}>
+          <div style={{ display: "grid", gap: 16 }}>
+            {/* ダッシュボード最上部の期間指定（PL 期間・BS 基準日を一括同期） */}
+            <div
+              style={{
+                width: "100%",
+                maxWidth: 358,
+                borderRadius: 12,
+                background: "#FFFFFF",
+                boxShadow: "0px 4px 12px rgba(0,0,0,0.08)",
+                boxSizing: "border-box",
+                padding: 20,
+              }}
+            >
+              <PeriodSelector
+                range={{ startDate: plStartDate, endDate: plEndDate }}
+                onChange={(r) => handleDashboardPeriodChange(r.startDate, r.endDate)}
+              />
+            </div>
+
+            {/* 純利益パネル: パネルボタン → 収益・費用サマリーリスト */}
             <div style={{ display: "grid", gap: 16 }}>
               <PanelButton
                 title="当期純利益"
                 value={`¥${profit.toLocaleString()}`}
                 subText={`${plStartDate} 〜 ${plEndDate}`}
-                onClick={() => setPlView("profit-loss")}
+                onClick={() => setIsProfitOpen((prev) => !prev)}
               />
-              <PanelButton
-                title="純資産合計"
-                value={`¥${netAssets.toLocaleString()}`}
-                subText={`基準日: ${bsAsOfDate}`}
-                onClick={() => setPlView("balance-sheet")}
-              />
-
-              <div ref={plCardRef}>
+              {/* サマリーリストは常時マウントし表示のみ切り替える（期間セレクターのマウント時リセットを防ぐ） */}
+              <div style={{ display: isProfitOpen ? "block" : "none" }}>
                 <ProfitLossStatementCard
                   appliedStartDate={plStartDate}
                   appliedEndDate={plEndDate}
@@ -203,13 +217,23 @@ function App() {
                   onApply={(s, e) => { setPlStartDate(s); setPlEndDate(e); }}
                 />
               </div>
-              <div ref={bsCardRef}>
+            </div>
+
+            {/* 純資産パネル: パネルボタン → 資産・負債サマリーリスト */}
+            <div style={{ display: "grid", gap: 16 }}>
+              <PanelButton
+                title="純資産合計"
+                value={`¥${netAssets.toLocaleString()}`}
+                subText={`基準日: ${bsAsOfDate}`}
+                onClick={() => setIsNetAssetsOpen((prev) => !prev)}
+              />
+              {isNetAssetsOpen && (
                 <BalanceSheetCard
                   appliedAsOfDate={bsAsOfDate}
                   rows={bsRows}
                   onApply={(d) => setBsAsOfDate(d)}
                 />
-              </div>
+              )}
             </div>
           </div>
         );
