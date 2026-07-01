@@ -1,6 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, type CSSProperties } from "react";
 import type { BalanceSheetView } from "@asset-simulator/shared";
-import { Card, CardBodyHead, CardBodyMain } from "@mobile-components/Card";
 import { DateInput } from "@mobile-components/DateInput";
 import { CommonButton } from "@mobile-components/CommonButton";
 import { DataGrid } from "@mobile-components/DataGrid";
@@ -21,6 +20,19 @@ function fmt(d: Date): string {
 // 区分の表示順（貸借対照表: 資産→負債→純資産）
 const CATEGORY_ORDER: Record<string, number> = { Asset: 0, Liability: 1, Equity: 2 };
 
+const container: CSSProperties = {
+  width: "100%",
+  maxWidth: 358,
+  borderRadius: 12,
+  background: "#FFFFFF",
+  boxShadow: "0px 4px 12px rgba(0,0,0,0.08)",
+  boxSizing: "border-box",
+  padding: 20,
+  display: "flex",
+  flexDirection: "column",
+  gap: 16,
+};
+
 function getDatePresets() {
   const now = new Date();
   const y = now.getFullYear();
@@ -32,9 +44,8 @@ function getDatePresets() {
   };
 }
 
+// 資産・負債サマリーリスト（純資産パネル配下に表示される明細）
 export function BalanceSheetCard({ appliedAsOfDate, rows, onApply }: Props) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
   // サーバー集計済みの BalanceSheetView を表示用の行へマッピング（区分→勘定科目でソート）
   const grouped = useMemo(
     () =>
@@ -63,25 +74,18 @@ export function BalanceSheetCard({ appliedAsOfDate, rows, onApply }: Props) {
   };
 
   return (
-    <Card
-      title="貸借対照表【BS】"
-      subInfo={appliedAsOfDate}
-      isExpanded={isExpanded}
-      onToggle={() => setIsExpanded((prev) => !prev)}
-    >
-      <CardBodyHead>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            <CommonButton label="今日" sizeVariant="S" fontSize="S" colorVariant="secondary" onClick={() => applyPreset(presets.today)} />
-            <CommonButton label="今月末" sizeVariant="S" fontSize="S" colorVariant="secondary" onClick={() => applyPreset(presets.thisMonthEnd)} />
-            <CommonButton label="先月末" sizeVariant="S" fontSize="S" colorVariant="secondary" onClick={() => applyPreset(presets.lastMonthEnd)} />
-          </div>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-            <DateInput value={appliedAsOfDate} onChange={(v: string) => onApply(v)} sizeVariant="M" />
-          </div>
+    <div style={container}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <CommonButton label="今日" sizeVariant="S" fontSize="S" colorVariant="secondary" onClick={() => applyPreset(presets.today)} />
+          <CommonButton label="今月末" sizeVariant="S" fontSize="S" colorVariant="secondary" onClick={() => applyPreset(presets.thisMonthEnd)} />
+          <CommonButton label="先月末" sizeVariant="S" fontSize="S" colorVariant="secondary" onClick={() => applyPreset(presets.lastMonthEnd)} />
         </div>
-      </CardBodyHead>
-      <CardBodyMain>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+          <DateInput value={appliedAsOfDate} onChange={(v: string) => onApply(v)} sizeVariant="M" />
+        </div>
+      </div>
+      <div>
         <DataGrid
           data={grouped}
           columns={[
@@ -121,7 +125,7 @@ export function BalanceSheetCard({ appliedAsOfDate, rows, onApply }: Props) {
             <span>¥{summeryTotal.toLocaleString()}</span>
           </div>
         </div>
-      </CardBodyMain>
-    </Card>
+      </div>
+    </div>
   );
 }

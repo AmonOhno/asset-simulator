@@ -1,6 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, type CSSProperties } from "react";
 import type { ProfitLossView } from "@asset-simulator/shared";
-import { Card, CardBodyHead, CardBodyMain } from "@mobile-components/Card";
 import { PeriodSelector } from "@mobile-components/PeriodSelector";
 import { DataGrid } from "@mobile-components/DataGrid";
 
@@ -14,9 +13,21 @@ type Props = {
 // 区分の表示順（損益計算書: 収益→費用）
 const CATEGORY_ORDER: Record<string, number> = { Revenue: 0, Expense: 1 };
 
-export function ProfitLossStatementCard({ appliedStartDate, appliedEndDate, rows, onApply }: Props) {
-  const [isExpanded, setIsExpanded] = useState(false);
+const container: CSSProperties = {
+  width: "100%",
+  maxWidth: 358,
+  borderRadius: 12,
+  background: "#FFFFFF",
+  boxShadow: "0px 4px 12px rgba(0,0,0,0.08)",
+  boxSizing: "border-box",
+  padding: 20,
+  display: "flex",
+  flexDirection: "column",
+  gap: 16,
+};
 
+// 収益・費用サマリーリスト（純利益パネル配下に表示される明細）
+export function ProfitLossStatementCard({ appliedStartDate, appliedEndDate, rows, onApply }: Props) {
   // サーバー集計済みの ProfitLossView を表示用の行へマッピング（区分→勘定科目でソート）
   const grouped = useMemo(
     () =>
@@ -41,19 +52,12 @@ export function ProfitLossStatementCard({ appliedStartDate, appliedEndDate, rows
   const profit = revenueTotal - expenseTotal;
 
   return (
-    <Card
-      title="損益計算書【PL】"
-      subInfo={`${appliedStartDate} 〜 ${appliedEndDate}`}
-      isExpanded={isExpanded}
-      onToggle={() => setIsExpanded((prev) => !prev)}
-    >
-      <CardBodyHead>
-        <PeriodSelector
-          range={{ startDate: appliedStartDate, endDate: appliedEndDate }}
-          onChange={(r) => onApply(r.startDate, r.endDate)}
-        />
-      </CardBodyHead>
-      <CardBodyMain>
+    <div style={container}>
+      <PeriodSelector
+        range={{ startDate: appliedStartDate, endDate: appliedEndDate }}
+        onChange={(r) => onApply(r.startDate, r.endDate)}
+      />
+      <div>
         <DataGrid
           data={grouped}
           columns={[
@@ -93,7 +97,7 @@ export function ProfitLossStatementCard({ appliedStartDate, appliedEndDate, rows
             <span>¥{profit.toLocaleString()}</span>
           </div>
         </div>
-      </CardBodyMain>
-    </Card>
+      </div>
+    </div>
   );
 }
