@@ -74,9 +74,13 @@ export function computePeriodRange(
     case "month": {
       start = new Date(today.getFullYear(), today.getMonth(), settings.startDayOfMonth);
       if (start > today) start.setMonth(start.getMonth() - 1);
-      end = new Date(start.getFullYear(), start.getMonth() + 1, start.getDate() - 1);
+      // 終了日は「翌期間の（調整後）開始日の前日」とし、期間が重複・欠落しないようにする
+      end = adjustHoliday(
+        new Date(start.getFullYear(), start.getMonth() + 1, settings.startDayOfMonth),
+        settings.holidayAdjustment
+      );
+      end.setDate(end.getDate() - 1);
       start = adjustHoliday(start, settings.holidayAdjustment);
-      end = adjustHoliday(end, settings.holidayAdjustment);
       break;
     }
     case "year": {
@@ -112,10 +116,15 @@ export function shiftPeriodRange(
       break;
     }
     case "month": {
-      start = new Date(currentStart.getFullYear(), currentStart.getMonth() + offset, settings.startDayOfMonth);
-      end = new Date(start.getFullYear(), start.getMonth() + 1, start.getDate() - 1);
-      start = adjustHoliday(start, settings.holidayAdjustment);
-      end = adjustHoliday(end, settings.holidayAdjustment);
+      // currentStart は調整後の日付なので、開始日設定から未調整の基準日を復元して移動する
+      const anchor = new Date(currentStart.getFullYear(), currentStart.getMonth() + offset, settings.startDayOfMonth);
+      // 終了日は「翌期間の（調整後）開始日の前日」とし、期間が重複・欠落しないようにする
+      end = adjustHoliday(
+        new Date(anchor.getFullYear(), anchor.getMonth() + 1, settings.startDayOfMonth),
+        settings.holidayAdjustment
+      );
+      end.setDate(end.getDate() - 1);
+      start = adjustHoliday(anchor, settings.holidayAdjustment);
       break;
     }
     case "year": {
