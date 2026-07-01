@@ -35,6 +35,7 @@ export function RecurringTransactionCard() {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState(() => new Date().toLocaleDateString("sv-SE"));
   const [frequency, setFrequency] = useState<RecurrenceFrequency>("monthly");
   const [dateOfMonth, setDateOfMonth] = useState(1);
@@ -46,6 +47,7 @@ export function RecurringTransactionCard() {
 
   const resetForm = () => {
     setName("");
+    setDescription("");
     setStartDate(new Date().toLocaleDateString("sv-SE"));
     setFrequency("monthly");
     setDateOfMonth(1);
@@ -106,7 +108,7 @@ export function RecurringTransactionCard() {
     try {
       const entry: Omit<RecurringTransaction, "id"> = {
         name,
-        description: name,
+        description: description.trim() || name,
         debitAccountId,
         creditAccountId,
         amount,
@@ -217,6 +219,9 @@ export function RecurringTransactionCard() {
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <DateInput value={startDate} onChange={setStartDate} sizeVariant="M" />
             <TextInput placeholder="取引名称" value={name} onChange={setName} sizeVariant="Full" />
+          </div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <TextInput placeholder="摘要（未入力時は取引名称を使用）" value={description} onChange={setDescription} sizeVariant="Full" />
           </div>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <div className="column" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
