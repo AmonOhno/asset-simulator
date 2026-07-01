@@ -64,10 +64,11 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
       case '1-month':
         start = new Date(today.getFullYear(), today.getMonth(), startDayOfMonth);
         if (start > today) start.setMonth(start.getMonth() - 1);
-        
-        end = new Date(start.getFullYear(), start.getMonth() + 1, start.getDate() - 1);
+
+        // 終了日は「翌期間の（調整後）開始日の前日」とし、期間が重複・欠落しないようにする
+        end = adjustDate(new Date(start.getFullYear(), start.getMonth() + 1, startDayOfMonth), holidayAdj);
+        end.setDate(end.getDate() - 1);
         start = adjustDate(start, holidayAdj);
-        end = adjustDate(end, holidayAdj);
         break;
 
       case '1-year':
@@ -100,14 +101,15 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         newEnd = new Date(newStart.getFullYear(), newStart.getMonth(), newStart.getDate() + 6);
         break;
 
-      case '1-month':
-        // 現在の月から相対的に移動し、開始日設定(startDayOfMonth)を再適用
-        newStart = new Date(currentStart.getFullYear(), currentStart.getMonth() + offset, startDayOfMonth);
-        newEnd = new Date(newStart.getFullYear(), newStart.getMonth() + 1, newStart.getDate() - 1);
-        // 移動先でも休日調整を反映
-        newStart = adjustDate(newStart, holidayAdj);
-        newEnd = adjustDate(newEnd, holidayAdj);
+      case '1-month': {
+        // currentStart は調整後の日付なので、開始日設定(startDayOfMonth)から未調整の基準日を復元して移動
+        const anchor = new Date(currentStart.getFullYear(), currentStart.getMonth() + offset, startDayOfMonth);
+        // 終了日は「翌期間の（調整後）開始日の前日」とし、期間が重複・欠落しないようにする
+        newEnd = adjustDate(new Date(anchor.getFullYear(), anchor.getMonth() + 1, startDayOfMonth), holidayAdj);
+        newEnd.setDate(newEnd.getDate() - 1);
+        newStart = adjustDate(anchor, holidayAdj);
         break;
+      }
 
       case '1-year':
         newStart.setFullYear(currentStart.getFullYear() + offset);
