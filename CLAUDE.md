@@ -80,21 +80,12 @@ asset-simulator/
 
 | ファイル | 内容 |
 |---------|------|
-| `docs/architecture/overview.md` | システム概要・技術スタック・アーキテクチャ方針 |
-| `docs/architecture/system_architecture.puml` | システムアーキテクチャ図（PlantUML） |
-| `docs/feature/overview.md` | 機能一覧・画面遷移概要 |
-| `docs/feature/journal_entry.md` | 仕訳入力機能設計 |
-| `docs/feature/regular_journal.md` | 定期仕訳機能設計 |
-| `docs/feature/financial_statement.md` | 財務諸表（BS/PL）表示機能設計 |
-| `docs/feature/account_management.md` | 口座・勘定科目管理機能設計 |
-| `docs/feature/event_schedule.md` | スケジュールイベント機能設計 |
-| `docs/ui/specification.md` | 画面構成・コンポーネント仕様・データフロー |
-| `docs/ui/form_validation.md` | フォームバリデーション詳細仕様 |
-| `docs/ui/component_list.csv` | コンポーネント一覧 |
-| `docs/ui/component_design.md` | モバイル向けコンポーネント設計（開発中） |
-| `docs/api/specification.md` | エンドポイント仕様（リクエスト/レスポンス形式） |
+| `docs/architecture/overview.md` | システム概要・技術スタック・ディレクトリ構成・状態管理・shared/utils |
+| `docs/ui/specification.md` | 画面構成・コンポーネント仕様・フォームバリデーション・データフロー・期間セレクター仕様 |
+| `docs/api/specification.md` | Supabase 直接アクセスの規約・テーブル/VIEW/RPC 一覧・ストアアクション一覧 |
 | `docs/database/er_diagram.puml` | DB ER 図（PlantUML） |
-| `docs/database/schema.md` | テーブル定義・カラム説明 |
+| `docs/database/schema.md` | テーブル定義・カラム説明・VIEW・RPC |
+| `docs/test/scenarios.md` | 自動テストの観点一覧・手動テストシナリオ・回帰観点 |
 
 ## Issue駆動開発
 
