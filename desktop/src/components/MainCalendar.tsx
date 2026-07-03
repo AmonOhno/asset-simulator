@@ -4,7 +4,7 @@ import 'react-calendar/dist/Calendar.css';
 import './MainCalendar.css';
 import './utilities.css';
 import './cards.css';
-import { useFinancialStore, useEventsStore } from '@asset-simulator/shared';
+import { useFinancialStore, useEventsStore, formatDateLocal } from '@asset-simulator/shared';
 import type { CalendarJournalEntry, JournalEntry, ScheduleEvent } from '@asset-simulator/shared';
 import { JournalEntriesModal } from './journal/JournalEntriesModal';
 
@@ -31,10 +31,7 @@ export const MainCalendar: React.FC = () => {
 
   // 日付を文字列形式に変換（YYYY-MM-DD）
   const formatDateToString = useCallback((date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return formatDateLocal(date);
   }, []);
 
   // 月の開始日と最終日を取得

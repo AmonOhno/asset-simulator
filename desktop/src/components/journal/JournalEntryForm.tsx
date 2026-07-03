@@ -1,14 +1,14 @@
 // src/components/JournalEntryForm.tsx
 
 import React, { useState } from 'react';
-import { useFinancialStore } from '@asset-simulator/shared';
+import { useFinancialStore, todayLocalString } from '@asset-simulator/shared';
 
 export const JournalEntryForm: React.FC = () => {
   const { journalAccounts, addJournalEntry } = useFinancialStore();
 
   const [visible, setVisible] = useState(true);
 
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(todayLocalString());
   const [description, setDescription] = useState('');
   const [debitAccountId, setDebitAccountId] = useState('');
   const [creditAccountId, setCreditAccountId] = useState('');

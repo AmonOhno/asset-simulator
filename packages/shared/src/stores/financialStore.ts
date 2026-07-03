@@ -2,9 +2,9 @@ import { create } from 'zustand';
 import type { StateCreator } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { toCamelCase, toSnakeCase } from '../utils/caseConvert';
+import { formatDateLocal, todayLocalString } from '../utils/dateUtils';
+import { isExecutionDate } from '../utils/recurrence';
 import {
-  Account,
-  CreditCard,
   JournalAccount,
   JournalEntry,
   CalendarJournalEntry,
@@ -41,6 +41,41 @@ interface FinancialState {
   deleteRegularJournalEntry: (entry: RecurringTransaction) => Promise<void>;
   executeRegularJournalEntry: (entry: RecurringTransaction) => Promise<void>; // 個別実行
   executeDueRegularJournalEntries: () => Promise<{executed: number, details: any[]}>; // 期限が来ている定期取引を実行
+}
+
+// 定期取引の実行（仕訳挿入 + last_executed_date 更新）を行う共通処理。
+// executeRegularJournalEntry / executeDueRegularJournalEntries の両方から利用する。
+async function insertRecurringExecution(
+  userId: string,
+  dbEntry: any,
+  todayStr: string,
+  amountOverride?: number
+): Promise<any> {
+  const journalEntry = {
+    id: `je_${crypto.randomUUID()}`,
+    user_id: userId,
+    date: todayStr,
+    description: dbEntry.description,
+    debit_account_id: dbEntry.debit_account_id,
+    credit_account_id: dbEntry.credit_account_id,
+    amount: amountOverride || dbEntry.amount,
+  };
+
+  const { data: newEntry, error: insertError } = await supabase
+    .from('journal_entries')
+    .insert(journalEntry)
+    .select()
+    .single();
+  if (insertError) throw insertError;
+
+  const { error: updateError } = await supabase
+    .from('regular_journal_entries')
+    .update({ last_executed_date: todayStr })
+    .eq('id', dbEntry.id)
+    .eq('user_id', userId);
+  if (updateError) throw updateError;
+
+  return newEntry;
 }
 
 const financialStore: StateCreator<FinancialState> = (set, get) => {
@@ -156,7 +191,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
     if (!userId) return;
 
     try {
-      const entryId = `entry_${crypto.randomUUID()}`;
+      const entryId = `je_${crypto.randomUUID()}`;
       const amount = parseFloat(String(entry.amount));
       const rpcEntryData = {
         id: entryId,
@@ -353,33 +388,13 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
         .single();
       if (fetchError) throw fetchError;
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = todayLocalString();
 
       if (dbEntry.last_executed_date === today) {
         throw new Error('Entry already executed today');
       }
 
-      const journalEntry = {
-        id: `je_${crypto.randomUUID()}`,
-        user_id: userId,
-        date: today,
-        description: dbEntry.description,
-        debit_account_id: dbEntry.debit_account_id,
-        credit_account_id: dbEntry.credit_account_id,
-        amount: entry.amount || dbEntry.amount,
-      };
-
-      const { error: insertError } = await supabase
-        .from('journal_entries')
-        .insert(journalEntry);
-      if (insertError) throw insertError;
-
-      const { error: updateError } = await supabase
-        .from('regular_journal_entries')
-        .update({ last_executed_date: today })
-        .eq('id', entry.id)
-        .eq('user_id', userId);
-      if (updateError) throw updateError;
+      await insertRecurringExecution(userId, dbEntry, today, entry.amount);
 
       await get().getJournalAccounts();
       await get().getRegularJournalEntries();
@@ -394,8 +409,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
 
     try {
       const today = new Date();
-      const todayStr = today.toISOString().split('T')[0];
-      const todayDayOfWeek = today.getDay(); // 0=日曜日, 1=月曜日, ...
+      const todayStr = todayLocalString();
 
       const { data: entries, error: fetchError } = await supabase
         .from('regular_journal_entries')
@@ -408,115 +422,27 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
 
       for (const entry of entries) {
         if (entry.last_executed_date === todayStr) continue;
-        if (entry.start_date && todayStr < entry.start_date) continue;
-        if (entry.end_date && todayStr > entry.end_date) continue;
 
-        let shouldExecute = false;
+        const transaction = toCamelCase(entry) as RecurringTransaction;
+        if (!isExecutionDate(transaction, today)) continue;
 
-        switch (entry.frequency) {
-          case 'daily':
-            shouldExecute = true;
-            break;
+        try {
+          const newEntry = await insertRecurringExecution(userId, entry, todayStr);
 
-          case 'weekly': {
-            const dayFlags = [
-              entry.sun_flg_of_week,
-              entry.mon_flg_of_week,
-              entry.tue_flg_of_week,
-              entry.wed_flg_of_week,
-              entry.thu_flg_of_week,
-              entry.fri_flg_of_week,
-              entry.sat_flg_of_week,
-            ];
-            shouldExecute = Boolean(dayFlags[todayDayOfWeek]);
-            if (shouldExecute && entry.public_holiday_ex_flg_of_week) {
-              if (todayDayOfWeek === 0 || todayDayOfWeek === 6) {
-                shouldExecute = false;
-              }
-            }
-            break;
-          }
-
-          case 'monthly': {
-            if (entry.date_of_month) {
-              const currentMonthLastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-              const targetDay = Math.min(entry.date_of_month, currentMonthLastDay);
-              const targetDate = new Date(today.getFullYear(), today.getMonth(), targetDay);
-              if (entry.holiday_div_of_month === 'before') {
-                if (targetDate.getDay() === 0) targetDate.setDate(targetDate.getDate() - 2);
-                else if (targetDate.getDay() === 6) targetDate.setDate(targetDate.getDate() - 1);
-              } else if (entry.holiday_div_of_month === 'after') {
-                if (targetDate.getDay() === 0) targetDate.setDate(targetDate.getDate() + 1);
-                else if (targetDate.getDay() === 6) targetDate.setDate(targetDate.getDate() + 2);
-              }
-              shouldExecute = targetDate.toISOString().split('T')[0] === todayStr;
-            }
-            break;
-          }
-
-          case 'yearly': {
-            if (entry.date_of_year) {
-              const [month, day] = entry.date_of_year.split('-').map(Number);
-              const targetDate = new Date(today.getFullYear(), month - 1, day);
-              if (entry.holiday_div_of_month === 'before') {
-                if (targetDate.getDay() === 0) targetDate.setDate(targetDate.getDate() - 2);
-                else if (targetDate.getDay() === 6) targetDate.setDate(targetDate.getDate() - 1);
-              } else if (entry.holiday_div_of_month === 'after') {
-                if (targetDate.getDay() === 0) targetDate.setDate(targetDate.getDate() + 1);
-                else if (targetDate.getDay() === 6) targetDate.setDate(targetDate.getDate() + 2);
-              }
-              shouldExecute = targetDate.toISOString().split('T')[0] === todayStr;
-            }
-            break;
-          }
-
-          case 'free':
-          default:
-            shouldExecute = false;
-            break;
-        }
-
-        if (shouldExecute) {
-          try {
-            const journalEntry = {
-              id: `je_${crypto.randomUUID()}`,
-              user_id: userId,
-              date: todayStr,
-              description: entry.description,
-              debit_account_id: entry.debit_account_id,
-              credit_account_id: entry.credit_account_id,
-              amount: entry.amount,
-            };
-
-            const { data: newEntry, error: insertError } = await supabase
-              .from('journal_entries')
-              .insert(journalEntry)
-              .select()
-              .single();
-            if (insertError) throw insertError;
-
-            const { error: updateError } = await supabase
-              .from('regular_journal_entries')
-              .update({ last_executed_date: todayStr })
-              .eq('id', entry.id)
-              .eq('user_id', userId);
-            if (updateError) throw updateError;
-
-            executedEntries.push(newEntry);
-            details.push({
-              regularEntryId: entry.id,
-              regularEntryName: entry.name,
-              journalEntryId: newEntry.id,
-              amount: newEntry.amount,
-              frequency: entry.frequency,
-            });
-          } catch (err: any) {
-            details.push({
-              regularEntryId: entry.id,
-              regularEntryName: entry.name,
-              error: err?.message || 'Unknown error',
-            });
-          }
+          executedEntries.push(newEntry);
+          details.push({
+            regularEntryId: entry.id,
+            regularEntryName: entry.name,
+            journalEntryId: newEntry.id,
+            amount: newEntry.amount,
+            frequency: entry.frequency,
+          });
+        } catch (err: any) {
+          details.push({
+            regularEntryId: entry.id,
+            regularEntryName: entry.name,
+            error: err?.message || 'Unknown error',
+          });
         }
       }
 
@@ -536,7 +462,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
     if (!userId) return [];
 
     try {
-      const asOfDateStr = asOfDate || new Date().toISOString().split('T')[0];
+      const asOfDateStr = asOfDate || todayLocalString();
       const { data, error } = await supabase
         .rpc('fn_balance_sheet', { p_end_date: asOfDateStr, p_user_id: userId });
       if (error) throw error;
@@ -553,8 +479,8 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
 
     try {
       const today = new Date();
-      const defaultStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
-      const defaultEnd = today.toISOString().split('T')[0];
+      const defaultStart = formatDateLocal(new Date(today.getFullYear(), today.getMonth(), 1));
+      const defaultEnd = todayLocalString();
       const { data, error } = await supabase
         .rpc('fn_profit_loss', {
           p_start_date: startDate || defaultStart,

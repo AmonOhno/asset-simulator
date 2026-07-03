@@ -106,7 +106,7 @@ export interface ProfitLossView {
 }
 
 // --- 定期取引リマインド ---
-export type RecurrenceFrequency = 'free' | 'weekly' | 'monthly' | 'yearly';
+export type RecurrenceFrequency = 'free' | 'daily' | 'weekly' | 'monthly' | 'yearly';
 export type HolidayDivOfMonth = 'before' | 'after' | 'none';
 
 /**

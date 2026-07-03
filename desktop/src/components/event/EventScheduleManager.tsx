@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useEventsStore, ScheduleEvent } from '@asset-simulator/shared';
+import { useEventsStore, ScheduleEvent, todayLocalString } from '@asset-simulator/shared';
 import { EventScheduleForm } from './EventScheduleForm';
 
 export const EventScheduleManager: React.FC = () => {
@@ -40,7 +40,7 @@ export const EventScheduleManager: React.FC = () => {
   };
 
   const getFilteredEvents = (): ScheduleEvent[] => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayLocalString();
     
     let filtered: ScheduleEvent[];
     switch (filter) {

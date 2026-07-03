@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import {
+  computePeriodRange,
+  shiftPeriodRange,
+} from '@asset-simulator/shared';
+import type { PeriodPreset, PeriodRange, PeriodSettings } from '@asset-simulator/shared';
 
-export interface DateRange {
-  startDate: string;
-  endDate: string;
-}
+export type DateRange = PeriodRange;
 
 type HolidayAdjustment = 'none' | 'before' | 'after';
 
@@ -13,10 +15,18 @@ interface DateRangePickerProps {
   className?: string;
 }
 
-export const DateRangePicker: React.FC<DateRangePickerProps> = ({ 
-  dateRange, 
-  onDateRangeChange, 
-  className = '' 
+// UI 上のプリセット値 ('1-week' 等) と shared の PeriodPreset ('week' 等) の対応
+const PRESET_MAP: Record<string, PeriodPreset> = {
+  '1-week': 'week',
+  '1-month': 'month',
+  '1-year': 'year',
+  'custom': 'custom',
+};
+
+export const DateRangePicker: React.FC<DateRangePickerProps> = ({
+  dateRange,
+  onDateRangeChange,
+  className = ''
 }) => {
   // 設定用ステート
   const [preset, setPreset] = useState<string>('1-month');
@@ -25,105 +35,30 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   const [holidayAdj, setHolidayAdj] = useState<HolidayAdjustment>('before');
   const [startMonthDay, setStartMonthDay] = useState<{ m: number, d: number }>({ m: 12, d: 25 });
 
-  // タイムゾーンのズレを防ぐフォーマット関数 (YYYY-MM-DD)
-  const formatDate = (date: Date) => {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  };
-
-  // 休日（土日）調整ロジック
-  const adjustDate = useCallback((date: Date, adj: HolidayAdjustment): Date => {
-    const result = new Date(date);
-    if (adj === 'none') return result;
-
-    const day = result.getDay();
-    if (day === 0) { // 日曜日
-      result.setDate(result.getDate() + (adj === 'after' ? 1 : -2));
-    } else if (day === 6) { // 土曜日
-      result.setDate(result.getDate() + (adj === 'after' ? 2 : -1));
-    }
-    return result;
-  }, []);
+  const buildSettings = useCallback((): PeriodSettings => ({
+    startDayOfWeek,
+    startDayOfMonth,
+    holidayAdjustment: holidayAdj,
+    startMonth: startMonthDay.m,
+    startMonthDay: startMonthDay.d,
+  }), [startDayOfWeek, startDayOfMonth, holidayAdj, startMonthDay]);
 
   // 設定変更時に初期範囲を計算する関数
   const calculateInitialRange = useCallback(() => {
-    const today = new Date();
-    let start = new Date();
-    let end = new Date();
-
-    switch (preset) {
-      case '1-week':
-        const currentDay = today.getDay();
-        const diff = (currentDay < startDayOfWeek ? 7 : 0) + currentDay - startDayOfWeek;
-        start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - diff);
-        end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
-        break;
-
-      case '1-month':
-        start = new Date(today.getFullYear(), today.getMonth(), startDayOfMonth);
-        if (start > today) start.setMonth(start.getMonth() - 1);
-
-        // 終了日は「翌期間の（調整後）開始日の前日」とし、期間が重複・欠落しないようにする
-        end = adjustDate(new Date(start.getFullYear(), start.getMonth() + 1, startDayOfMonth), holidayAdj);
-        end.setDate(end.getDate() - 1);
-        start = adjustDate(start, holidayAdj);
-        break;
-
-      case '1-year':
-        start = new Date(today.getFullYear(), startMonthDay.m - 1, startMonthDay.d);
-        if (start > today) start.setFullYear(start.getFullYear() - 1);
-        
-        end = new Date(start.getFullYear() + 1, start.getMonth(), start.getDate() - 1);
-        break;
-
-      default:
-        return;
+    const mappedPreset = PRESET_MAP[preset];
+    const range = computePeriodRange(mappedPreset, buildSettings());
+    if (range) {
+      onDateRangeChange(range);
     }
-
-    onDateRangeChange({ 
-      startDate: formatDate(start), 
-      endDate: formatDate(end) 
-    });
-  }, [preset, startDayOfWeek, startDayOfMonth, holidayAdj, startMonthDay, adjustDate, onDateRangeChange]);
+  }, [preset, buildSettings, onDateRangeChange]);
 
   // 矢印ボタンでの期間移動処理
   const handleOffset = (direction: 'prev' | 'next') => {
-    const offset = direction === 'next' ? 1 : -1;
-    const currentStart = new Date(dateRange.startDate);
-    let newStart = new Date(currentStart);
-    let newEnd = new Date();
-
-    switch (preset) {
-      case '1-week':
-        newStart.setDate(currentStart.getDate() + (offset * 7));
-        newEnd = new Date(newStart.getFullYear(), newStart.getMonth(), newStart.getDate() + 6);
-        break;
-
-      case '1-month': {
-        // currentStart は調整後の日付なので、開始日設定(startDayOfMonth)から未調整の基準日を復元して移動
-        const anchor = new Date(currentStart.getFullYear(), currentStart.getMonth() + offset, startDayOfMonth);
-        // 終了日は「翌期間の（調整後）開始日の前日」とし、期間が重複・欠落しないようにする
-        newEnd = adjustDate(new Date(anchor.getFullYear(), anchor.getMonth() + 1, startDayOfMonth), holidayAdj);
-        newEnd.setDate(newEnd.getDate() - 1);
-        newStart = adjustDate(anchor, holidayAdj);
-        break;
-      }
-
-      case '1-year':
-        newStart.setFullYear(currentStart.getFullYear() + offset);
-        newEnd = new Date(newStart.getFullYear() + 1, newStart.getMonth(), newStart.getDate() - 1);
-        break;
-
-      default:
-        return;
+    const mappedPreset = PRESET_MAP[preset];
+    const range = shiftPeriodRange(mappedPreset, buildSettings(), dateRange, direction);
+    if (range) {
+      onDateRangeChange(range);
     }
-
-    onDateRangeChange({ 
-      startDate: formatDate(newStart), 
-      endDate: formatDate(newEnd) 
-    });
   };
 
   // 設定項目が変更された時のみ初期計算を実行
