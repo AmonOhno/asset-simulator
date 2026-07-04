@@ -1,611 +1,275 @@
 # UI仕様書 - 会計＆資産シミュレーター
 
 ## 目次
-- [画面構成](#画面構成)
-- [コンポーネント仕様](#コンポーネント仕様)
-- [ナビゲーション](#ナビゲーション)
-- [データフロー](#データフロー)
+- [1. 画面全体像](#1-画面全体像)
+- [2. デスクトップ版](#2-デスクトップ版)
+- [3. モバイル版](#3-モバイル版)
+- [4. フォームバリデーション仕様](#4-フォームバリデーション仕様)
+- [5. データフロー](#5-データフロー)
+- [6. 期間セレクター仕様](#6-期間セレクター仕様)
 
 ---
 
-## 画面構成
+## 1. 画面全体像
 
-### ウィンドウ構造
-
-```
-┌───────────────────────────────────────────────────────────┐
-│                     会計＆資産シミュレーター              │ メインウィンドウ
-├───────────────────────────────────────────────────────────┤
-│ [取引入力] [ダッシュボード] [定期取引] [マスタ管理] [イベント] │ ナビゲーション
-├───────────────────────────────────────────────────────────┤
-│                                                           │
-│                    コンテンツエリア                      │
-│              (タブごとに異なる構成)                     │
-│                                                           │
-├───────────────────────────────────────────────────────────┤
-│                        [ログアウト]                      │ フッター
-└───────────────────────────────────────────────────────────┘
-```
-
-### タブ別画面構成
-
-#### 1. 取引入力 (transactions)
+`client/src/main.tsx` がエントリーポイント。`client/src/utils/deviceDetect.ts` の `isMobileDevice()` で端末を判定し、`React.lazy` で該当 UI を読み込む。
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│ 取引入力タブ                                             │
-├──────────────┬──────────────────────────────────────────┤
-│   (lg-4)     │           (lg-8)                         │
-├──────────────┤                                          │
-│ 仕訳入力     │                                          │
-│ ┌──────────┐│      MainCalendar                     │
-│ │日付選択  ││      (カレンダー表示)                    │
-│ │摘要入力  ││                                          │
-│ │勘定科目  ││                                          │
-│ │金額入力  ││                                          │
-│ │[登録]   ││                                          │
-│ └──────────┘│                                          │
-│             │                                          │
-│ EventScheduleForm                                      │
-│ ┌──────────┐│                                          │
-│ │タイトル  ││                                          │
-│ │日付時間  ││                                          │
-│ │説明入力  ││                                          │
-│ │[登録]   ││                                          │
-│ └──────────┘│                                          │
-└──────────────┴──────────────────────────────────────────┘
+client/src/main.tsx
+├─ isMobileDevice() === false → lazy(() => import('./DesktopApp'))  → @web/App (desktop/src/App.tsx)
+└─ isMobileDevice() === true  → lazy(() => import('@mobile/App'))   → mobile/app/src/App.tsx
 ```
 
-#### 2. ダッシュボード (JournalDashboard)
+`isMobileDevice()` の判定ロジック（`client/src/utils/deviceDetect.ts`）:
+- UA に `Mobi|Android|iPhone|iPod` を含み、かつ `iPad` を含まない → モバイル扱い
+- iPad は常にデスクトップ UI 扱い（タブレット）
+- Safari の「デスクトップ用サイトを表示」で UA が書き換わるケースのフォールバックとして、`navigator.maxTouchPoints > 1 && window.screen.width <= 430` （iPhone 14 Pro Max 相当以下の幅）もモバイル判定に含める
 
-```
-┌──────────────────────────────────────────────────────────┐
-│ JournalDashboard                                                │
-│ ┌────────────────────────────────────────────────────────┐
-│ │ 日付範囲選択: [開始日] ～ [終了日]                     │
-│ ├────────────────────────────────────────────────────────┤
-│ │ 貸借対照表 (BS)      │   損益計算書 (PL)              │
-│ │ ─────────────────   │   ─────────────            │
-│ │ 資産                │   収益                     │
-│ │   ○○○○ ¥xxx      │     ○○○ ¥xxx              │
-│ │ 負債                │   費用                     │
-│ │   ○○○○ ¥xxx      │     ○○○ ¥xxx              │
-│ │ 純資産              │   当期純利益 ¥xxx         │
-│ └────────────────────────────────────────────────────────┘
-└──────────────────────────────────────────────────────────┘
-```
-
-#### 3. 定期取引 (recurring)
-
-```
-┌──────────────────────────────────────────────────────────┐
-│ RecurringTransactionManager                             │
-│ ┌────────────────────────────────────────────────────────┐
-│ │ フィルタ: [名前] [勘定科目] │ ソート: [項目] [▲▼]     │
-│ │ [新規追加]                                             │
-│ ├────────────────────────────────────────────────────────┤
-│ │ 定期仕訳一覧 (テーブル)                              │
-│ │ 名前 │ 周期 │ 借方 │ 貸方 │ 金額 │ 次回実行日 │ 操作  │
-│ │──────────────────────────────────────────────────────  │
-│ │ ○○  │ 月次 │ ××  │ △△  │ 100K │ 2026-03-15 │[実行][編][削]│
-│ └────────────────────────────────────────────────────────┘
-└──────────────────────────────────────────────────────────┘
-```
-
-#### 4. マスタ管理 (masters)
-
-```
-┌──────────────────────────────────────────────────────────┐
-│ マスタ管理タブ                                           │
-├───────────────┬───────────────┬───────────────┐
-│   (lg-4)      │     (lg-4)    │     (lg-4)    │
-├───────────────┼───────────────┼───────────────┤
-│JournalAccount-│ AccountManager│ CreditCard-   │
-│Manager        │               │ Manager       │
-│               │               │               │
-│勘定科目マスタ │金融口座管理    │クレジット     │
-│管理           │               │カード管理     │
-│               │               │               │
-│[追加] [編集]  │[追加] [編集]  │[追加] [編集]  │
-│               │               │               │
-│リスト表示     │リスト表示     │リスト表示     │
-└───────────────┴───────────────┴───────────────┘
-```
-
-#### 5. イベント (events)
-
-```
-┌──────────────────────────────────────────────────────────┐
-│ イベントタブ                                             │
-├──────────────┬──────────────────────────────────────────┤
-│   (lg-4)     │           (lg-8)                         │
-├──────────────┤                                          │
-│ Event-       │          EventScheduleManager            │
-│ ScheduleForm │  ┌──────────────────────────────┐       │
-│              │  │ [すべて] [今後] [過去]      │       │
-│              │  ├──────────────────────────────┤       │
-│ ┌──────────┐│  │ イベント一覧 (テーブル)     │       │
-│ │タイトル  ││  │                              │       │
-│ │日付      ││  │ 日付 │タイトル │操作       │       │
-│ │時間（選択）││  │──────────────────────────  │       │
-│ │説明      ││  │ xx  │ ○○    │[編][削]   │       │
-│ │[登録]   ││  │                              │       │
-│ └──────────┘│  └──────────────────────────────┘       │
-└──────────────┴──────────────────────────────────────────┘
-```
+`client/src/DesktopApp.tsx` は Bootstrap CSS を読み込んだ上で `@web/App` を re-export するラッパー。
 
 ---
 
-## コンポーネント仕様
+## 2. デスクトップ版
 
-### アプリケーションルート (App.tsx)
+エントリー: `desktop/src/App.tsx`。Bootstrap ベースの UI。
 
-| 項目 | 内容 |
-|------|------|
-| **ID** | app-main |
-| **コンポーネント名** | App |
-| **責務** | ナビゲーションと認証管理、タブコンテンツの切り替え |
-| **状態** | activeTab, session |
-| **子コンポーネント** | Auth UI, 各タブコンテンツ |
+### 2.1 タブ構成
 
-**イベント処理**:
-- `setActiveTab()`: タブ切り替え時にコンテンツを更新
-- `setSession()`: ログイン/ログアウト時のセッション管理
-- `getJournalAccounts()` / `getRegularJournalEntries()`: ログイン時に金融・勘定科目データを取得
-- `fetchEvents()`: ログイン時およびイベント登録・更新時にイベントデータを取得
+| タブ ID | 表示名 | 内容 |
+|--------|-------|------|
+| `transactions` | 取引入力 | `JournalEntryForm` + `MainCalendar` |
+| `JournalDashboard` | ダッシュボード | `JournalDashboard`（BS/PL） |
+| `recurring` | 定期取引 | `RecurringTransactionManager` |
+| `masters` | 勘定科目管理 | `JournalAccountManager` |
+| `events` | イベント入力 | `EventScheduleForm` + `EventScheduleManager` |
 
-**ナビゲーションボタン**:
-- 取引入力 (transactions)
-- ダッシュボード (JournalDashboard)
-- 定期取引 (recurring)
-- マスタ管理 (masters)
-- イベント (events)
+`transactions` と `recurring` は同じドロップダウングループ（`transactionGroupActive`）に属し、ナビゲーションの見た目上は1つのボタン＋ドロップダウンとして表示される。
 
----
-
-### 仕訳入力コンポーネント
-
-| 項目 | 内容 |
-|------|------|
-| **ID** | journal-entry-form |
-| **コンポーネント名** | JournalEntryForm |
-| **責務** | 仕訳エントリーの入力フォーム |
-| **親** | App (transactions tab) |
-| **状態** | visible, date, description, debitAccountId, creditAccountId, amount |
-
-**フォーム要素**:
-| 要素 | 型 | 初期値 | 必須 | 説明 |
-|-----|-----|-------|------|------|
-| 日付 | date | 本日 | ○ | 仕訳の日付 |
-| 摘要 | text | 空 | ○ | 取引の説明 |
-| 借方勘定科目 | select | 選択なし | ○ | 勘定科目の費用側 |
-| 貸方勘定科目 | select | 選択なし | ○ | 勘定科目の収入側 |
-| 金額 | number | 空 | ○ | 取引金額 (¥) |
-
-**イベント処理**:
-- `onClick(card-header)`: フォーム表示/非表示の切り替え
-- `onSubmit()`: フォーム送信時に`addJournalEntry()`を呼び出し
-- `onChange()`: 入力値をリアルタイムで更新
-
-**バリデーション**:
-- すべての必須フィールドが入力されているか確認
-- 金額は数値のみ
-
----
-
-### イベント入力コンポーネント
-
-| 項目 | 内容 |
-|------|------|
-| **ID** | event-schedule-form |
-| **コンポーネント名** | EventScheduleForm |
-| **責務** | スケジュールイベントの入力フォーム |
-| **親** | App (transactions, events tabs) |
-| **状態** | visible, title, allDayFlg, startDate, startTime, endDate, endTime, description |
-
-**フォーム要素**:
-| 要素 | 型 | 初期値 | 必須 | 説明 |
-|-----|-----|-------|------|------|
-| タイトル | text | 空 | ○ | イベント名（最大100文字） |
-| 終日フラグ | checkbox | false | ○ | 終日か時間指定か |
-| 開始日 | date | 本日 | ○ | イベント開始日 |
-| 開始時間 | time | 空 | ※ | イベント開始時間（時間指定時のみ） |
-| 終了日 | date | 本日 | ○ | イベント終了日 |
-| 終了時間 | time | 空 | ※ | イベント終了時間（時間指定時のみ） |
-| 説明 | textarea | 空 | - | イベントの詳細説明 |
-
-**イベント処理**:
-- `onClick(card-header)`: フォーム表示/非表示の切り替え
-- `onChange(allDayFlg)`: チェック時に時間入力可否を切り替え
-- `onSubmit()`: バリデーション後に`addEvent()`を呼び出し
-
-**バリデーション**:
-- タイトル、開始日、終了日は必須
-- 開始日 ≤ 終了日
-- タイトルは100文字以内
-- 終日フラグが有効な場合は時間入力禁止
-- 時間指定の場合は開始/終了時間必須
-
----
-
-### カレンダー表示コンポーネント
-
-| 項目 | 内容 |
-|------|------|
-| **ID** | journal-calendar |
-| **コンポーネント名** | MainCalendar |
-| **責務** | 仕訳とイベントをカレンダー表します、月別データを取得 |
-| **親** | App (transactions tab) |
-| **状態** | selectedDate, currentMonth, monthlyJournalEntries, selectedDateEntries, selectedDateEvents, editingEntry, debitAccountFilter, creditAccountFilter |
-
-**表示要素**:
-- React Calendar による月間カレンダー表示
-- 仕訳がある日付をハイライト
-- イベントがある日付をマーク
-- 選択日の詳細情報パネル
-
-**フィルタ機能**:
-| フィルタ | 型 | 対象 |
-|--------|-----|------|
-| 借方勘定科目 | select | 仕訳の借方を絞り込み |
-| 貸方勘定科目 | select | 仕訳の貸方を絞り込み |
-
-**イベント処理**:
-- `onClickDay()`: 日付を選択して詳細を表示
-- `onActiveStartDateChange()`: 月を変更时期に该月の仕訳を取得
-- `onChange(debitAccountFilter/creditAccountFilter)`: フィルタ条件で仕訳を再表示
-- `onEditEntry()`: 仕訳を編集するためモーダルを開く
-
----
-
-### ダッシュボードコンポーネント
-
-| 項目 | 内容 |
-|------|------|
-| **ID** | JournalDashboard |
-| **コンポーネント名** | JournalDashboard |
-| **責務** | 貸借対照表と損益計算書を表示 |
-| **親** | App (JournalDashboard tab) |
-| **状態** | dateRange, bsAsOfDate, bsData, plData, isLoading |
-
-**表示セクション**:
-
-**1. 貸借対照表 (Balance Sheet)**
-- 基準日を指定
-  - デフォルト: 本日
-  - ストレージに保存
-- 資産（Asset）
-- 負債（Liability）
-- 純資産（Equity） = 資産 - 負債
-
-**2. 損益計算書 (Profit & Loss)**
-- 期間を指定
-  - デフォルト: 月初～本日
-  - ストレージに保存
-- 収益（Revenue）
-- 費用（Expense）
-- 当期純利益 = 収益 - 費用
-
-**イベント処理**:
-- `onDateRangeChange()`: 期間選択時にBS・PLデータを再取得
-- `onAsOfDateChange()`: BS基準日変更時にBSデータを再取得
-
----
-
-### 定期仕訳管理コンポーネント
-
-| 項目 | 内容 |
-|------|------|
-| **ID** | recurring-transaction-manager |
-| **コンポーネント名** | RecurringTransactionManager |
-| **責務** | 定期仕訳の管理（CRUD、実行） |
-| **親** | App (recurring tab) |
-| **状態** | regularJournalEntries, isModalOpen, editingTransaction, nameFilter, debitFilter, creditFilter, sortBy, sortDirection |
-
-**テーブルカラム**:
-| カラム | 内容 |
-|-------|------|
-| 名前 | 定期仕訳の名前 |
-| 周期 | 実行頻度（日次/週次/月次/年次） |
-| 借方 | 借方勘定科目 |
-| 貸方 | 貸方勘定科目 |
-| 金額 | 定期金額 |
-| 次回実行日 | 次の実行予定日 |
-
-**フィルタ機能**:
-| フィルタ | 型 |
-|--------|-----|
-| 名前 | text (部分一致) |
-| 借方勘定科目 | select |
-| 貸方勘定科目 | select |
-
-**ソート機能**:
-- 名前、借方、貸方、金額で昇順/降順ソート可能
-
-**操作ボタン**:
-| ボタン | 機能 |
-|-------|------|
-| [新規追加] | 定期仕訳追加モーダルを開く |
-| [実行] | 定期仕訳を即座に実行 |
-| [編集] | 定期仕訳編集モーダルを開く |
-| [削除] | 定期仕訳を削除（確認あり） |
-
-**イベント処理**:
-- ページ読み込み時に`executeDueRegularJournalEntries()`を呼び出し（当日実行分を自動実行）
-- 10分ごとに実行状況をチェック
-- フィルタ/ソート変更時にリスト再表示
-
----
-
-### マスタ管理コンポーネント群
-
-#### 仕訳帳勘定科目マスタ管理
-
-| 項目 | 内容 |
-|------|------|
-| **ID** | journal-account-manager |
-| **コンポーネント名** | JournalAccountManager |
-| **責務** | 勘定科目（仕訳帳口座）の管理 |
-| **親** | App (masters tab) |
-| **状態** | journalAccounts, isEditing, currentAccount |
-
-**フォーム要素**:
-| 要素 | 型 | 初期値 | 必須 |
-|-----|-----|-------|------|
-| 勘定科目名 | text | 空 | ○ |
-| カテゴリ | select | Expense | ○ |
-
-**カテゴリ選択肢**: Asset(資産), Liability(負債), Equity(純資産), Revenue(収益), Expense(費用)
-
-**操作**:
-- [追加]: 新規勘定科目を追加
-- [編集]: 既存勘定科目を編集（システム勘定科目のカテゴリは編集不可）
-- [削除]: 勘定科目を削除
-
----
-
-#### 金融口座管理
-
-| 項目 | 内容 |
-|------|------|
-| **ID** | account-manager |
-| **コンポーネント名** | AccountManager |
-| **責務** | 金融口座（銀行、投資など）の管理 |
-| **親** | App (masters tab) |
-| **状態** | accounts, isEditing, currentAccount |
-
-**フォーム要素**:
-| 要素 | 型 | 初期値 | 必須 |
-|-----|-----|-------|------|
-| 口座名 | text | 空 | ○ |
-| 金融機関 | text | 空 | ○ |
-| 支店番号 | text | 空 | ○ |
-| 種別 | select | savings | ○ |
-| 口座番号 | text | 空 | ○ |
-| 口座名義人 | text | 空 | ○ |
-
-**種別選択肢**: 普通預金(savings), 当座預金(checking), 証券口座(investment), その他(other)
-
-**操作**:
-- [追加]: 新規口座を追加
-- [編集]: 既存口座を編集
-
----
-
-#### クレジットカード管理
-
-| 項目 | 内容 |
-|------|------|
-| **ID** | credit-card-manager |
-| **コンポーネント名** | CreditCardManager |
-| **責務** | クレジットカード情報の管理 |
-| **親** | App (masters tab) |
-| **状態** | creditCards, isEditing, currentCard |
-
-**フォーム要素**:
-| 要素 | 型 | 初期値 | 必須 |
-|-----|-----|-------|------|
-| カード名 | text | 空 | ○ |
-| 締め日 | number | 25 | ○ |
-| 支払日 | number | 10 | ○ |
-| 引落口座 | select | 選択なし | ○ |
-
-**制約**:
-- 締め日、支払日は1～31の範囲
-
-**操作**:
-- [追加]: 新規カードを追加
-- [編集]: 既存カードを編集
-
----
-
-### イベント管理コンポーネント
-
-| 項目 | 内容 |
-|------|------|
-| **ID** | event-schedule-manager |
-| **コンポーネント名** | EventScheduleManager |
-| **責務** | スケジュールイベントの管理（表示、編集、削除） |
-| **親** | App (events tab) |
-| **状態** | events, editingEvent, isModalOpen, filter |
-
-**テーブルカラム**:
-| カラム | 内容 |
-|-------|------|
-| 日付 | イベントの開始日（YYYY-MM-DD形式） |
-| タイトル | イベント名 |
-| 開始時間 | 開始時刻（時間指定時のみ） |
-| 終了時間 | 終了時刻（時間指定時のみ） |
-| 説明 | イベントの詳細 |
-
-**フィルタ機能**:
-| フィルタ | 対象 |
-|--------|------|
-| すべて | すべてのイベント表示 |
-| 今後 | 本日以降のイベント表示 |
-| 過去 | 本日より前のイベント表示 |
-
-**ソート**:
-- 開始日昇順 → 開始時間昇順
-
-**操作ボタン**:
-| ボタン | 機能 |
-|-------|------|
-| [編集] | イベント編集モーダルを開く |
-| [削除] | イベント削除（確認あり） |
-
-**イベント処理**:
-- `onFilterChange()`: フィルタ変更時にリスト再表示
-- `onEdit()`: 編集モーダルを開く
-- `onDelete()`: 削除確認ダイアログを表示
-- `onClick([編集])`: モーダルでEventScheduleForm を開く
-
----
-
-## ナビゲーション
-
-### ナビゲーション構造
+### 2.2 コンポーネントツリー
 
 ```
-┌─ App
-├─ [取引入力 (transactions)] 
-│  ├─ JournalEntryForm (col-lg-4)
-│  ├─ EventScheduleForm (col-lg-4)
-│  └─ MainCalendar (col-lg-8)
-├─ [ダッシュボード (JournalDashboard)]
-│  └─ JournalDashboard
-├─ [定期取引 (recurring)]
-│  └─ RecurringTransactionManager
-├─ [マスタ管理 (masters)]
-│  ├─ JournalAccountManager (col-lg-4)
-│  ├─ AccountManager (col-lg-4)
-│  └─ CreditCardManager (col-lg-4)
-└─ [イベント (events)]
-   ├─ EventScheduleForm (col-lg-4)
-   └─ EventScheduleManager (col-lg-8)
+App (desktop/src/App.tsx)
+├─ [transactions] JournalEntryForm, MainCalendar
+│    └─ MainCalendar → JournalEntriesModal（仕訳編集モーダル）
+├─ [JournalDashboard] JournalDashboard
+│    └─ DateRangePicker（common/DateRangePicker.tsx）
+├─ [recurring] RecurringTransactionManager
+│    └─ RecurringTransactionFormModal
+├─ [masters] JournalAccountManager
+└─ [events] EventScheduleForm, EventScheduleManager
+     └─ EventScheduleManager → EventScheduleForm（編集モーダル内で再利用）
 ```
 
-### 認証フロー
+### 2.3 各コンポーネントの責務
 
-```
-1. アプリ初期化
-   ↓
-2. Session確認
-   ├─ Session有: Dashboard表示
-   └─ Session無: Auth UI表示
-   ↓
-3. ログイン
-   ├─ 金融データ取得 (Cache化)
-   ├─ イベントデータ取得
-   └─ ユーザーメニュー表示
-   ↓
-4. ログアウト
-   └─ Auth UI表示に戻る
-```
+| コンポーネント | ファイル | 責務 | 使用するストアアクション |
+|---------------|---------|------|------------------------|
+| `App` | `src/App.tsx` | 認証状態監視・タブ切り替え・初回データ取得 | `getJournalAccounts`, `getRegularJournalEntries`, `fetchEvents` |
+| `JournalEntryForm` | `components/journal/JournalEntryForm.tsx` | 仕訳の新規登録フォーム。カードヘッダークリックで折りたたみ | `addJournalEntry`（`journalAccounts` を購読） |
+| `MainCalendar` | `components/MainCalendar.tsx` | `react-calendar` による月間カレンダー。日別の仕訳・イベント表示、借方/貸方フィルタ、費用/収益サマリー | `getCalendarJournalEntries`（月が変わるたびに再取得）, `updateJournalEntry`（編集モーダル保存時） |
+| `JournalEntriesModal` | `components/journal/JournalEntriesModal.tsx` | `MainCalendar` から開く仕訳編集モーダル（フィールド編集のみ、保存は呼び出し元） | なし（props 経由の callback） |
+| `JournalDashboard` | `components/journal/JournalDashboard.tsx` | BS/PL の表示。期間・基準日は `localStorage` に `userId` ごとに永続化 | `getBalanceSheetView`, `getProfitLossStatementView` |
+| `DateRangePicker` | `components/common/DateRangePicker.tsx` | 週/月/年/カスタムのプリセット選択 UI。shared の `computePeriodRange`/`shiftPeriodRange` を呼ぶ | ストア未使用（shared/utils のみ） |
+| `RecurringTransactionManager` | `components/journal/RecurringTransactionManager.tsx` | 定期取引の一覧・フィルタ・ソート・実行。マウント時+10分間隔で期限到来分を自動実行 | `getRegularJournalEntries`, `addRegularJournalEntry`, `updateRegularJournalEntry`, `deleteRegularJournalEntry`, `executeRegularJournalEntry`, `executeDueRegularJournalEntries` |
+| `RecurringTransactionFormModal` | `components/journal/RecurringTransactionFormModal.tsx` | 定期取引の新規作成・編集用モーダル（頻度に応じて入力項目が切り替わる） | なし（`RecurringTransactionManager` から `formData`/`onChange`/`onSave` を受け取る） |
+| `JournalAccountManager` | `components/journal/JournalAccountManager.tsx` | 勘定科目の追加・編集一覧。`isSystemAccount()`（`acc_`/`card_` プレフィックス）はカテゴリ編集を禁止 | `addJournalAccount`, `updateJournalAccount`, `getJournalAccounts` |
+| `EventScheduleForm` | `components/event/EventScheduleForm.tsx` | イベントの新規登録・編集フォーム（`editingEvent` props があれば編集モード） | `addEvent`（新規時のみ。編集時は親の `onSave` 経由で `updateEvent`） |
+| `EventScheduleManager` | `components/event/EventScheduleManager.tsx` | イベント一覧（すべて/今後/過去フィルタ）、編集・削除 | `updateEvent`, `deleteEvent`（`events` を購読） |
+
+### 2.4 その他
+
+- `desktop/src/hooks/useScrollToTop.tsx`: `JournalAccountManager` の編集開始時に `#journal-account-manager .card-body` を先頭へスクロールするための共通フック
+- `desktop/src/App.test.tsx`: ヘッダー文言（「会計＆資産シミュレーター」）が表示されることのみを確認するスモークテスト
 
 ---
 
-## データフロー
+## 3. モバイル版
 
-### 金融データ取得フロー
+エントリー: `mobile/app/src/App.tsx`。インラインスタイル（`CSSProperties`）ベースの UI で、下部タブバー形式。
 
-```
-App 
-├─ useEffect (session依存)
-│  └─ getJournalAccounts() + getRegularJournalEntries() 一度だけ実行
-│     └─ キャッシュに金融データを保存
-│
-├─ useEffect (activeTab依存)
-│  ├─ 各Tabがキャッシュから必要なデータを読み込み
-│  └─ MainCalendar: 月別データを別途取得
-│
-└─ 各コンポーネント
-   └─ useFinancialStore から状態を購読
-```
+### 3.1 タブ構成
 
-### イベントデータ取得フロー
+| タブ ID | 表示名 | 内容 |
+|--------|-------|------|
+| `transaction` | 取引 | `CalendarCard` + 取引入力/編集ダイアログ（`TransactionEntryCard`） |
+| `pl-bs` | PL/BS | `PeriodSelector`（期間指定）+ `PanelButton` × 2（純利益/純資産）→ 展開で `ProfitLossStatementCard` / `BalanceSheetCard` |
+| `recurring` | 定期取引 | `RecurringTransactionCard` |
+| `accounts` | 勘定科目 | `AccountMasterCard` |
+
+未ログイン時は `LoginScreen`（Supabase Auth UI、Google/GitHub プロバイダ）を表示。
+
+### 3.2 各カードの責務
+
+| コンポーネント | ファイル | 責務 | 使用するストアアクション |
+|---------------|---------|------|------------------------|
+| `App` | `mobile/app/src/App.tsx` | 認証監視・タブ切り替え・PL/BS 期間の一括管理・取引入力/編集ダイアログの開閉 | `getJournalAccounts`, `getRegularJournalEntries`, `fetchEvents`, `getProfitLossStatementView`, `getBalanceSheetView` |
+| `LoginScreen` | `LoginScreen.tsx` | 未ログイン時のログイン画面（Supabase Auth UI） | なし（`useAuthStore` の `client` のみ） |
+| `CalendarCard` | `CalendarCard.tsx` | 月表示のカレンダー。日付タップで選択、ダブルタップで取引入力ダイアログを開く。選択日の取引一覧・編集/削除 | `getCalendarJournalEntries`, `deleteJournalEntry` |
+| `TransactionEntryCard` | `TransactionEntryCard.tsx` | 取引の新規登録／編集（`entry` props の有無でモード切替） | `addJournalEntry`, `updateJournalEntry`, `getJournalAccounts`（残高反映のため再取得） |
+| `ProfitLossStatementCard` | `ProfitLossStatementCard.tsx` | 収益・費用の明細サマリーリスト（`PeriodSelector` 内包） | なし（`rows` は `App` から props で受け取る） |
+| `BalanceSheetCard` | `BalanceSheetCard.tsx` | 資産・負債・純資産の明細サマリーリスト（基準日プリセット: 今日/今月末/先月末） | なし（`rows` は props） |
+| `RecurringTransactionCard` | `RecurringTransactionCard.tsx` | 定期取引の一覧・追加（ダイアログ）・実行・削除・期限到来分一括実行 | `addRegularJournalEntry`, `deleteRegularJournalEntry`, `executeRegularJournalEntry`, `executeDueRegularJournalEntries` |
+| `AccountMasterCard` | `AccountMasterCard.tsx` | 勘定科目の追加・一覧・**削除**（desktop の勘定科目管理は編集のみで削除なし） | `addJournalAccount`, `deleteJournalAccount` |
+
+モバイル版には勘定科目の「編集」機能はない（追加・削除のみ）。desktop 版には「削除」機能がない（追加・編集のみ）。
+
+### 3.3 コンポーネントライブラリ（mobile/components、Storybook 対象）
+
+`mobile/.storybook/` に各コンポーネントの `.stories.tsx` があり、Storybook でカタログ表示・確認できる。
+
+| コンポーネント | ファイル | props 概要 |
+|---------------|---------|-----------|
+| `Card` / `CardBodyHead` / `CardBodyMain` | `Card.tsx` | `isExpanded`, `onToggle`, `title`, `subInfo?`, `maxHeight?`。折りたたみ可能なカードコンテナ |
+| `CommonButton` | `CommonButton.tsx` | `label`, `sizeVariant?`(S/M/L/LL/Full), `colorVariant?`(primary/secondary), `fontSize?`(S/M/L), `icon?`, `onClick?` |
+| `DataGrid<T>` | `DataGrid.tsx` | `data: T[]`, `columns: {label,key,width?,align?}[]`, `colorVariant?`(blue/red/gray)。ジェネリックなテーブル表示 |
+| `DateInput` | `DateInput.tsx` | `value`, `onChange`, `onBlur?`, `readOnly?`, `sizeVariant?`(S/M/L/Full), `fontSize?`。`min="2000-01-01"` `max="2100-12-31"` 固定 |
+| `Dialog` | `Dialog.tsx` | `isOpen`, `onClose`, `title?`, `children?`。`createPortal` で `document.body` に描画、Esc キーで閉じる |
+| `NumericInput` | `NumericInput.tsx` | `value`, `unit?`, `min?`, `max?`, `error?`, `placeholder?`, `allowNegative?`（±ボタン表示）, `onBlur?`, `sizeVariant?`, `fontSize?`。ローカル文字列 state を持ち `onBlur` でのみ確定 |
+| `PanelButton` | `PanelButton.tsx` | `title`, `value`, `onClick`, `subText?`。金額サマリーの大きなボタン（純利益/純資産パネルなどで使用） |
+| `PeriodSelector` | `PeriodSelector.tsx` | `range: PeriodRange`, `onChange`, `defaultPreset?`, `defaultSettings?`。週/月/年/カスタムの期間選択（shared の `computePeriodRange`/`shiftPeriodRange` を内部使用） |
+| `SelectInput` | `SelectInput.tsx` | `options: {label,value}[]`, `value`, `onChange`, `sizeVariant?`, `fontSize?` |
+| `TextInput` | `TextInput.tsx` | `placeholder`, `value`, `onChange?`, `onBlur?`, `sizeVariant?`, `fontSize?` |
+
+`mobile/components/periodSelector.utils.ts` は `packages/shared/src/utils/period.ts` を re-export するだけのファイル（ロジックの実体は shared 側の一箇所に集約）。
+
+---
+
+## 4. フォームバリデーション仕様
+
+コード上の実際の `validate`/`alert` に基づく（推測ではなくソース確認済み）。
+
+### 4.1 仕訳入力
+
+| フォーム | ファイル | 必須項目 | 実装 |
+|---------|---------|---------|------|
+| desktop `JournalEntryForm` | `desktop/src/components/journal/JournalEntryForm.tsx` | 日付・摘要・借方勘定科目・貸方勘定科目・金額 | `handleSubmit` で全項目の truthy チェックのみ。不足時は `alert('すべての項目を入力してください。')` |
+| mobile `TransactionEntryCard` | `mobile/app/src/TransactionEntryCard.tsx` | 日付・摘要・借方勘定科目・貸方勘定科目（借方と異なること）・金額（0以外） | `validate()` が項目ごとに個別の `alert` を出す（例:「貸方勘定科目を選択してください（借方と異なる科目）」「金額を入力してください（0 以外）」） |
+
+desktop 版は借方・貸方が同一科目でも登録をブロックしない点がモバイル版と異なる。
+
+### 4.2 定期取引
+
+| フォーム | 必須/制約 | 実装 |
+|---------|----------|------|
+| desktop `RecurringTransactionManager`/`RecurringTransactionFormModal` | `name`, `debitAccountId`, `creditAccountId` が必須 | `handleSave` で `alert('必須項目を入力してください')` |
+| mobile `RecurringTransactionCard` | 取引名称必須、借方必須、貸方必須（借方と異なる科目）、金額 > 0、`monthly` は `dateOfMonth` 1〜31、`yearly` は `dateOfYear` が `MM-DD` 正規表現 (`/^\d{2}-\d{2}$/`) に一致 | `addRecurring()` が項目ごとに個別の `alert` |
+
+### 4.3 イベント入力
+
+`desktop/src/components/event/EventScheduleForm.tsx` の `handleSubmit`:
+
+- `title`, `startDate`, `endDate` は必須（いずれか欠落で `alert('必須項目を入力してください。')`）
+- `startDate > endDate` はエラー（`alert('開始日は終了日より前である必要があります。')`）
+- `title.length > 100` はエラー（`alert('タイトルは100文字以内である必要があります。')`。input 側も `maxLength={100}` で制限）
+- `allDayFlg === false` かつ（`startTime` または `endTime` が空）はエラー（`alert('終日イベントには開始時間と終了時間の設定ができません。')` — メッセージは終日/時間指定が逆転しているが実装上のロジックは「時間指定モードなのに時刻未入力」を指す）
+- `allDayFlg === true` かつ（`startTime` または `endTime` が入力済み）はエラー（`alert('時間指定のイベントには開始時間と終了時間が必要です。')` — 同様にメッセージ文言と実際の条件が逆になっている点に注意）
+
+モバイル版には現状イベント入力 UI（`EventScheduleForm` 相当）は存在しない。
+
+### 4.4 勘定科目
+
+| フォーム | 必須/制約 | 実装 |
+|---------|----------|------|
+| desktop `JournalAccountManager` | `name` は `required`（HTML バリデーションのみ）。編集時、`isSystemAccount(id)`（`acc_`/`card_` プレフィックス）はカテゴリ `<select>` を `disabled` にする | フォームの JS 側バリデーションはなし |
+| mobile `AccountMasterCard` | `name` 必須 | `addAccount()` で `alert('勘定科目名を入力してください')` |
+
+---
+
+## 5. データフロー
+
+### 5.1 ストア構成
+
+`packages/shared/src/stores/` の Zustand ストア（`@asset-simulator/shared` からインポート）:
+
+| ストア | 主な state | 主なアクション |
+|-------|-----------|---------------|
+| `useFinancialStore` | `journalAccounts`, `journalEntries`, `regularJournalEntries` | 詳細は [`docs/api/specification.md`](../api/specification.md#ストアアクション一覧) |
+| `useEventsStore` | `events` | `fetchEvents`, `addEvent`, `updateEvent`, `deleteEvent` |
+| `useAuthStore` | `session`, `userId`, `client` | `setSession`, `refreshSession`, `signOut` |
+
+`useFinancialStore` は `persist` ミドルウェアで `localStorage`（キー `financial-store`）に永続化される。
+
+### 5.2 リフレッシュルール
+
+**ミューテーション後は変更したリソースのアクションだけを呼ぶ。** 広範囲な「全データ再取得」関数は存在しない。
+
+- 仕訳登録・更新後: `getJournalAccounts()`（残高が変わるため）を呼ぶ実装が多い（例: mobile `TransactionEntryCard`）
+- 定期取引実行後: `executeRegularJournalEntry`/`executeDueRegularJournalEntries` の内部で `getJournalAccounts()` + `getRegularJournalEntries()` を呼び直す
+- イベント CRUD 後: `addEvent`/`updateEvent`/`deleteEvent` が自身で state を更新するため、`fetchEvents()` の再呼び出しは不要（コード内コメントにも明記）
+
+### 5.3 初回データ取得（desktop / mobile 共通パターン）
 
 ```
 App
-└─ useEffect (session依存)
-   └─ fetchEvents() ページロード時に実行
-      
-useEffect (activeTab依存)  
-└─ ['calendar', 'events'].includes(activeTab)
-   └─ fetchEvents() を再実行（最新データ取得）
-
-各コンポーネント
-└─ useEventsStore から状態を購読
+├─ useEffect（認証監視）
+│   └─ refreshSession() → setSession() / onAuthStateChange → setSession()
+├─ useEffect（session 依存, ref で一度だけ）
+│   └─ getJournalAccounts() + getRegularJournalEntries()（初回のみ）
+│   └─ fetchEvents()（毎回）
+└─ 各タブ/カード
+    └─ ストアの state を購読、必要に応じて自身で個別データ（カレンダー月別データ・BS/PL 等）を取得
 ```
 
-### 仕訳入力フロー
+- desktop: `activeTab` が `calendar`/`events` のときは `fetchEvents()` を再実行（実際のタブ ID は `transactions`/`events` などのため、この判定は現状ヒットしにくい実装になっている点に留意）
+- mobile: `entriesVersion`（取引の登録・更新・削除でインクリメント）を依存配列に含めることで、PL/BS の再取得とカレンダーの再取得をトリガーする
+
+### 5.4 仕訳入力フロー（例: mobile）
 
 ```
-JournalEntryForm
-└─ onSubmit()
-   └─ addJournalEntry()
-      ├─ APIへ送信
-      └─ useFinancialStore 更新
-         ├─ journalEntries更新
-         ├─ MainCalendarが自動再描画
-         └─ Dashboard再計算
-```
-
-### イベント入力フロー
-
-```
-EventScheduleForm
-└─ onSubmit()
-   └─ addEvent()
-      ├─ APIへ送信
-      └─ useEventsStore 更新
-         ├─ events更新
-         └─ EventScheduleManager、MainCalendarが自動再描画
-```
-
-### 定期仕訳実行フロー
-
-```
-RecurringTransactionManager
-├─ ページロード時
-│  └─ executeDueRegularJournalEntries()
-│     └─ 当日実行対象を自動実行
-│
-└─ 定期的に（10分ごと）
-   └─ 実行状況をチェック
-      └─ 新規実行があれば通知
+TransactionEntryCard.registerEntry()
+└─ addJournalEntry()  … RPC create_journal_entry
+   └─ getJournalAccounts()  … 残高反映
+      └─ onEntryAdded?.()  … App の entriesVersion をインクリメント
+         └─ CalendarCard / PL・BS カードが再取得・再描画
 ```
 
 ---
 
-## 状態管理
+## 6. 期間セレクター仕様
 
-### グローバル状態 (Zustand Stores)
+実体は `packages/shared/src/utils/period.ts` に一本化されている（`mobile/components/periodSelector.utils.ts` は re-export のみ）。desktop の `DateRangePicker`、mobile の `PeriodSelector` は共にこの関数を呼び出す。
 
-#### useFinancialStore
-- `journalAccounts`: 仕訳帳勘定科目
-- `accounts`: 金融口座
-- `creditCards`: クレジットカード
-- `journalEntries`: 仕訳エントリー
-- `regularJournalEntries`: 定期仕訳
+### 6.1 設定値（`PeriodSettings`）
 
-#### useEventsStore
-- `events`: スケジュールイベント
+| フィールド | 意味 | デフォルト |
+|-----------|------|-----------|
+| `startDayOfWeek` | 週プリセットの開始曜日（0:日 〜 6:土） | 1（月曜） |
+| `startDayOfMonth` | 月プリセットの開始日（1〜31） | 25 |
+| `holidayAdjustment` | 月/年プリセットの休日ずらし（`'none'`/`'before'`/`'after'`） | `'none'`（`DEFAULT_PERIOD_SETTINGS` 上。desktop `DateRangePicker` の初期 UI 値は `'before'`） |
+| `startMonth` | 年プリセットの開始月（1〜12） | 1 |
+| `startMonthDay` | 年プリセットの開始日（1〜31） | 1 |
 
-#### useAuthStore
-- `session`: Supabase セッション
-- `userId`: ユーザーID
+### 6.2 プリセット計算（`computePeriodRange`）
 
-### ローカル状態
+- **week**: `today` から `startDayOfWeek` 基準で当該週の開始日を逆算し、+6日を終了日とする
+- **month**: 当月の `startDayOfMonth` 日を仮の開始日とし、それが `today` より未来なら前月にずらす。**終了日は「翌期間の（休日調整後）開始日の前日」**として計算し、開始日自体も同じ `holidayAdjustment` で調整する（#106 修正: 月単位の休日ずらしで期間終了日が次期間開始日に重なる不具合の修正。詳細は下記6.4）
+- **year**: `startMonth`/`startMonthDay` を仮の開始日とし、`today` より未来なら前年にずらす。終了日は翌年の同日の前日
+- **custom**: `null` を返す（呼び出し側は既存の値を維持）
 
-各コンポーネントで管理:
-- フォーム入力値
-- モーダル表示/非表示
-- イベント編集中フラグ
-- フィルタ/ソート条件
+### 6.3 期間移動（`shiftPeriodRange`）
+
+`current`（現在の期間）と `direction`（`'prev'`/`'next'`）を受け取り、隣接する期間を計算する。month の場合、`currentStart`（調整後の開始日）から `settings.startDayOfMonth` を使って調整前の基準日を再構成し、月をオフセットしてから改めて休日調整をかける（調整後の日付をそのまま月シフトすると誤差が生じるための対応）。
+
+### 6.4 月次開始日 + 休日ずらしの重複・欠落防止（Issue #106）
+
+修正前は月の終了日を「次の開始日と同じ日」など単純な計算にしていたため、休日調整によって隣接する期間が重複したり1日欠落したりする不具合があった。
+
+修正後のロジック（`computePeriodRange`/`shiftPeriodRange` 共通）:
+
+1. 翌期間の開始日（調整前）を計算
+2. その日付に `holidayAdjustment` を適用（＝翌期間の実際の開始日）
+3. その **前日** を今期間の終了日とする
+4. 今期間の開始日にも同じ `holidayAdjustment` を適用する
+
+これにより「今期間の終了日 + 1日 = 次期間の開始日」が常に成立し、重複・欠落が起きない。`packages/shared/src/utils/__tests__/period.test.ts` に `#106 回帰テスト` として、`startDayOfMonth: 25`・`holidayAdjustment: 'before'/'after'` の両パターンで境界日が連続することを検証するテストがある。
+
+### 6.5 UI 差異
+
+- desktop `DateRangePicker`: プリセットは `'1-week'`/`'1-month'`/`'1-year'`/`'custom'`という別名で保持し、内部で `PeriodPreset`（`'week'`/`'month'`/`'year'`/`'custom'`）にマッピングしてから shared 関数を呼ぶ
+- mobile `PeriodSelector`: `PeriodPreset` をそのまま state に持つ。前後移動ボタンは custom 以外で表示
 
 ---
 
 ## 更新日時
 
-最終更新: 2026-06-14
+最終更新: 2026-07-03

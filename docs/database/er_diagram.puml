@@ -4,13 +4,21 @@
 title Asset Simulator - Database Entity Relationship Diagram
 
 ' --- Entities ---
+entity "users" as users {
+  * id : uuid <<PK>>
+  --
+  * email : string
+  --
+  created_at : timestamp
+}
+
 entity "journal_accounts" as journal_accounts {
   * id : string <<PK>>
   --
   * name : string
   * category : string
   * balance : numeric
-  * user_id : string <<FK>>
+  * user_id : uuid <<FK>>
   --
   created_at : timestamp
   updated_at : timestamp
@@ -24,56 +32,85 @@ entity "journal_entries" as journal_entries {
   * debit_account_id : string <<FK>>
   * credit_account_id : string <<FK>>
   * amount : numeric
-  * user_id : string <<FK>>
+  * user_id : uuid <<FK>>
   --
   created_at : timestamp
   updated_at : timestamp
 }
 
 entity "regular_journal_entries" as regular_journal_entries {
-  * user_id : string <<PK>>
-  * id : string <<PK>>  
+  * id : string <<PK>>
+  --
   * name : string
   description : string
   * debit_account_id : string <<FK>>
   * credit_account_id : string <<FK>>
   amount : numeric
+  * frequency : string
   start_date : date
   end_date : date
-  * frequency : string
-  date_of_year : date(mm/dd)
+  date_of_year : string
   date_of_month : integer
-  holiday_div_of_month : boolean
-  date_of_week : integer
+  holiday_div_of_month : string
   mon_flg_of_week : boolean
   tue_flg_of_week : boolean
   wed_flg_of_week : boolean
-  thr_flg_of_week : boolean
+  thu_flg_of_week : boolean
   fri_flg_of_week : boolean
   sat_flg_of_week : boolean
   sun_flg_of_week : boolean
-  public_holiiday_ex_flg_week : boolean
+  public_holiday_ex_flg_of_week : boolean
+  last_executed_date : date
+  * user_id : uuid <<FK>>
   --
   created_at : timestamp
   updated_at : timestamp
 }
 
-entity "users" as users {
-  * id : string <<PK>>
+entity "schedule_events" as schedule_events {
+  * event_id : string <<PK>>
   --
-  * email : string
-  * name : string
+  * title : string
+  * all_day_flg : boolean
+  * start_date : date
+  start_time : string
+  * end_date : date
+  end_time : string
+  description : string
+  * user_id : uuid <<FK>>
   --
   created_at : timestamp
-  updated_at : timestamp
+}
+
+entity "accounts" as accounts {
+  * id : string <<PK>>
+  --
+  * name : string
+  * institution : string
+  * branch_number : string
+  * type : string
+  * account_number : string
+  * account_holder : string
+  * user_id : uuid <<FK>>
+}
+
+entity "credit_cards" as credit_cards {
+  * id : string <<PK>>
+  --
+  * name : string
+  * closing_day : integer
+  * payment_day : integer
+  * linked_account_id : string <<FK>>
+  * user_id : uuid <<FK>>
 }
 
 ' --- Relationships ---
-users ||--o{ accounts : "user_id"
-users ||--o{ credit_cards : "user_id"
 users ||--o{ journal_accounts : "user_id"
 users ||--o{ journal_entries : "user_id"
 users ||--o{ regular_journal_entries : "user_id"
+users ||--o{ schedule_events : "user_id"
+users ||--o{ accounts : "user_id"
+users ||--o{ credit_cards : "user_id"
 
 accounts ||--o| credit_cards : "linked_account_id"
 
@@ -85,40 +122,62 @@ journal_accounts ||--o{ regular_journal_entries : "credit_account_id"
 
 ' --- Notes ---
 note top of users
-  User table manages
-  multi-tenancy.
-  All other tables
-  include user_id for
-  row-level security.
+  Supabase Auth の auth.users。
+  アプリ側で新規作成する
+  テーブルではない。
+  他の全テーブルは user_id で
+  行レベルセキュリティ(RLS)を
+  適用する想定。
 end note
 
 note right of journal_entries
-  Core transaction table.
-  Each entry has both
-  debit and credit sides
-  following double-entry
-  bookkeeping principles.
+  複式簿記の仕訳コアテーブル。
+  借方・貸方の両勘定科目を持つ。
+  新規作成は RPC
+  create_journal_entry 経由
+  (残高更新も同時に行う)。
 end note
 
 note bottom of regular_journal_entries
-  Template for recurring
-  transactions like rent,
-  salary, subscriptions.
-  Can be executed to create
-  journal_entries.
+  定期取引のテンプレート。
+  frequency: daily/weekly/monthly/yearly/free
+  holiday_div_of_month は
+  'before'/'after'/'none' の文字列。
+  last_executed_date で
+  同日の重複実行を防止する。
+  実行すると journal_entries が
+  1件生成される。
 end note
 
 note left of journal_accounts
-  Chart of accounts.
-  Categories: Asset,
-  Liability, Equity,
-  Revenue, Expense.
-  Balance is calculated
-  from journal_entries.
+  勘定科目マスタ。
+  Categories: Asset, Liability,
+  Equity, Revenue, Expense。
+  balance は仕訳から更新される。
+end note
+
+note bottom of schedule_events
+  カレンダー上のスケジュール
+  イベント（給料日・支払日等の
+  リマインド用）。仕訳とは独立。
+end note
+
+note bottom of accounts
+  金融口座マスタ。型定義のみ存在し、
+  現行 UI からは未使用
+  （journal_accounts の
+  isSystemAccount 判定で
+  "acc_" プレフィックスのみ参照）。
+end note
+
+note bottom of credit_cards
+  クレジットカードマスタ。型定義のみ
+  存在し、現行 UI からは未使用
+  （"card_" プレフィックスのみ参照）。
 end note
 
 ' --- Categories ---
-package "Account Categories" {
+package "Enums" {
   enum AccountCategory {
     Asset
     Liability
@@ -126,18 +185,39 @@ package "Account Categories" {
     Revenue
     Expense
   }
-}
 
-package "Frequency Types" {
   enum RecurrenceFrequency {
     daily
     weekly
     monthly
     yearly
+    free
+  }
+
+  enum HolidayDivOfMonth {
+    none
+    before
+    after
   }
 }
 
 journal_accounts --> AccountCategory
 regular_journal_entries --> RecurrenceFrequency
+regular_journal_entries --> HolidayDivOfMonth
+
+' --- Views / RPC (documentation only, not physical tables) ---
+note as ViewNote
+  VIEW: v_journal_entries_for_calendar
+  journal_entries に借方/貸方の
+  勘定科目名・カテゴリを JOIN 済み。
+  カレンダー表示専用。
+
+  RPC: fn_balance_sheet(p_user_id, p_end_date)
+  RPC: fn_profit_loss(p_user_id, p_start_date, p_end_date)
+  どちらも user_id, account_id, category,
+  name, sum_amount の集計行を返す。
+end note
+
+journal_entries .. ViewNote
 
 @enduml
