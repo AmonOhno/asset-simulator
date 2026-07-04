@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import { SelectInput } from "./SelectInput";
 import { NumericInput } from "./NumericInput";
 import { DateInput } from "./DateInput";
 import {
   computePeriodRange,
   shiftPeriodRange,
-  DEFAULT_PERIOD_SETTINGS,
   type PeriodPreset,
   type PeriodRange,
   type PeriodSettings,
@@ -15,8 +14,10 @@ import {
 interface PeriodSelectorProps {
   range: PeriodRange;
   onChange: (range: PeriodRange) => void;
-  defaultPreset?: PeriodPreset;
-  defaultSettings?: Partial<PeriodSettings>;
+  preset: PeriodPreset;
+  onPresetChange: (preset: PeriodPreset) => void;
+  settings: PeriodSettings;
+  onSettingsChange: (settings: PeriodSettings) => void;
 }
 
 const presetOptions = [
@@ -70,15 +71,11 @@ const styles = {
 export function PeriodSelector({
   range,
   onChange,
-  defaultPreset = "month",
-  defaultSettings,
+  preset,
+  onPresetChange,
+  settings,
+  onSettingsChange,
 }: PeriodSelectorProps) {
-  const [preset, setPreset] = useState<PeriodPreset>(defaultPreset);
-  const [settings, setSettings] = useState<PeriodSettings>(() => ({
-    ...DEFAULT_PERIOD_SETTINGS,
-    ...defaultSettings,
-  }));
-
   // 親が毎レンダーで新しい onChange を渡しても効果が再実行されないよう ref 経由で参照する。
   const onChangeRef = useRef(onChange);
   useEffect(() => {
@@ -87,14 +84,17 @@ export function PeriodSelector({
 
   // プリセット/設定が変わったとき（custom 以外）に範囲を再計算して通知する。
   // range を依存に含めないことで、矢印操作や親の更新による再計算ループを防ぐ。
+  const didMountRef = useRef(false);
   useEffect(() => {
+    // 再マウント時に保持済みの範囲（矢印移動後の値を含む）を初期設定で上書きしないよう、初回実行だけスキップ
+    if (!didMountRef.current) { didMountRef.current = true; return; }
     if (preset === "custom") return;
     const next = computePeriodRange(preset, settings);
     if (next) onChangeRef.current(next);
   }, [preset, settings]);
 
   const updateSetting = <K extends keyof PeriodSettings>(key: K, value: PeriodSettings[K]) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
+    onSettingsChange({ ...settings, [key]: value });
   };
 
   const handleShift = (direction: "prev" | "next") => {
@@ -118,7 +118,7 @@ export function PeriodSelector({
         <SelectInput
           options={presetOptions}
           value={preset}
-          onChange={(v) => setPreset(v as PeriodPreset)}
+          onChange={(v) => onPresetChange(v as PeriodPreset)}
           sizeVariant="S"
           fontSize="S"
         />

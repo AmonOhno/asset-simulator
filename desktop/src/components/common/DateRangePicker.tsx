@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 import {
   computePeriodRange,
   shiftPeriodRange,
@@ -7,11 +7,22 @@ import type { PeriodPreset, PeriodRange, PeriodSettings } from '@asset-simulator
 
 export type DateRange = PeriodRange;
 
-type HolidayAdjustment = 'none' | 'before' | 'after';
+export type HolidayAdjustment = 'none' | 'before' | 'after';
+
+export interface DateRangeSettings {
+  preset: string;
+  startDayOfWeek: number;
+  startDayOfMonth: number;
+  holidayAdj: HolidayAdjustment;
+  startMonthDay: { m: number; d: number };
+}
 
 interface DateRangePickerProps {
   dateRange: DateRange;
   onDateRangeChange: (dateRange: DateRange) => void;
+  settings: DateRangeSettings;
+  onSettingsChange: (settings: DateRangeSettings) => void;
+  skipInitialCompute?: boolean;
   className?: string;
 }
 
@@ -26,14 +37,13 @@ const PRESET_MAP: Record<string, PeriodPreset> = {
 export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   dateRange,
   onDateRangeChange,
+  settings,
+  onSettingsChange,
+  skipInitialCompute,
   className = ''
 }) => {
-  // 設定用ステート
-  const [preset, setPreset] = useState<string>('1-month');
-  const [startDayOfWeek, setStartDayOfWeek] = useState<number>(1); // 0:日, 1:月...
-  const [startDayOfMonth, setStartDayOfMonth] = useState<number>(25);
-  const [holidayAdj, setHolidayAdj] = useState<HolidayAdjustment>('before');
-  const [startMonthDay, setStartMonthDay] = useState<{ m: number, d: number }>({ m: 12, d: 25 });
+  // 設定（親からの controlled props）
+  const { preset, startDayOfWeek, startDayOfMonth, holidayAdj, startMonthDay } = settings;
 
   const buildSettings = useCallback((): PeriodSettings => ({
     startDayOfWeek,
@@ -63,12 +73,15 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
 
   // 設定項目が変更された時のみ初期計算を実行
   // 依存関係に dateRange を含めないことで、矢印ボタン操作時の上書きループを防ぐ
+  const didMountRef = useRef(false);
   useEffect(() => {
+    const isFirst = !didMountRef.current;
+    didMountRef.current = true;
+    // localStorage 復元値がある再マウント時は初回計算をスキップして保持値を守る
+    if (isFirst && skipInitialCompute) return;
     if (preset !== 'custom') {
       calculateInitialRange();
     }
-    // 依存関係から calculateInitialRange を外すことで、
-    // 親から dateRange (Props) が降ってきても再計算ループが起きないようにする
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preset, startDayOfWeek, startDayOfMonth, holidayAdj, startMonthDay]);
 
@@ -103,8 +116,8 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         <div className="col-auto">
           <select 
             className="form-select form-select-sm" 
-            value={preset} 
-            onChange={(e) => setPreset(e.target.value)}
+            value={preset}
+            onChange={(e) => onSettingsChange({ ...settings, preset: e.target.value })}
           >
             <option value="custom">カスタム</option>
             <option value="1-week">1週間</option>
@@ -118,8 +131,8 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
           <div className="col-auto">
             <select 
               className="form-select form-select-sm" 
-              value={startDayOfWeek} 
-              onChange={(e) => setStartDayOfWeek(Number(e.target.value))}
+              value={startDayOfWeek}
+              onChange={(e) => onSettingsChange({ ...settings, startDayOfWeek: Number(e.target.value) })}
             >
               {['日', '月', '火', '水', '木', '金', '土'].map((d, i) => (
                 <option key={i} value={i}>{d}曜日</option>
@@ -138,15 +151,15 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                 style={{ width: '55px' }} 
                 min="1" 
                 max="31" 
-                value={startDayOfMonth} 
-                onChange={(e) => setStartDayOfMonth(Number(e.target.value))} 
+                value={startDayOfMonth}
+                onChange={(e) => onSettingsChange({ ...settings, startDayOfMonth: Number(e.target.value) })}
               />
             </div>
             <div className="col-auto">
               <select 
                 className="form-select form-select-sm" 
-                value={holidayAdj} 
-                onChange={(e) => setHolidayAdj(e.target.value as HolidayAdjustment)}
+                value={holidayAdj}
+                onChange={(e) => onSettingsChange({ ...settings, holidayAdj: e.target.value as HolidayAdjustment })}
               >
                 <option value="none">休日ずらしなし</option>
                 <option value="before">休日前倒し</option>
@@ -166,8 +179,8 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                 style={{ width: '50px' }} 
                 min="1" 
                 max="12" 
-                value={startMonthDay.m} 
-                onChange={(e) => setStartMonthDay({ ...startMonthDay, m: Number(e.target.value) })} 
+                value={startMonthDay.m}
+                onChange={(e) => onSettingsChange({ ...settings, startMonthDay: { ...startMonthDay, m: Number(e.target.value) } })}
               />
               <span>/</span>
               <input 
@@ -176,8 +189,8 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                 style={{ width: '50px' }} 
                 min="1" 
                 max="31" 
-                value={startMonthDay.d} 
-                onChange={(e) => setStartMonthDay({ ...startMonthDay, d: Number(e.target.value) })} 
+                value={startMonthDay.d}
+                onChange={(e) => onSettingsChange({ ...settings, startMonthDay: { ...startMonthDay, d: Number(e.target.value) } })}
               />
             </div>
           </div>
