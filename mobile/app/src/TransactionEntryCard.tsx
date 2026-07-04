@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useFinancialStore } from "@asset-simulator/shared";
+import { useFinancialStore, todayLocalString } from "@asset-simulator/shared";
 import type { CalendarJournalEntry } from "@asset-simulator/shared";
 import { Card, CardBodyMain } from "@mobile-components/Card";
 import { DateInput } from "@mobile-components/DateInput";
@@ -33,7 +33,7 @@ export default function TransactionEntryCard({
 
   const [isExpanded, setIsExpanded] = useState(true);
   const [date, setDate] = useState(
-    () => entry?.date ?? selectedDate ?? new Date().toLocaleDateString("sv-SE")
+    () => entry?.date ?? selectedDate ?? todayLocalString()
   );
   const [description, setDescription] = useState(() => entry?.description ?? "");
   const [debitAccountId, setDebitAccountId] = useState(() => entry?.debitAccountId ?? "");

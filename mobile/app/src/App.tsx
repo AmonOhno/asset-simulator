@@ -3,6 +3,7 @@ import {
   useAuthStore,
   useFinancialStore,
   useEventsStore,
+  formatDateLocal,
 } from "@asset-simulator/shared";
 import type { ProfitLossView, BalanceSheetView, CalendarJournalEntry } from "@asset-simulator/shared";
 import "./App.css";
@@ -30,17 +31,12 @@ const tabs: { id: TabId; label: string }[] = [
 
 function getDefaultDates() {
   const now = new Date();
-  const fmt = (d: Date) => {
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${d.getFullYear()}-${m}-${day}`;
-  };
   // PL の期間初期値は「月単位・開始日 25 日」（例: 2026/06/25〜2026/07/24）
   const plRange = computePeriodRange("month", DEFAULT_PERIOD_SETTINGS, now)!;
   return {
     plStart: plRange.startDate,
     plEnd: plRange.endDate,
-    bsAsOf: fmt(now),
+    bsAsOf: formatDateLocal(now),
   };
 }
 

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useFinancialStore, RecurringTransaction, RecurrenceFrequency } from '@asset-simulator/shared';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useFinancialStore, RecurringTransaction, getNextExecutionDate, todayLocalString } from '@asset-simulator/shared';
+import { RecurringTransactionFormModal } from './RecurringTransactionFormModal';
 
 export const RecurringTransactionManager: React.FC = () => {
   const { 
@@ -52,209 +53,6 @@ export const RecurringTransactionManager: React.FC = () => {
     return () => clearInterval(interval);
   }, [executeDueRegularJournalEntries]);
 
-  const isTodayExecutionDate = (transaction: RecurringTransaction): boolean => {
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    const todayDayOfWeek = today.getDay();
-
-    // 開始日・終了日チェック
-    if (transaction.startDate && todayStr < transaction.startDate) return false;
-    if (transaction.endDate && todayStr > transaction.endDate) return false;
-    const dayFlags = [
-          transaction.sunFlgOfWeek,
-          transaction.monFlgOfWeek,
-          transaction.tueFlgOfWeek,
-          transaction.wedFlgOfWeek,
-          transaction.thuFlgOfWeek,
-          transaction.friFlgOfWeek,
-          transaction.satFlgOfWeek,
-        ];
-    // 周次
-    if (transaction.frequency === 'weekly') {
-      // 基本的な曜日チェック
-      if (!dayFlags[todayDayOfWeek]) return false;
-      return true;
-    }
-
-    // 月次
-    if (transaction.frequency === 'monthly') {
-      if (transaction.dateOfMonth) {
-        const currentMonthLastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-        const targetDay = Math.min(transaction.dateOfMonth, currentMonthLastDay);
-        let targetDate = new Date(today.getFullYear(), today.getMonth(), targetDay);
-
-        // 休日調整
-        if (transaction.holidayDivOfMonth === 'before') {
-          if (targetDate.getDay() === 0) {
-            targetDate.setDate(targetDate.getDate() - 2);
-          } else if (targetDate.getDay() === 6) {
-            targetDate.setDate(targetDate.getDate() - 1);
-          }
-        } else if (transaction.holidayDivOfMonth === 'after') {
-          if (targetDate.getDay() === 0) {
-            targetDate.setDate(targetDate.getDate() + 1);
-          } else if (targetDate.getDay() === 6) {
-            targetDate.setDate(targetDate.getDate() + 2);
-          }
-        }
-
-        return targetDate.toISOString().split('T')[0] === todayStr;
-      }
-      return false;
-    }
-
-    // 年次
-    if (transaction.frequency === 'yearly') {
-      if (transaction.dateOfYear) {
-        const [month, day] = transaction.dateOfYear.split('-').map(Number);
-        let targetDate = new Date(today.getFullYear(), month - 1, day);
-
-        // 休日調整
-        if (transaction.holidayDivOfMonth === 'before') {
-          if (targetDate.getDay() === 0) {
-            targetDate.setDate(targetDate.getDate() - 2);
-          } else if (targetDate.getDay() === 6) {
-            targetDate.setDate(targetDate.getDate() - 1);
-          }
-        } else if (transaction.holidayDivOfMonth === 'after') {
-          if (targetDate.getDay() === 0) {
-            targetDate.setDate(targetDate.getDate() + 1);
-          } else if (targetDate.getDay() === 6) {
-            targetDate.setDate(targetDate.getDate() + 2);
-          }
-        }
-
-        return targetDate.toISOString().split('T')[0] === todayStr;
-      }
-      return false;
-    }
-
-    return false;
-  };
-
-  // 次の実行予定日を計算
-  const getNextExecutionDate = (transaction: RecurringTransaction): Date | undefined => {
-    const endDate = new Date(transaction.endDate || new Date());
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    
-    if (endDate && today > endDate) {
-      // 終了日を過ぎている場合は次の実行日を計算しない
-      return undefined;
-    }
-
-    // 本日が実行日で、まだ実行されていない場合は本日を返す
-    if (isTodayExecutionDate(transaction) && transaction.lastExecutedDate !== todayStr) {
-      return today;
-    }
-
-    let nextDate = new Date(today);
-
-    switch (transaction.frequency) {
-      case 'weekly':
-        const daysOfWeek = [
-          transaction.sunFlgOfWeek,
-          transaction.monFlgOfWeek,
-          transaction.tueFlgOfWeek,
-          transaction.wedFlgOfWeek,
-          transaction.thuFlgOfWeek,
-          transaction.friFlgOfWeek,
-          transaction.satFlgOfWeek
-        ];
-        
-        const todayIndex = today.getDay();
-        let foundNextDay = false;
-        
-        // 今週の残り日数をチェック
-        for (let i = todayIndex + 1; i < 7; i++) {
-          if (daysOfWeek[i]) {
-            // 祝日除外設定のチェック（サーバー側ロジックと合わせるためコメントアウト）
-            /*
-            if (transaction.publicHolidayExFlgOfWeek && (i === 0 || i === 6)) {
-              continue; // 日曜日または土曜日はスキップ
-            }
-            */
-            nextDate.setDate(today.getDate() + (i - todayIndex));
-            foundNextDay = true;
-            break;
-          }
-        }
-        
-        // 今週に該当日がない場合、来週以降をチェック
-        if (!foundNextDay) {
-          let weekOffset = 1;
-          while (!foundNextDay) {
-            for (let i = 0; i < 7; i++) {
-              if (daysOfWeek[i]) {
-                // 祝日除外設定のチェック（サーバー側ロジックと合わせるためコメントアウト）
-                /*
-                if (transaction.publicHolidayExFlgOfWeek && (i === 0 || i === 6)) {
-                  continue; // 日曜日または土曜日はスキップ
-                }
-                */
-                nextDate.setDate(today.getDate() + (7 * weekOffset) - todayIndex + i);
-                foundNextDay = true;
-                break;
-              }
-            }
-            weekOffset++;
-            if (weekOffset > 4) break; // 無限ループ防止
-          }
-        }
-        break;
-        
-      case 'monthly':
-        nextDate = new Date(today.getFullYear(), today.getMonth(), transaction.dateOfMonth || 1);
-        // 休日調整
-        if (transaction.holidayDivOfMonth === 'before') {
-          if (nextDate.getDay() === 0) { // 日曜日
-            nextDate.setDate(nextDate.getDate() - 2);
-          } else if (nextDate.getDay() === 6) { // 土曜日
-            nextDate.setDate(nextDate.getDate() - 1);
-          }
-        } else if (transaction.holidayDivOfMonth === 'after') {
-          if (nextDate.getDay() === 0) { // 日曜日
-            nextDate.setDate(nextDate.getDate() + 1);
-          } else if (nextDate.getDay() === 6) { // 土曜日
-            nextDate.setDate(nextDate.getDate() + 2);
-          }
-        }
-        // 今月の該当日が過ぎている場合は来月を設定
-        if (nextDate < today) {
-          nextDate.setMonth(nextDate.getMonth() + 1);
-        }
-        break;
-        
-      case 'yearly':
-        if (transaction.dateOfYear) {
-          const [month, day] = transaction.dateOfYear.split('-').map(Number);
-          nextDate = new Date(today.getFullYear() + 1, month - 1, day);
-          
-          // 休日調整
-          if (transaction.holidayDivOfMonth === 'before') {
-            if (nextDate.getDay() === 0) { // 日曜日
-              nextDate.setDate(nextDate.getDate() - 2);
-            } else if (nextDate.getDay() === 6) { // 土曜日
-              nextDate.setDate(nextDate.getDate() - 1);
-            }
-          } else if (transaction.holidayDivOfMonth === 'after') {
-            if (nextDate.getDay() === 0) { // 日曜日
-              nextDate.setDate(nextDate.getDate() + 1);
-            } else if (nextDate.getDay() === 6) { // 土曜日
-              nextDate.setDate(nextDate.getDate() + 2);
-            }
-          }
-        }
-        break;
-        
-      case 'free':
-        // 適宜実行は次回実行日を計算しない
-        return undefined;
-    }
-
-    return nextDate;
-  };
-
   // 新規作成または編集開始
   const startEdit = (transaction?: RecurringTransaction) => {
     if (transaction) {
@@ -269,10 +67,10 @@ export const RecurringTransactionManager: React.FC = () => {
         creditAccountId: '',
         amount: undefined,
         frequency: 'weekly',
-        startDate: new Date().toISOString().split('T')[0],
-        endDate: new Date().toISOString().split('T')[0],
+        startDate: todayLocalString(),
+        endDate: todayLocalString(),
         dateOfMonth: 1,
-        dateOfYear: new Date().toISOString().split('T')[0], // Added for yearly transactions
+        dateOfYear: todayLocalString(), // Added for yearly transactions
         holidayDivOfMonth: 'none', // Added for monthly transactions
         monFlgOfWeek: false, // Added for weekly transactions
         tueFlgOfWeek: false,
@@ -324,6 +122,51 @@ export const RecurringTransactionManager: React.FC = () => {
       }
     }
   };
+
+  // フィルタ・ソート済みの一覧（表描画用）
+  const sortedFilteredEntries = useMemo(() => {
+    // フィルタ適用
+    const filtered = regularJournalEntries.filter(t => {
+      if (nameFilter && !t.name.toLowerCase().includes(nameFilter.toLowerCase())) return false;
+      if (debitFilter && t.debitAccountId !== debitFilter) return false;
+      if (creditFilter && t.creditAccountId !== creditFilter) return false;
+      return true;
+    });
+
+    // ソート適用（filtered は新規配列なので破壊的ソートで問題ない）
+    const accountNameMap = new Map(journalAccounts.map(a => [a.id, a.name]));
+    if (sortBy === 'name') {
+      return [...filtered].sort((a, b) => {
+        const av = a.name || '';
+        const bv = b.name || '';
+        const cmp = av.localeCompare(bv, 'ja');
+        return sortDirection === 'asc' ? cmp : -cmp;
+      });
+    } else if (sortBy === 'debit') {
+      return [...filtered].sort((a, b) => {
+        const av = accountNameMap.get(a.debitAccountId) || '';
+        const bv = accountNameMap.get(b.debitAccountId) || '';
+        const cmp = av.localeCompare(bv, 'ja');
+        return sortDirection === 'asc' ? cmp : -cmp;
+      });
+    } else if (sortBy === 'credit') {
+      return [...filtered].sort((a, b) => {
+        const av = accountNameMap.get(a.creditAccountId) || '';
+        const bv = accountNameMap.get(b.creditAccountId) || '';
+        const cmp = av.localeCompare(bv, 'ja');
+        return sortDirection === 'asc' ? cmp : -cmp;
+      });
+    } else if (sortBy === 'amount') {
+      return [...filtered].sort((a, b) => {
+        const av = a.amount ?? 0;
+        const bv = b.amount ?? 0;
+        const cmp = av - bv;
+        return sortDirection === 'asc' ? cmp : -cmp;
+      });
+    }
+
+    return filtered;
+  }, [regularJournalEntries, journalAccounts, nameFilter, debitFilter, creditFilter, sortBy, sortDirection]);
 
   // 実行
   const executeTransaction = async (transaction: RecurringTransaction) => {
@@ -419,432 +262,44 @@ export const RecurringTransactionManager: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {(() => {
-                // フィルタ適用
-                const filtered = regularJournalEntries.filter(t => {
-                  if (nameFilter && !t.name.toLowerCase().includes(nameFilter.toLowerCase())) return false;
-                  if (debitFilter && t.debitAccountId !== debitFilter) return false;
-                  if (creditFilter && t.creditAccountId !== creditFilter) return false;
-                  return true;
-                });
+              {sortedFilteredEntries.map((transaction: RecurringTransaction) => {
+                const debitAccount = journalAccounts.find(acc => acc.id === transaction.debitAccountId);
+                const creditAccount = journalAccounts.find(acc => acc.id === transaction.creditAccountId);
+                const nextExecution = getNextExecutionDate(transaction);
 
-                // ソート適用
-                const accountNameMap = new Map(journalAccounts.map(a => [a.id, a.name]));
-                if (sortBy === 'name') {
-                  filtered.sort((a, b) => {
-                    const av = a.name || '';
-                    const bv = b.name || '';
-                    const cmp = av.localeCompare(bv, 'ja');
-                    return sortDirection === 'asc' ? cmp : -cmp;
-                  });
-                } else if (sortBy === 'debit') {
-                  filtered.sort((a, b) => {
-                    const av = accountNameMap.get(a.debitAccountId) || '';
-                    const bv = accountNameMap.get(b.debitAccountId) || '';
-                    const cmp = av.localeCompare(bv, 'ja');
-                    return sortDirection === 'asc' ? cmp : -cmp;
-                  });
-                } else if (sortBy === 'credit') {
-                  filtered.sort((a, b) => {
-                    const av = accountNameMap.get(a.creditAccountId) || '';
-                    const bv = accountNameMap.get(b.creditAccountId) || '';
-                    const cmp = av.localeCompare(bv, 'ja');
-                    return sortDirection === 'asc' ? cmp : -cmp;
-                  });
-                } else if (sortBy === 'amount') {
-                  filtered.sort((a, b) => {
-                    const av = a.amount ?? 0;
-                    const bv = b.amount ?? 0;
-                    const cmp = av - bv;
-                    return sortDirection === 'asc' ? cmp : -cmp;
-                  });
-                }
-
-                return filtered.map((transaction: RecurringTransaction) => {
-                  const debitAccount = journalAccounts.find(acc => acc.id === transaction.debitAccountId);
-                  const creditAccount = journalAccounts.find(acc => acc.id === transaction.creditAccountId);
-                  const nextExecution = getNextExecutionDate(transaction);
-
-                  return (
-                    <tr key={transaction.id}>
-                      <td>{transaction.name}</td>
-                      <td>{transaction.description}</td>
-                      <td>{debitAccount?.name || '不明'}</td>
-                      <td>{creditAccount?.name || '不明'}</td>
-                      <td className="text-end">{transaction.amount ? `¥${transaction.amount.toLocaleString()}` : '動的金額'}</td>
-                      <td>{transaction.frequency}</td>
-                      <td>{nextExecution ? nextExecution.toLocaleDateString() : '-'}</td>
-                      <td>
-                        <div className="d-flex gap-2">
-                          <button className="btn btn-sm btn-success" onClick={() => executeTransaction(transaction)}>実行</button>
-                          <button className="btn btn-sm btn-warning" onClick={() => startEdit(transaction)}>編集</button>
-                          <button className="btn btn-sm btn-danger" onClick={() => handleDelete(transaction)}>削除</button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                });
-              })()}
+                return (
+                  <tr key={transaction.id}>
+                    <td>{transaction.name}</td>
+                    <td>{transaction.description}</td>
+                    <td>{debitAccount?.name || '不明'}</td>
+                    <td>{creditAccount?.name || '不明'}</td>
+                    <td className="text-end">{transaction.amount ? `¥${transaction.amount.toLocaleString()}` : '動的金額'}</td>
+                    <td>{transaction.frequency}</td>
+                    <td>{nextExecution ? nextExecution.toLocaleDateString() : '-'}</td>
+                    <td>
+                      <div className="d-flex gap-2">
+                        <button className="btn btn-sm btn-success" onClick={() => executeTransaction(transaction)}>実行</button>
+                        <button className="btn btn-sm btn-warning" onClick={() => startEdit(transaction)}>編集</button>
+                        <button className="btn btn-sm btn-danger" onClick={() => handleDelete(transaction)}>削除</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
       </div>
 
-      {/* モーダル */}
-      {isModalOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            background: 'white',
-            padding: '20px',
-            borderRadius: '8px',
-            width: '500px',
-            maxHeight: '80vh',
-            overflowY: 'auto'
-          }}>
-            <h3>{editingTransaction ? '定期取引編集' : '新規定期取引'}</h3>
-            
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                取引名 *
-              </label>
-              <input
-                type="text"
-                value={formData.name || ''}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="取引名を入力"
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  boxSizing: 'border-box'
-                }}
-              />
-            </div>
-
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                説明
-              </label>
-              <textarea
-                value={formData.description || ''}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="説明を入力"
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  boxSizing: 'border-box',
-                  height: '80px',
-                  resize: 'vertical'
-                }}
-              />
-            </div>
-
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                借方勘定 *
-              </label>
-              <select
-                value={formData.debitAccountId || ''}
-                onChange={(e) => setFormData({ ...formData, debitAccountId: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  boxSizing: 'border-box'
-                }}
-              >
-                <option value="">選択してください</option>
-                {journalAccounts.map(account => (
-                  <option key={account.id} value={account.id}>
-                    {account.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                貸方勘定 *
-              </label>
-              <select
-                value={formData.creditAccountId || ''}
-                onChange={(e) => setFormData({ ...formData, creditAccountId: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  boxSizing: 'border-box'
-                }}
-              >
-                <option value="">選択してください</option>
-                {journalAccounts.map(account => (
-                  <option key={account.id} value={account.id}>
-                    {account.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                金額
-              </label>
-              <input
-                type="number"
-                value={formData.amount || ''}
-                onChange={(e) => setFormData({ 
-                  ...formData, 
-                  amount: e.target.value ? Number(e.target.value) : undefined 
-                })}
-                placeholder="金額を入力（0で動的金額）"
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  boxSizing: 'border-box'
-                }}
-              />
-            </div>
-
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                開始日
-              </label>
-              <input
-                type="date"
-                value={formData.startDate || ''}
-                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  boxSizing: 'border-box'
-                }}
-              />
-            </div>
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                終了日
-              </label>
-              <input
-                type="date"
-                value={formData.endDate || ''}
-                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  boxSizing: 'border-box'
-                }}
-              />
-            </div>
-
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                頻度
-              </label>
-              <select
-                value={formData.frequency || 'monthly'}
-                onChange={(e) => setFormData({ 
-                  ...formData, 
-                  frequency: e.target.value as RecurrenceFrequency 
-                })}
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  boxSizing: 'border-box'
-                }}
-              >
-                <option value="weekly">毎週</option>
-                <option value="monthly">毎月</option>
-                <option value="yearly">毎年</option>
-                <option value="free">適宜</option>
-              </select>
-            </div>
-
-            {formData.frequency === 'free' && (
-              <div style={{ marginBottom: '15px', color: '#666' }}>
-                <em>自由形式の定期取引は次回実行日が自動計算されません。手動で実行してください。</em>
-              </div>
-            )}
-
-            {formData.frequency === 'monthly' && (
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                  実行日
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="31"
-                  value={formData.dateOfMonth || 1}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    dateOfMonth: Number(e.target.value) 
-                  })}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    boxSizing: 'border-box'
-                  }}
-                />
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                  休日調整
-                </label>
-                <select
-                  value={formData.holidayDivOfMonth || 'none'}
-                  onChange={(e) => setFormData({ ...formData, holidayDivOfMonth: e.target.value as 'before' | 'after' | 'none' })}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    boxSizing: 'border-box'
-                  }}
-                >
-                  <option value="none">なし</option>
-                  <option value="before">前倒し</option>
-                  <option value="after">後ろ倒し</option>
-                </select>
-              </div>
-            )}
-
-            {formData.frequency === 'weekly' && (
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-                  曜日
-                </label>
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={formData.monFlgOfWeek || false}
-                      onChange={(e) => setFormData({ ...formData, monFlgOfWeek: e.target.checked })}
-                    /> 月
-                  </label>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={formData.tueFlgOfWeek || false}
-                      onChange={(e) => setFormData({ ...formData, tueFlgOfWeek: e.target.checked })}
-                    /> 火
-                  </label>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={formData.wedFlgOfWeek || false}
-                      onChange={(e) => setFormData({ ...formData, wedFlgOfWeek: e.target.checked })}
-                    /> 水
-                  </label>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={formData.thuFlgOfWeek || false}
-                      onChange={(e) => setFormData({ ...formData, thuFlgOfWeek: e.target.checked })}
-                    /> 木
-                  </label>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={formData.friFlgOfWeek || false}
-                      onChange={(e) => setFormData({ ...formData, friFlgOfWeek: e.target.checked })}
-                    /> 金
-                  </label>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={formData.satFlgOfWeek || false}
-                      onChange={(e) => setFormData({ ...formData, satFlgOfWeek: e.target.checked })}
-                    /> 土
-                  </label>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={formData.sunFlgOfWeek || false}
-                      onChange={(e) => setFormData({ ...formData, sunFlgOfWeek: e.target.checked })}
-                    /> 日
-                  </label> 
-                </div>
-              </div>
-            )}
-
-            {formData.frequency === 'yearly' && (
-              <div style={{ marginBottom: '15px' }}>
-                <label>年次取引日 (YYYY-MM-DD)</label>
-                <input
-                  type="date"
-                  value={formData.dateOfYear || ''}
-                  onChange={(e) => setFormData({ ...formData, dateOfYear: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  boxSizing: 'border-box'
-                }}
-                />
-              </div>
-            )}
-
-            <div style={{
-              display: 'flex',
-              gap: '10px',
-              justifyContent: 'flex-end',
-              marginTop: '20px'
-            }}>
-              <button 
-                onClick={handleSave}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#2563eb',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-              >
-                保存
-              </button>
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#6b7280',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}
-              >
-                キャンセル
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <RecurringTransactionFormModal
+        isOpen={isModalOpen}
+        isEditing={editingTransaction != null}
+        formData={formData}
+        journalAccounts={journalAccounts}
+        onChange={setFormData}
+        onSave={handleSave}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 };

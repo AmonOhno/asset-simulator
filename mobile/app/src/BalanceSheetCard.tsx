@@ -1,4 +1,5 @@
 import { useMemo, type CSSProperties } from "react";
+import { formatDateLocal } from "@asset-simulator/shared";
 import type { BalanceSheetView } from "@asset-simulator/shared";
 import { DateInput } from "@mobile-components/DateInput";
 import { CommonButton } from "@mobile-components/CommonButton";
@@ -10,12 +11,7 @@ type Props = {
   onApply: (date: string) => void;
 };
 
-function fmt(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
+const fmt = formatDateLocal;
 
 // 区分の表示順（貸借対照表: 資産→負債→純資産）
 const CATEGORY_ORDER: Record<string, number> = { Asset: 0, Liability: 1, Equity: 2 };

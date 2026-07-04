@@ -1,22 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useFinancialStore, useAuthStore, BalanceSheetView, ProfitLossView } from '@asset-simulator/shared';
+import { useFinancialStore, useAuthStore, BalanceSheetView, ProfitLossView, formatDateLocal } from '@asset-simulator/shared';
 import { DateRangePicker, DateRange } from '../common/DateRangePicker';
 
 export const JournalDashboard: React.FC = () => {
   const { getBalanceSheetView, getProfitLossStatementView } = useFinancialStore();
   const { userId } = useAuthStore();
-    
+
   const getInitialRange = (): DateRange => {
     const today = new Date();
     const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
     const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-    // ヘルパーを使い回すか、ここでも同様のフォーマット処理を行う
-    const f = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
     return {
-      startDate: f(startDate),
-      endDate: f(endDate)
+      startDate: formatDateLocal(startDate),
+      endDate: formatDateLocal(endDate)
     };
   };
 

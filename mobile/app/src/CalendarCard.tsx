@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useFinancialStore } from "@asset-simulator/shared";
+import { useFinancialStore, formatDateLocal } from "@asset-simulator/shared";
 import type { CalendarJournalEntry } from "@asset-simulator/shared";
 import { Card, CardBodyHead, CardBodyMain } from "@mobile-components/Card";
 import { CommonButton } from "@mobile-components/CommonButton";
@@ -14,9 +14,7 @@ interface CalendarCardProps {
   onEntryChanged?: () => void;
 }
 
-function fmt(date: Date): string {
-  return date.toLocaleDateString("sv-SE");
-}
+const fmt = formatDateLocal;
 
 function getMonthDays(year: number, month: number) {
   const end = new Date(year, month + 1, 0);

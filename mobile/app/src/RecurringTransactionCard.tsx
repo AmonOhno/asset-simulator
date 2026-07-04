@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useFinancialStore } from "@asset-simulator/shared";
+import { useFinancialStore, todayLocalString } from "@asset-simulator/shared";
 import type { RecurrenceFrequency, RecurringTransaction } from "@asset-simulator/shared";
 import { Card, CardBodyHead, CardBodyMain } from "@mobile-components/Card";
 import { TextInput } from "@mobile-components/TextInput";
@@ -36,7 +36,7 @@ export function RecurringTransactionCard() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [startDate, setStartDate] = useState(() => new Date().toLocaleDateString("sv-SE"));
+  const [startDate, setStartDate] = useState(() => todayLocalString());
   const [frequency, setFrequency] = useState<RecurrenceFrequency>("monthly");
   const [dateOfMonth, setDateOfMonth] = useState(1);
   const [dateOfYear, setDateOfYear] = useState("01-01");
@@ -48,7 +48,7 @@ export function RecurringTransactionCard() {
   const resetForm = () => {
     setName("");
     setDescription("");
-    setStartDate(new Date().toLocaleDateString("sv-SE"));
+    setStartDate(todayLocalString());
     setFrequency("monthly");
     setDateOfMonth(1);
     setDateOfYear("01-01");
