@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useFinancialStore, useAuthStore, BalanceSheetView, ProfitLossView, formatDateLocal } from '@asset-simulator/shared';
-import { DateRangePicker, DateRange } from '../common/DateRangePicker';
+import { DateRangePicker, DateRange, DateRangeSettings } from '../common/DateRangePicker';
 
 export const JournalDashboard: React.FC = () => {
   const { getBalanceSheetView, getProfitLossStatementView } = useFinancialStore();
@@ -18,7 +18,15 @@ export const JournalDashboard: React.FC = () => {
   };
 
   const defaultRange = getInitialRange();
-  
+
+  const defaultDateSettings: DateRangeSettings = {
+    preset: '1-month',
+    startDayOfWeek: 1,
+    startDayOfMonth: 25,
+    holidayAdj: 'before',
+    startMonthDay: { m: 12, d: 25 },
+  };
+
 const getStoredDateRange = (): DateRange => {
     if (!userId) return defaultRange;
     const key = `JournalDashboard-date-range_${userId}`;
@@ -33,15 +41,28 @@ const getStoredDateRange = (): DateRange => {
     return defaultRange;
   };
 
+  const getStoredDateSettings = (): DateRangeSettings => {
+    if (!userId) return defaultDateSettings;
+    const stored = localStorage.getItem(`JournalDashboard-date-settings_${userId}`);
+    if (stored) {
+      try { return { ...defaultDateSettings, ...JSON.parse(stored) }; } catch { return defaultDateSettings; }
+    }
+    return defaultDateSettings;
+  };
+
   const getStoredBsAsOfDate = (plEndDate?: string): string => {
     if (!userId) return plEndDate || defaultRange.endDate;
     const key = `JournalDashboard-bs-as-of-date_${userId}`;
     const stored = localStorage.getItem(key);
     return stored || plEndDate || defaultRange.endDate;
   };
-  
+
   const initialDateRange = getStoredDateRange();
   const [dateRange, setDateRange] = useState<DateRange>(initialDateRange);
+  const [dateSettings, setDateSettings] = useState<DateRangeSettings>(getStoredDateSettings());
+  const hadStoredRangeRef = React.useRef<boolean>(
+    !!userId && localStorage.getItem(`JournalDashboard-date-range_${userId}`) !== null
+  );
   const [bsAsOfDate, setBsAsOfDate] = useState<string>(getStoredBsAsOfDate(initialDateRange.endDate));
   const [bsData, setBsData] = useState<BalanceSheetView[]>([]);
   const [plData, setPlData] = useState<ProfitLossView[]>([]);
@@ -52,6 +73,12 @@ const getStoredDateRange = (): DateRange => {
       localStorage.setItem(`JournalDashboard-date-range_${userId}`, JSON.stringify(dateRange));
     }
   }, [dateRange, userId]);
+
+  useEffect(() => {
+    if (userId) {
+      localStorage.setItem(`JournalDashboard-date-settings_${userId}`, JSON.stringify(dateSettings));
+    }
+  }, [dateSettings, userId]);
 
   useEffect(() => {
     if (userId) {
@@ -186,9 +213,12 @@ const getStoredDateRange = (): DateRange => {
             </div>
             <div className="card-body">
               <div className="col-md-12 mb-3">
-                <DateRangePicker 
+                <DateRangePicker
                   dateRange={dateRange}
                   onDateRangeChange={handleDateRangeChange}
+                  settings={dateSettings}
+                  onSettingsChange={setDateSettings}
+                  skipInitialCompute={hadStoredRangeRef.current}
                   className=''
                 />
               </div>

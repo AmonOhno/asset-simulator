@@ -2,12 +2,17 @@ import { useMemo, type CSSProperties } from "react";
 import type { ProfitLossView } from "@asset-simulator/shared";
 import { PeriodSelector } from "@mobile-components/PeriodSelector";
 import { DataGrid } from "@mobile-components/DataGrid";
+import type { PeriodPreset, PeriodSettings } from "@mobile-components/periodSelector.utils";
 
 type Props = {
   appliedStartDate: string;
   appliedEndDate: string;
   rows: ProfitLossView[];
   onApply: (startDate: string, endDate: string) => void;
+  preset: PeriodPreset;
+  onPresetChange: (preset: PeriodPreset) => void;
+  settings: PeriodSettings;
+  onSettingsChange: (settings: PeriodSettings) => void;
 };
 
 // 区分の表示順（損益計算書: 収益→費用）
@@ -27,7 +32,16 @@ const container: CSSProperties = {
 };
 
 // 収益・費用サマリーリスト（純利益パネル配下に表示される明細）
-export function ProfitLossStatementCard({ appliedStartDate, appliedEndDate, rows, onApply }: Props) {
+export function ProfitLossStatementCard({
+  appliedStartDate,
+  appliedEndDate,
+  rows,
+  onApply,
+  preset,
+  onPresetChange,
+  settings,
+  onSettingsChange,
+}: Props) {
   // サーバー集計済みの ProfitLossView を表示用の行へマッピング（区分→勘定科目でソート）
   const grouped = useMemo(
     () =>
@@ -56,6 +70,10 @@ export function ProfitLossStatementCard({ appliedStartDate, appliedEndDate, rows
       <PeriodSelector
         range={{ startDate: appliedStartDate, endDate: appliedEndDate }}
         onChange={(r) => onApply(r.startDate, r.endDate)}
+        preset={preset}
+        onPresetChange={onPresetChange}
+        settings={settings}
+        onSettingsChange={onSettingsChange}
       />
       <div>
         <DataGrid

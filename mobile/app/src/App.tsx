@@ -17,7 +17,7 @@ import { PanelButton } from "@mobile-components/PanelButton";
 import { CommonButton } from "@mobile-components/CommonButton";
 import { Dialog } from "@mobile-components/Dialog";
 import { PeriodSelector } from "@mobile-components/PeriodSelector";
-import { computePeriodRange, DEFAULT_PERIOD_SETTINGS } from "@mobile-components/periodSelector.utils";
+import { computePeriodRange, DEFAULT_PERIOD_SETTINGS, type PeriodPreset, type PeriodSettings } from "@mobile-components/periodSelector.utils";
 import LoginScreen from "./LoginScreen";
 
 type TabId = "transaction" | "pl-bs" | "recurring" | "accounts";
@@ -91,6 +91,9 @@ function App() {
   const [plStartDate, setPlStartDate] = useState(defaults.plStart);
   const [plEndDate, setPlEndDate] = useState(defaults.plEnd);
   const [bsAsOfDate, setBsAsOfDate] = useState(defaults.bsAsOf);
+
+  const [periodPreset, setPeriodPreset] = useState<PeriodPreset>("month");
+  const [periodSettings, setPeriodSettings] = useState<PeriodSettings>(DEFAULT_PERIOD_SETTINGS);
 
   const [plRows, setPlRows] = useState<ProfitLossView[]>([]);
   const [bsRows, setBsRows] = useState<BalanceSheetView[]>([]);
@@ -193,6 +196,10 @@ function App() {
               <PeriodSelector
                 range={{ startDate: plStartDate, endDate: plEndDate }}
                 onChange={(r) => handleDashboardPeriodChange(r.startDate, r.endDate)}
+                preset={periodPreset}
+                onPresetChange={setPeriodPreset}
+                settings={periodSettings}
+                onSettingsChange={setPeriodSettings}
               />
             </div>
 
@@ -211,6 +218,10 @@ function App() {
                   appliedEndDate={plEndDate}
                   rows={plRows}
                   onApply={(s, e) => { setPlStartDate(s); setPlEndDate(e); }}
+                  preset={periodPreset}
+                  onPresetChange={setPeriodPreset}
+                  settings={periodSettings}
+                  onSettingsChange={setPeriodSettings}
                 />
               </div>
             </div>
