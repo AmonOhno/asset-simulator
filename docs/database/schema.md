@@ -107,6 +107,23 @@ ER 図: [er_diagram.puml](er_diagram.puml)
 
 ---
 
+### api_tokens（MyOS 連携用 API トークン）
+
+MyOS からの読み取り専用連携用。詳細は [`docs/api/myos_integration.md`](../api/myos_integration.md)。
+
+| カラム | 型 | 説明 |
+|-------|---|------|
+| id | string PK | `tok_<uuid>` |
+| user_id | uuid FK→auth.users | — |
+| name | string | トークン用途名（例: `myos`） |
+| token_hash | string | 平文トークンの SHA-256 hex ハッシュ（一意）。平文は保存しない |
+| created_at | timestamp | — |
+| last_used_at | timestamp \| null | Edge Function 認証成功のたびに更新 |
+
+発行は SECURITY DEFINER 関数 `fn_issue_api_token(p_user_id, p_name)` を SQL Editor から実行する（`anon` / `authenticated` には EXECUTE 権限なし）。RLS は「本人のみ select 可」のみで insert/update/delete ポリシーは設けていない。
+
+---
+
 ## VIEW
 
 ### v_journal_entries_for_calendar

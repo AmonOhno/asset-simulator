@@ -19,6 +19,7 @@ Asset Simulator の設計ドキュメント一覧です。API サーバー（Exp
 | ファイル | 内容 |
 |---------|------|
 | [api/specification.md](api/specification.md) | Supabase 直接アクセスの規約・テーブル/VIEW/RPC 一覧・ストアアクション一覧・定期取引実行仕様 |
+| [api/myos_integration.md](api/myos_integration.md) | MyOS 連携用の読み取り専用 Finance API（Edge Function）仕様・トークン発行・デプロイ手順 |
 
 ## DB・ER設計
 
