@@ -17,6 +17,7 @@ asset-simulator/
 │   └── src/        # Storybook エントリー用スキャフォールド
 ├── packages/
 │   └── shared/     # 共有型・ユーティリティ・Zustand ストア
+├── supabase/       # マイグレーション + Edge Functions（MyOS 連携 API 等）
 └── docs/           # 設計ドキュメント
 ```
 
@@ -68,6 +69,7 @@ asset-simulator/
 | 仕訳エントリー | `je_` | `je_<uuid>` |
 | 定期仕訳 | `reg_` | `reg_<uuid>` |
 | スケジュールイベント | `event_` | `event_<uuid>` |
+| APIトークン | `tok_` | `tok_<uuid>` |
 
 ## セキュリティルール
 
@@ -83,6 +85,7 @@ asset-simulator/
 | `docs/architecture/overview.md` | システム概要・技術スタック・ディレクトリ構成・状態管理・shared/utils |
 | `docs/ui/specification.md` | 画面構成・コンポーネント仕様・フォームバリデーション・データフロー・期間セレクター仕様 |
 | `docs/api/specification.md` | Supabase 直接アクセスの規約・テーブル/VIEW/RPC 一覧・ストアアクション一覧 |
+| `docs/api/myos_integration.md` | MyOS 連携用の読み取り専用 Finance API（Edge Function）仕様 |
 | `docs/database/er_diagram.puml` | DB ER 図（PlantUML） |
 | `docs/database/schema.md` | テーブル定義・カラム説明・VIEW・RPC |
 | `docs/test/scenarios.md` | 自動テストの観点一覧・手動テストシナリオ・回帰観点 |
