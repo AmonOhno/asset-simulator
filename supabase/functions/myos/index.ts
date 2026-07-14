@@ -122,12 +122,34 @@ Deno.serve(async (req) => {
   }
 });
 
-async function handleSummary(url: URL, userId: string, cors: Record<string, string>): Promise<Response> {
-  const month = url.searchParams.get('month') ?? '';
-  if (!MONTH_RE.test(month)) {
-    return json({ error: 'invalid month' }, 400, cors);
+// month/date クエリパラメータから期間を解決する。
+// 両方または片方も指定されていない場合は null（呼び出し側で 400 を返す）。
+function resolvePeriod(url: URL): { start: string; end: string; label: Record<string, string> } | null {
+  const month = url.searchParams.get('month');
+  const date = url.searchParams.get('date');
+
+  if (month !== null && date !== null) return null;
+
+  if (date !== null) {
+    if (!DATE_RE.test(date)) return null;
+    return { start: date, end: date, label: { date } };
   }
-  const { start, end } = monthRange(month);
+
+  if (month !== null) {
+    if (!MONTH_RE.test(month)) return null;
+    const { start, end } = monthRange(month);
+    return { start, end, label: { month } };
+  }
+
+  return null;
+}
+
+async function handleSummary(url: URL, userId: string, cors: Record<string, string>): Promise<Response> {
+  const period = resolvePeriod(url);
+  if (!period) {
+    return json({ error: 'invalid month or date' }, 400, cors);
+  }
+  const { start, end, label } = period;
 
   const { data, error } = await supabase.rpc('fn_profit_loss', {
     p_start_date: start,
@@ -143,15 +165,15 @@ async function handleSummary(url: URL, userId: string, cors: Record<string, stri
     if (row.category === 'Expense') expense += Number(row.sum_amount);
   }
 
-  return json({ month, income, expense, net: income - expense }, 200, cors);
+  return json({ ...label, income, expense, net: income - expense }, 200, cors);
 }
 
 async function handleCategories(url: URL, userId: string, cors: Record<string, string>): Promise<Response> {
-  const month = url.searchParams.get('month') ?? '';
-  if (!MONTH_RE.test(month)) {
-    return json({ error: 'invalid month' }, 400, cors);
+  const period = resolvePeriod(url);
+  if (!period) {
+    return json({ error: 'invalid month or date' }, 400, cors);
   }
-  const { start, end } = monthRange(month);
+  const { start, end, label } = period;
 
   const { data, error } = await supabase.rpc('fn_profit_loss', {
     p_start_date: start,
@@ -165,7 +187,7 @@ async function handleCategories(url: URL, userId: string, cors: Record<string, s
     .map((row: { name: string; sum_amount: number }) => ({ name: row.name, amount: Number(row.sum_amount) }))
     .sort((a: { amount: number }, b: { amount: number }) => b.amount - a.amount);
 
-  return json({ month, categories }, 200, cors);
+  return json({ ...label, categories }, 200, cors);
 }
 
 async function handleEvents(url: URL, userId: string, cors: Record<string, string>): Promise<Response> {
