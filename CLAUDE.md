@@ -70,6 +70,7 @@ asset-simulator/
 | 定期仕訳 | `reg_` | `reg_<uuid>` |
 | スケジュールイベント | `event_` | `event_<uuid>` |
 | APIトークン | `tok_` | `tok_<uuid>` |
+| 支出目標 | `goal_` | `goal_<uuid>` |
 
 ## セキュリティルール
 

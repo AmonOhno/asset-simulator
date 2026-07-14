@@ -139,6 +139,20 @@ export interface RecurringTransaction {
   lastExecutedDate?: string; // 最終実行日 (YYYY-MM-DD)
 }
 
+// --- 支出目標 ---
+export type GoalPeriod = 'day' | 'month';
+
+/**
+ * 勘定科目ごと・期間（日次/月次）ごとの支出目標
+ */
+export interface Goal {
+  id: string; // 'goal_<uuid>' 形式
+  accountId: string; // 対象勘定科目のID (JournalAccount.id)
+  period: GoalPeriod; // 目標期間: day（日次）/ month（月次）
+  amount: number; // 目標金額（円）
+  userId: string; // ユーザーID
+}
+
 // --- スケジュールイベント ---
 export interface ScheduleEvent {
   eventId: string; // 一意のID

@@ -91,8 +91,8 @@ App (desktop/src/App.tsx)
 
 | タブ ID | 表示名 | 内容 |
 |--------|-------|------|
-| `transaction` | 取引 | `CalendarCard` + 取引入力/編集ダイアログ（`TransactionEntryCard`） |
-| `pl-bs` | PL/BS | `PeriodSelector`（期間指定）+ `PanelButton` × 2（純利益/純資産）→ 展開で `ProfitLossStatementCard` / `BalanceSheetCard` |
+| `transaction` | 取引 | `CalendarCard` + 取引入力/編集ダイアログ（`TransactionEntryCard`） + `GoalCard`（支出目標） |
+| `pl-bs` | PL/BS | `PeriodSelector`（期間指定）+ `PanelButton` × 2（純利益/純資産）→ 展開で `ProfitLossStatementCard` / `BalanceSheetCard` + `GoalCard`（支出目標） |
 | `recurring` | 定期取引 | `RecurringTransactionCard` |
 | `accounts` | 勘定科目 | `AccountMasterCard` |
 
@@ -110,6 +110,7 @@ App (desktop/src/App.tsx)
 | `BalanceSheetCard` | `BalanceSheetCard.tsx` | 資産・負債・純資産の明細サマリーリスト（基準日プリセット: 今日/今月末/先月末） | なし（`rows` は props） |
 | `RecurringTransactionCard` | `RecurringTransactionCard.tsx` | 定期取引の一覧・追加（ダイアログ）・実行・削除・期限到来分一括実行 | `addRegularJournalEntry`, `deleteRegularJournalEntry`, `executeRegularJournalEntry`, `executeDueRegularJournalEntries` |
 | `AccountMasterCard` | `AccountMasterCard.tsx` | 勘定科目の追加・一覧・**削除**（desktop の勘定科目管理は編集のみで削除なし） | `addJournalAccount`, `deleteJournalAccount` |
+| `GoalCard` | `GoalCard.tsx` | 費用科目ごと・期間（日次/月次）ごとの支出目標の設定（ダイアログ、同一科目・期間は金額を上書き）・一覧・進捗表示（当日/当月の実績支出との比較バー）・削除。`transaction` タブと `pl-bs` タブの両方から利用可能 | `getGoals`, `addGoal`, `updateGoal`, `deleteGoal`, `getProfitLossStatementView`（実績取得） |
 
 モバイル版には勘定科目の「編集」機能はない（追加・削除のみ）。desktop 版には「削除」機能がない（追加・編集のみ）。
 

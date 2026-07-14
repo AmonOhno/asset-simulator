@@ -82,6 +82,17 @@ entity "schedule_events" as schedule_events {
   created_at : timestamp
 }
 
+entity "goals" as goals {
+  * id : string <<PK>>
+  --
+  * account_id : string <<FK>>
+  * period : string
+  * amount : numeric
+  * user_id : uuid <<FK>>
+  --
+  created_at : timestamp
+}
+
 entity "accounts" as accounts {
   * id : string <<PK>>
   --
@@ -111,6 +122,7 @@ users ||--o{ regular_journal_entries : "user_id"
 users ||--o{ schedule_events : "user_id"
 users ||--o{ accounts : "user_id"
 users ||--o{ credit_cards : "user_id"
+users ||--o{ goals : "user_id"
 
 accounts ||--o| credit_cards : "linked_account_id"
 
@@ -119,6 +131,8 @@ journal_accounts ||--o{ journal_entries : "credit_account_id"
 
 journal_accounts ||--o{ regular_journal_entries : "debit_account_id"
 journal_accounts ||--o{ regular_journal_entries : "credit_account_id"
+
+journal_accounts ||--o{ goals : "account_id"
 
 ' --- Notes ---
 note top of users
@@ -160,6 +174,15 @@ note bottom of schedule_events
   カレンダー上のスケジュール
   イベント（給料日・支払日等の
   リマインド用）。仕訳とは独立。
+end note
+
+note bottom of goals
+  勘定科目ごと・期間(日次/月次)ごと
+  の支出目標。
+  period: 'day'/'month'。
+  (user_id, account_id, period) は
+  一意制約あり(UI からは既存があれば
+  金額を上書き更新)。
 end note
 
 note bottom of accounts
