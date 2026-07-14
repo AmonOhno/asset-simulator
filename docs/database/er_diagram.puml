@@ -18,6 +18,7 @@ entity "journal_accounts" as journal_accounts {
   * name : string
   * category : string
   * balance : numeric
+  * include_in_summary : boolean
   * user_id : uuid <<FK>>
   --
   created_at : timestamp

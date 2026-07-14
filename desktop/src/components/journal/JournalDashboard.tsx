@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useFinancialStore, useAuthStore, BalanceSheetView, ProfitLossView, formatDateLocal } from '@asset-simulator/shared';
+import { useFinancialStore, useAuthStore, BalanceSheetView, ProfitLossView, formatDateLocal, filterSummaryIncludedRows } from '@asset-simulator/shared';
 import { DateRangePicker, DateRange, DateRangeSettings } from '../common/DateRangePicker';
 
 export const JournalDashboard: React.FC = () => {
-  const { getBalanceSheetView, getProfitLossStatementView } = useFinancialStore();
+  const { getBalanceSheetView, getProfitLossStatementView, journalAccounts } = useFinancialStore();
   const { userId } = useAuthStore();
 
   const getInitialRange = (): DateRange => {
@@ -152,16 +152,19 @@ const getStoredDateRange = (): DateRange => {
     return rows.filter(row => row.category === category);
   };
 
-  const bsCategorized = groupByCategory(bsData);
+  // サマリーに含めない設定（変動資産等）の勘定科目を BS 集計から除外
+  const bsDataForSummary = filterSummaryIncludedRows(bsData, journalAccounts);
+
+  const bsCategorized = groupByCategory(bsDataForSummary);
   const plCategorized = groupByCategory(plData);
-  
+
   const totalAssets = bsCategorized['Asset'] || 0;
   const totalLiabilities = bsCategorized['Liability'] || 0;
   const totalEquity_Value = totalAssets - totalLiabilities;
 
-  const assetDetails = getDetailsByCategory(bsData, 'Asset');
-  const liabilityDetails = getDetailsByCategory(bsData, 'Liability');
-  const equityDetails = getDetailsByCategory(bsData, 'Equity');
+  const assetDetails = getDetailsByCategory(bsDataForSummary, 'Asset');
+  const liabilityDetails = getDetailsByCategory(bsDataForSummary, 'Liability');
+  const equityDetails = getDetailsByCategory(bsDataForSummary, 'Equity');
   
   const totalRevenues = plCategorized['Revenue'] || 0;
   const totalExpenses = plCategorized['Expense'] || 0;

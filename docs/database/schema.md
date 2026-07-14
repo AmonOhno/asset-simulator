@@ -18,11 +18,14 @@ ER 図: [er_diagram.puml](er_diagram.puml)
 | name | string | 勘定科目名 |
 | category | enum | Asset / Liability / Equity / Revenue / Expense |
 | balance | numeric | 残高（仕訳集計値。RPC `create_journal_entry` 実行時に更新） |
+| include_in_summary | boolean | 貸借対照表サマリーに含めるか（既定値 `true`）。`false` の場合、株など価値が変動する資産（変動資産）をダッシュボードの BS 集計・合計から除外する |
 | user_id | string FK→auth.users | — |
 | created_at | timestamp | — |
 | updated_at | timestamp | — |
 
 ソート順（`getJournalAccounts`）: `category` 昇順 → `name` 昇順。
+
+`include_in_summary = false` の勘定科目は `fn_balance_sheet` の戻り値自体には引き続き含まれる（DB 側では絞り込まない）。除外はフロントエンド側で `filterSummaryIncludedRows`（`packages/shared/src/utils/balanceSheet.ts`）を用いて行う（desktop の `JournalDashboard`、mobile の `App`/`BalanceSheetCard` で共通利用）。
 
 ---
 

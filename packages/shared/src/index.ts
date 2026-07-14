@@ -12,6 +12,7 @@ export {
 } from './utils/period';
 export type { PeriodPreset, PeriodRange, PeriodSettings } from './utils/period';
 export { isExecutionDate, getNextExecutionDate } from './utils/recurrence';
+export { filterSummaryIncludedRows } from './utils/balanceSheet';
 export type {
     Account,
     CreditCard,

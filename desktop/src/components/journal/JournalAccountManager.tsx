@@ -13,6 +13,7 @@ export const JournalAccountManager: React.FC = () => {
     name: '',
     category: 'Expense',
     balance: 0,
+    includeInSummary: true,
     user_id: ''
   });
 
@@ -20,7 +21,7 @@ export const JournalAccountManager: React.FC = () => {
 
   const resetForm = () => {
     setIsEditing(false);
-    setCurrentAccount({ name: '', category: 'Expense', balance: 0, user_id: '' });
+    setCurrentAccount({ name: '', category: 'Expense', balance: 0, includeInSummary: true, user_id: '' });
   };
 
   const handleEditClick = (account: JournalAccount) => {
@@ -49,6 +50,11 @@ export const JournalAccountManager: React.FC = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setCurrentAccount(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleIncludeInSummaryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { checked } = e.target;
+    setCurrentAccount(prev => ({ ...prev, includeInSummary: checked }));
   };
 
   return (
@@ -87,6 +93,20 @@ export const JournalAccountManager: React.FC = () => {
               <option value="Expense">費用</option>
             </select>
           </div>
+          <div className="mb-3 form-check">
+            <input
+              type="checkbox"
+              id="journalAccountIncludeInSummary"
+              name="includeInSummary"
+              className="form-check-input"
+              checked={currentAccount.includeInSummary}
+              onChange={handleIncludeInSummaryChange}
+            />
+            <label htmlFor="journalAccountIncludeInSummary" className="form-check-label">
+              サマリー（貸借対照表）に含める
+            </label>
+            <div className="form-text">株など価値が変動する資産をサマリー集計から除外したい場合はオフにします。</div>
+          </div>
           <button type="submit" className="btn btn-primary">{isEditing ? '更新' : '追加'}</button>
           {isEditing && <button type="button" className="btn btn-secondary ms-2" onClick={resetForm}>キャンセル</button>}
         </form>
@@ -97,6 +117,7 @@ export const JournalAccountManager: React.FC = () => {
             <tr>
               <th>勘定科目名</th>
               <th>カテゴリ</th>
+              <th>サマリー</th>
               <th>操作</th>
             </tr>
           </thead>
@@ -105,6 +126,7 @@ export const JournalAccountManager: React.FC = () => {
               <tr key={acc.id}>
                 <td>{acc.name}</td>
                 <td>{acc.category}</td>
+                <td>{acc.includeInSummary === false ? '含めない' : '含める'}</td>
                 <td>
                   <button className="btn btn-sm btn-outline-primary" onClick={() => handleEditClick(acc)}>編集</button>
                 </td>

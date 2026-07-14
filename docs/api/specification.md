@@ -117,6 +117,7 @@
     p_user_id: userId,
   });
   ```
+- **サマリー除外（変動資産等）**: RPC の戻り値自体は `journal_accounts.include_in_summary` によるフィルタを行わない。`include_in_summary = false` の勘定科目をダッシュボードの合計・明細から除くのはフロントエンドの責務で、`filterSummaryIncludedRows`（`@asset-simulator/shared`）を `getBalanceSheetView` の結果に適用する
 
 ### `fn_profit_loss(p_user_id, p_start_date, p_end_date)`
 
@@ -149,10 +150,10 @@
 | `getRegularJournalEntries` | `() => Promise<RecurringTransaction[]>` | `regular_journal_entries` を取得し state に反映 | `console.error` して現在の state を返す |
 | `getBalanceSheetView` | `(asOfDate?) => Promise<BalanceSheetView[]>` | RPC `fn_balance_sheet` 呼び出し | `console.error` して `[]` |
 | `getProfitLossStatementView` | `(startDate?, endDate?) => Promise<ProfitLossView[]>` | RPC `fn_profit_loss` 呼び出し | `console.error` して `[]` |
-| `addJournalAccount` | `(account: Omit<JournalAccount,'id'>) => Promise<void>` | `jacc_` ID 発行 → insert → state に追加 | `console.error`（呼び出し元には伝播しない） |
+| `addJournalAccount` | `(account: Omit<JournalAccount,'id'>) => Promise<void>` | `jacc_` ID 発行 → insert（`name`/`category`/`include_in_summary`）→ state に追加 | `console.error`（呼び出し元には伝播しない） |
 | `addJournalEntry` | `(entry: Omit<JournalEntry,'id'>) => Promise<void>` | `je_` ID 発行 → RPC `create_journal_entry` → state に追加 | 同上 |
 | `addRegularJournalEntry` | `(entry: Omit<RecurringTransaction,'id'>) => Promise<void>` | `reg_` ID 発行 → `toSnakeCase` → insert → state に追加 | 同上 |
-| `updateJournalAccount` | `(account: JournalAccount) => Promise<void>` | `name`/`category` を update → state を置換 | 同上 |
+| `updateJournalAccount` | `(account: JournalAccount) => Promise<void>` | `name`/`category`/`include_in_summary` を update → state を置換 | 同上 |
 | `updateJournalEntry` | `(entry: JournalEntry) => Promise<void>` | 全フィールド update（`amount` は `parseFloat`） | 同上 |
 | `updateRegularJournalEntry` | `(entry: RecurringTransaction) => Promise<void>` | `toSnakeCase(entry)` を丸ごと update | 同上 |
 | `deleteJournalAccount` / `deleteJournalEntry` / `deleteRegularJournalEntry` | `(entity) => Promise<void>` | delete → state から filter で除去 | 同上 |
