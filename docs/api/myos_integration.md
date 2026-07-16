@@ -32,24 +32,32 @@
 
 ベース URL: `https://<project-ref>.supabase.co/functions/v1/myos`
 
-### `GET /summary?month=YYYY-MM`
+### `GET /summary?month=YYYY-MM` または `GET /summary?date=YYYY-MM-DD`
 
-当月の収入・支出・収支サマリ。
+当月、または指定日1日分の収入・支出・収支サマリ。`month` / `date` はどちらか一方のみ指定する（両方指定・両方未指定は 400）。日毎の分析には `date` に前日日付を指定する。
 
 ```json
 { "month": "2026-07", "income": 320000, "expense": 277700, "net": 42300 }
+```
+
+```json
+{ "date": "2026-07-13", "income": 0, "expense": 4200, "net": -4200 }
 ```
 
 - `income` = `fn_profit_loss` の `category = 'Revenue'` 行の `sum_amount` 合計
 - `expense` = 同 `category = 'Expense'` 行の合計
 - `net` = `income - expense`
 
-### `GET /categories?month=YYYY-MM`
+### `GET /categories?month=YYYY-MM` または `GET /categories?date=YYYY-MM-DD`
 
-支出のカテゴリ（勘定科目）別内訳。金額降順。
+支出のカテゴリ（勘定科目）別内訳。金額降順。`month` / `date` はどちらか一方のみ指定する（両方指定・両方未指定は 400）。
 
 ```json
 { "month": "2026-07", "categories": [ { "name": "食費", "amount": 48200 } ] }
+```
+
+```json
+{ "date": "2026-07-13", "categories": [ { "name": "食費", "amount": 4200 } ] }
 ```
 
 ### `GET /events?range=YYYY-MM-DD..YYYY-MM-DD&min_amount=N`
@@ -64,7 +72,7 @@
 
 | コード | 意味 |
 |-------|------|
-| 400 | パラメータ不正（`month` / `range` / `min_amount` の形式エラー） |
+| 400 | パラメータ不正（`month` / `date` / `range` / `min_amount` の形式エラー、`month` と `date` の同時指定・同時未指定を含む） |
 | 401 | トークン不正・未指定 |
 | 404 | 未定義のパス |
 | 500 | サーバー内部エラー（DB エラー含む） |
