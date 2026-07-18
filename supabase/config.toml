@@ -1,0 +1,42 @@
+# Supabase ローカル開発環境設定
+# 起動: supabase start（Docker 必須） / 停止: supabase stop
+project_id = "saitama-city-modernization"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+# パスキー認証時の RP ID / origin と一致させること（docs/auth-passkey.md）
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
+[edge_runtime]
+enabled = true
+policy = "oneshot"
+
+[functions.passkey-register]
+verify_jwt = false
+
+[functions.passkey-auth]
+verify_jwt = false

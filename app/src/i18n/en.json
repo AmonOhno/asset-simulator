@@ -1,0 +1,64 @@
+{
+  "siteName": "Saitama City",
+  "siteTagline": "Modernization learning demo (unofficial)",
+  "skipToContent": "Skip to main content",
+  "search": {
+    "label": "Site search",
+    "placeholder": "e.g. resident record, garbage, nursery",
+    "button": "Search",
+    "resultCount": "{{count}} result(s)",
+    "noResult": "No results found for \"{{query}}\"."
+  },
+  "nav": {
+    "title": "Categories"
+  },
+  "a11y": {
+    "fontSize": "Text size",
+    "fontSizeNormal": "Normal",
+    "fontSizeLarge": "Large",
+    "contrast": "Contrast",
+    "contrastNormal": "Normal",
+    "contrastHigh": "High contrast"
+  },
+  "lang": {
+    "switchLabel": "Language",
+    "ja": "日本語",
+    "en": "English"
+  },
+  "emergency": {
+    "title": "Emergency Information"
+  },
+  "sections": {
+    "news": "News",
+    "newsMore": "All news (current official site)",
+    "categories": "Browse by category",
+    "wards": "Ward Offices",
+    "popular": "Popular menus",
+    "events": "Events"
+  },
+  "auth": {
+    "login": "Log in",
+    "logout": "Log out",
+    "myPage": "My Page",
+    "loggedInAs": "Signed in as {{name}}",
+    "passkeyTitle": "Sign in with a passkey",
+    "passkeyDescription": "Use your fingerprint, face, or device PIN instead of a password (WebAuthn).",
+    "username": "Username",
+    "register": "Register a passkey",
+    "authenticate": "Sign in with passkey",
+    "notConfigured": "Supabase is not connected; authentication is demo-only. Run `supabase start` to launch the local stack.",
+    "success": "Signed in",
+    "error": "Authentication failed: {{message}}"
+  },
+  "dataSource": {
+    "live": "Data source: Supabase (local)",
+    "fallback": "Data source: fallback demo data (Supabase not connected)"
+  },
+  "footer": {
+    "links": "Related links",
+    "address": "6-4-4 Tokiwa, Urawa-ku, Saitama City, Saitama 330-9588, Japan",
+    "tel": "Tel: +81-48-829-1111 (main)",
+    "copyright": "This is an unofficial demo for learning. Content source: Saitama City official website.",
+    "disclaimer": "A personal learning project unaffiliated with Saitama City."
+  }
+}

@@ -1,0 +1,279 @@
+{
+  "url": "http://localhost:4173/",
+  "title": "さいたま市（モダナイゼーション学習デモ）",
+  "lang": "ja",
+  "generator": null,
+  "viewportMeta": "width=device-width, initial-scale=1.0",
+  "colors": [
+    {
+      "value": "#1A1A1A",
+      "count": 100
+    },
+    {
+      "value": "#FFFFFF",
+      "count": 44
+    },
+    {
+      "value": "#1E5C31",
+      "count": 30
+    },
+    {
+      "value": "#55605A",
+      "count": 14
+    },
+    {
+      "value": "#0B57D0",
+      "count": 7
+    },
+    {
+      "value": "#F4F6F4",
+      "count": 6
+    },
+    {
+      "value": "#E8F3EC",
+      "count": 6
+    },
+    {
+      "value": "#D6607F",
+      "count": 3
+    },
+    {
+      "value": "#FBEEF2",
+      "count": 3
+    },
+    {
+      "value": "#2E7D46",
+      "count": 2
+    },
+    {
+      "value": "#000000",
+      "count": 1
+    },
+    {
+      "value": "#D4DAD6",
+      "count": 1
+    },
+    {
+      "value": "#FDECEA",
+      "count": 1
+    },
+    {
+      "value": "#B3261E",
+      "count": 1
+    }
+  ],
+  "fonts": [
+    {
+      "value": "\"Hiragino Kaku Gothic ProN\", \"Hiragino Sans\", \"Noto Sans JP\", \"Yu Gothic UI\", \"Yu Gothic\", Meiryo, system-ui, sans-serif",
+      "count": 173
+    },
+    {
+      "value": "Arial",
+      "count": 1
+    }
+  ],
+  "links": [
+    {
+      "text": "本文へスキップ",
+      "href": "http://localhost:4173/#main"
+    },
+    {
+      "text": "ログイン",
+      "href": "http://localhost:4173/login"
+    },
+    {
+      "text": "彩さいたま市モダナイゼーション学習デモ（非公式）",
+      "href": "http://localhost:4173/"
+    },
+    {
+      "text": "暮らし・手続き",
+      "href": "https://www.city.saitama.lg.jp/001/index.html"
+    },
+    {
+      "text": "健康・福祉",
+      "href": "https://www.city.saitama.lg.jp/002/index.html"
+    },
+    {
+      "text": "子育て・教育",
+      "href": "https://www.city.saitama.lg.jp/003/index.html"
+    },
+    {
+      "text": "観光・文化・スポーツ",
+      "href": "https://www.city.saitama.lg.jp/004/index.html"
+    },
+    {
+      "text": "事業者向け",
+      "href": "https://www.city.saitama.lg.jp/005/index.html"
+    },
+    {
+      "text": "市政情報",
+      "href": "https://www.city.saitama.lg.jp/006/index.html"
+    },
+    {
+      "text": "（デモ）緊急情報はここに表示されます。災害・防災情報の確認先はこちら",
+      "href": "https://www.city.saitama.lg.jp/"
+    },
+    {
+      "text": "2026-07-01お知らせ新着情報一覧はこちら（現行サイト）",
+      "href": "https://www.city.saitama.lg.jp/news.html"
+    },
+    {
+      "text": "2026-07-01広報市報さいたま 最新号のご案内",
+      "href": "https://www.city.saitama.lg.jp/006/014/010/001/index.html"
+    },
+    {
+      "text": "2026-06-15子育て子育てに関する援助のご案内",
+      "href": "https://www.city.saitama.lg.jp/003/001/011/index.html"
+    },
+    {
+      "text": "新着情報一覧（現行サイト）",
+      "href": "https://www.city.saitama.lg.jp/news.html"
+    },
+    {
+      "text": "暮らし・手続き住民票・戸籍・税・ごみなど",
+      "href": "https://www.city.saitama.lg.jp/001/index.html"
+    },
+    {
+      "text": "健康・福祉健診・予防接種・福祉サービス",
+      "href": "https://www.city.saitama.lg.jp/002/index.html"
+    },
+    {
+      "text": "子育て・教育保育園・学校・子育て支援",
+      "href": "https://www.city.saitama.lg.jp/003/index.html"
+    },
+    {
+      "text": "観光・文化・スポーツイベント・施設・文化財",
+      "href": "https://www.city.saitama.lg.jp/004/index.html"
+    },
+    {
+      "text": "事業者向け入札・産業支援・募集",
+      "href": "https://www.city.saitama.lg.jp/005/index.html"
+    },
+    {
+      "text": "市政情報市の計画・組織・広報",
+      "href": "https://www.city.saitama.lg.jp/006/index.html"
+    },
+    {
+      "text": "住民票・戸籍",
+      "href": "https://www.city.saitama.lg.jp/001/915/002/001/index.html"
+    },
+    {
+      "text": "新着情報一覧",
+      "href": "https://www.city.saitama.lg.jp/news.html"
+    },
+    {
+      "text": "子育てに関する援助",
+      "href": "https://www.city.saitama.lg.jp/003/001/011/index.html"
+    },
+    {
+      "text": "市の組織・各課",
+      "href": "https://www.city.saitama.lg.jp/006/015/index.html"
+    },
+    {
+      "text": "市役所・区役所・支所",
+      "href": "https://www.city.saitama.lg.jp/008/001/index.html"
+    },
+    {
+      "text": "よくある質問（FAQ）",
+      "href": "https://www.city.saitama.lg.jp/faq/001/006/006/p111295.html"
+    },
+    {
+      "text": "西区",
+      "href": "https://www.city.saitama.lg.jp/nishi/index.html"
+    },
+    {
+      "text": "北区",
+      "href": "https://www.city.saitama.lg.jp/kita/index.html"
+    },
+    {
+      "text": "大宮区",
+      "href": "https://www.city.saitama.lg.jp/omiya/index.html"
+    },
+    {
+      "text": "見沼区",
+      "href": "https://www.city.saitama.lg.jp/minuma/index.html"
+    },
+    {
+      "text": "中央区",
+      "href": "https://www.city.saitama.lg.jp/chuo/index.html"
+    },
+    {
+      "text": "桜区",
+      "href": "https://www.city.saitama.lg.jp/sakura/index.html"
+    },
+    {
+      "text": "浦和区",
+      "href": "https://www.city.saitama.lg.jp/urawa/index.html"
+    },
+    {
+      "text": "南区",
+      "href": "https://www.city.saitama.lg.jp/minami/index.html"
+    },
+    {
+      "text": "緑区",
+      "href": "https://www.city.saitama.lg.jp/midori/index.html"
+    },
+    {
+      "text": "岩槻区",
+      "href": "https://www.city.saitama.lg.jp/iwatsuki/index.html"
+    },
+    {
+      "text": "（デモ）区役所休日窓口",
+      "href": "https://www.city.saitama.lg.jp/008/001/index.html"
+    },
+    {
+      "text": "（デモ）市民健康まつり",
+      "href": "https://www.city.saitama.lg.jp/002/index.html"
+    },
+    {
+      "text": "現行トップページ",
+      "href": "https://www.city.saitama.lg.jp/"
+    },
+    {
+      "text": "English",
+      "href": "https://www.city.saitama.lg.jp/en/index.html"
+    },
+    {
+      "text": "携帯サイト",
+      "href": "https://www.city.saitama.lg.jp/mobile/"
+    },
+    {
+      "text": "市報さいたま",
+      "href": "https://www.city.saitama.lg.jp/006/014/010/001/index.html"
+    }
+  ],
+  "images": [],
+  "landmarks": [
+    {
+      "tag": "header",
+      "role": null,
+      "label": null
+    },
+    {
+      "tag": "main",
+      "role": null,
+      "label": null
+    },
+    {
+      "tag": "form",
+      "role": "search",
+      "label": null
+    },
+    {
+      "tag": "nav",
+      "role": null,
+      "label": "分野別メニュー"
+    },
+    {
+      "tag": "footer",
+      "role": null,
+      "label": null
+    },
+    {
+      "tag": "nav",
+      "role": null,
+      "label": "関連リンク"
+    }
+  ],
+  "responsive": true
+}

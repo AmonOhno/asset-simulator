@@ -1,0 +1,64 @@
+{
+  "siteName": "さいたま市",
+  "siteTagline": "モダナイゼーション学習デモ（非公式）",
+  "skipToContent": "本文へスキップ",
+  "search": {
+    "label": "サイト内検索",
+    "placeholder": "例：住民票、ごみ、保育園",
+    "button": "検索",
+    "resultCount": "検索結果：{{count}}件",
+    "noResult": "「{{query}}」に一致する情報は見つかりませんでした。"
+  },
+  "nav": {
+    "title": "分野別メニュー"
+  },
+  "a11y": {
+    "fontSize": "文字サイズ",
+    "fontSizeNormal": "標準",
+    "fontSizeLarge": "拡大",
+    "contrast": "色合い",
+    "contrastNormal": "標準",
+    "contrastHigh": "高コントラスト"
+  },
+  "lang": {
+    "switchLabel": "言語切替",
+    "ja": "日本語",
+    "en": "English"
+  },
+  "emergency": {
+    "title": "緊急情報"
+  },
+  "sections": {
+    "news": "新着情報",
+    "newsMore": "新着情報一覧（現行サイト）",
+    "categories": "分野から探す",
+    "wards": "区役所",
+    "popular": "よく利用されるメニュー",
+    "events": "イベント情報"
+  },
+  "auth": {
+    "login": "ログイン",
+    "logout": "ログアウト",
+    "myPage": "マイページ",
+    "loggedInAs": "{{name}} さん",
+    "passkeyTitle": "パスキーでログイン",
+    "passkeyDescription": "パスワードの代わりに、指紋・顔認証・端末のPINでログインできます（WebAuthn）。",
+    "username": "ユーザー名",
+    "register": "パスキーを登録する",
+    "authenticate": "パスキーでログイン",
+    "notConfigured": "Supabase が未接続のため、認証はデモ表示のみです。supabase start でローカル環境を起動してください。",
+    "success": "ログインしました",
+    "error": "認証に失敗しました：{{message}}"
+  },
+  "dataSource": {
+    "live": "データ取得元：Supabase（ローカル）",
+    "fallback": "データ取得元：フォールバック（Supabase 未接続のためデモデータを表示中）"
+  },
+  "footer": {
+    "links": "関連リンク",
+    "address": "〒330-9588 埼玉県さいたま市浦和区常盤6丁目4番4号",
+    "tel": "電話番号：048-829-1111（代表）",
+    "copyright": "本サイトは学習用の非公式デモです。コンテンツの出典：さいたま市公式ホームページ",
+    "disclaimer": "さいたま市とは無関係の個人学習プロジェクトです。"
+  }
+}

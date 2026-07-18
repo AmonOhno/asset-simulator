@@ -1,0 +1,18 @@
+[
+  { "id": "F01", "selector": "[data-ui=F01]", "label": "サイトロゴ・市名", "category": "fixed" },
+  { "id": "F02", "selector": "[data-ui=F02]", "label": "スキップリンク（通常時は非表示）", "category": "fixed" },
+  { "id": "F03", "selector": "[data-ui=F03]", "label": "言語切替（I18N）", "category": "fixed" },
+  { "id": "F04", "selector": "[data-ui=F04]", "label": "文字サイズ・色合い切替（A11Y）", "category": "fixed" },
+  { "id": "F05", "selector": "[data-ui=F05]", "label": "サイト内検索フォーム", "category": "fixed" },
+  { "id": "F06", "selector": "[data-ui=F06]", "label": "グローバルナビ（分野別6カテゴリ）", "category": "fixed" },
+  { "id": "F08", "selector": "[data-ui=F08]", "label": "カテゴリグリッド（実リンク）", "category": "fixed" },
+  { "id": "F09", "selector": "[data-ui=F09]", "label": "区役所グリッド（10区・実リンク）", "category": "fixed" },
+  { "id": "F10", "selector": "[data-ui=F10]", "label": "よく利用されるメニュー", "category": "fixed" },
+  { "id": "F11", "selector": "[data-ui=F11]", "label": "フッターリンク集", "category": "fixed" },
+  { "id": "F12", "selector": "[data-ui=F12]", "label": "フッター所在地・著作権", "category": "fixed" },
+  { "id": "F13", "selector": "[data-ui=F13]", "label": "ログイン導線（パスキー）", "category": "fixed" },
+  { "id": "D01", "selector": "[data-ui=D01]", "label": "緊急情報バナー（emergency_notices）", "category": "dynamic" },
+  { "id": "D02", "selector": "[data-ui=D02]", "label": "新着情報リスト（news）", "category": "dynamic" },
+  { "id": "D03", "selector": "[data-ui=D03]", "label": "イベント情報（events）", "category": "dynamic" },
+  { "id": "D04", "selector": "[data-ui=D04]", "label": "認証状態表示（Supabase Auth）", "category": "dynamic" }
+]

@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.env.local
+*.local
+.DS_Store
+supabase/.temp/
+supabase/.branches/
+# キャプチャ出力はコミット対象を docs/captures/ へコピーして管理する
+capture/output/
+*.tsbuildinfo

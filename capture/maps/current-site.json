@@ -1,0 +1,14 @@
+[
+  { "id": "F01", "selector": "header a[href='/'], #header .logo, header img[alt*='さいたま']", "label": "サイトロゴ・市名（要検証）", "category": "fixed" },
+  { "id": "F03", "selector": "a[href*='translate'], [class*=lang], [id*=lang]", "label": "言語切替・翻訳リンク（要検証）", "category": "fixed" },
+  { "id": "F04", "selector": "[class*=fontsize], [id*=fontsize], [class*=yomiage]", "label": "文字サイズ・音声読み上げ（要検証）", "category": "fixed" },
+  { "id": "F05", "selector": "form[role=search], form[action*=search], #search", "label": "サイト内検索（要検証）", "category": "fixed" },
+  { "id": "F06", "selector": "nav, #gnav, [class*=gnav], [class*=category-nav]", "label": "グローバルナビ（分野別）（要検証）", "category": "fixed" },
+  { "id": "F09", "selector": "[class*=ward], [id*=kuyakusho], a[href*='/nishi/']", "label": "区役所リンク（要検証）", "category": "fixed" },
+  { "id": "F11", "selector": "footer nav, #footer ul", "label": "フッターリンク集（要検証）", "category": "fixed" },
+  { "id": "F12", "selector": "footer address, #footer .address, footer [class*=copyright]", "label": "所在地・著作権（要検証）", "category": "fixed" },
+  { "id": "D01", "selector": "[class*=emergency], [id*=emergency], [class*=kinkyu]", "label": "緊急情報（要検証）", "category": "dynamic" },
+  { "id": "D02", "selector": "[class*=news] ul, #news, [class*=whatsnew]", "label": "新着情報（要検証）", "category": "dynamic" },
+  { "id": "D03", "selector": "[class*=event], [id*=event]", "label": "イベント情報（要検証）", "category": "dynamic" },
+  { "id": "D06", "selector": "[class*=banner], [id*=banner]", "label": "バナー広告・キャンペーン枠（要検証）", "category": "dynamic" }
+]

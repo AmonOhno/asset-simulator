@@ -1,0 +1,18 @@
+{
+  "name": "saitama-city-modernization",
+  "private": true,
+  "version": "0.1.0",
+  "description": "さいたま市公式サイトのモダナイゼーション学習プロジェクト",
+  "workspaces": [
+    "app",
+    "capture"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w app",
+    "build": "npm run build -w app",
+    "preview": "npm run preview -w app",
+    "capture:current": "npm run capture:current -w capture",
+    "capture:local": "npm run capture:local -w capture",
+    "annotate:local": "npm run annotate:local -w capture"
+  }
+}

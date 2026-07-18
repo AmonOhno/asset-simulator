@@ -1,0 +1,15 @@
+{
+  "name": "capture",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "capture:current": "node capture.mjs --url https://www.city.saitama.lg.jp/ --label current-site --download-assets",
+    "capture:local": "node capture.mjs --url http://localhost:5173/ --label local-app",
+    "annotate:current": "node annotate.mjs --url https://www.city.saitama.lg.jp/ --map maps/current-site.json --label current-site",
+    "annotate:local": "node annotate.mjs --url http://localhost:5173/ --map maps/local-app.json --label local-app"
+  },
+  "dependencies": {
+    "playwright": "^1.53.0"
+  }
+}

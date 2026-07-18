@@ -1,0 +1,68 @@
+/*
+ * デザイントークン（モダナイズ版の新規定義）
+ *
+ * 注意: 現行サイト（www.city.saitama.lg.jp）の実測値ではない。
+ * 本セッションのネットワーク制限により実測できなかったため、
+ * さいたま市のシンボル（市の木: ケヤキ / 市の花: サクラソウ）を
+ * モチーフに新規定義した。実測値は capture/extract 実行後に
+ * docs/design-tokens.md へ反映すること。
+ */
+:root {
+  /* ブランドカラー */
+  --color-primary: #2e7d46; /* ケヤキの緑 */
+  --color-primary-dark: #1e5c31;
+  --color-primary-soft: #e8f3ec;
+  --color-accent: #d6607f; /* サクラソウのピンク */
+  --color-accent-soft: #fbeef2;
+
+  /* セマンティックカラー */
+  --color-emergency: #b3261e;
+  --color-emergency-bg: #fdecea;
+  --color-link: #0b57d0;
+  --color-link-visited: #6a3ab2;
+  --color-text: #1a1a1a;
+  --color-text-muted: #55605a;
+  --color-bg: #ffffff;
+  --color-surface: #f4f6f4;
+  --color-border: #d4dad6;
+  --color-focus: #b78103;
+
+  /* タイポグラフィ */
+  --font-family-base:
+    "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP",
+    "Yu Gothic UI", "Yu Gothic", Meiryo, system-ui, sans-serif;
+  --font-size-base: 16px;
+  --line-height-base: 1.7;
+
+  /* スペーシング（4pxグリッド） */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* レイアウト */
+  --content-max-width: 1080px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --tap-target-min: 44px; /* WCAG 2.5.8 Target Size 対応 */
+}
+
+/* A11Y: 文字サイズ拡大モード（現行サイトの「文字サイズ変更」機能に相当） */
+:root[data-font-scale="large"] {
+  --font-size-base: 20px;
+}
+
+/* A11Y: ハイコントラストモード（現行サイトの「色合い変更」機能に相当） */
+:root[data-contrast="high"] {
+  --color-primary: #00541f;
+  --color-primary-soft: #ffffff;
+  --color-accent: #8f2246;
+  --color-text: #000000;
+  --color-text-muted: #222222;
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-border: #000000;
+  --color-link: #0000d0;
+}
