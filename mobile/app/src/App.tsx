@@ -12,6 +12,7 @@ import CalendarCard from "./CalendarCard";
 import TransactionEntryCard from "./TransactionEntryCard";
 import { RecurringTransactionCard } from "./RecurringTransactionCard";
 import { AccountMasterCard } from "./AccountMasterCard";
+import { GoalCard } from "./GoalCard";
 import { ProfitLossStatementCard } from "./ProfitLossStatementCard";
 import { BalanceSheetCard } from "./BalanceSheetCard";
 import { PanelButton } from "@mobile-components/PanelButton";
@@ -184,6 +185,7 @@ function App() {
               refreshSignal={entriesVersion}
               onEntryChanged={() => setEntriesVersion((v) => v + 1)}
             />
+            <GoalCard />
           </div>
         );
       case "pl-bs":
@@ -250,6 +252,9 @@ function App() {
                 />
               )}
             </div>
+
+            {/* 支出目標パネル: 勘定科目ごと・日次/月次の支出目標を設定・進捗確認 */}
+            <GoalCard />
           </div>
         );
       case "recurring":

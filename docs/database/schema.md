@@ -99,6 +99,23 @@ ER 図: [er_diagram.puml](er_diagram.puml)
 
 ---
 
+### goals（支出目標）
+
+勘定科目ごと・期間（日次/月次）ごとの支出目標。型定義: `Goal`。
+
+| カラム | 型 | 説明 |
+|-------|---|------|
+| id | text PK | `goal_<uuid>`（クライアント側で発行） |
+| user_id | uuid FK→auth.users | — |
+| account_id | text FK→journal_accounts | 対象勘定科目（費用科目を想定） |
+| period | string enum | `day`（日次） / `month`（月次）（型 `GoalPeriod`） |
+| amount | numeric | 目標金額（円） |
+| created_at | timestamptz | — |
+
+`unique(user_id, account_id, period)` 制約あり。同一勘定科目・期間に対しては1件のみ（UI からは既存があれば金額を更新）。
+
+---
+
 ### accounts / credit_cards（未使用マスタ）
 
 `packages/shared/src/types/common.ts` に型定義（`Account`, `CreditCard`）は残っているが、**現行 UI からは利用されていない**。desktop の `JournalAccountManager.tsx` に `isSystemAccount(id)`（`acc_` / `card_` プレフィックス判定）が残るのみで、これらのテーブルへの CRUD 画面・ストアアクションは存在しない。

@@ -25,4 +25,6 @@ export type {
     RecurringTransaction,
     RecurrenceFrequency,
     ScheduleEvent,
+    Goal,
+    GoalPeriod,
 } from './types/common';

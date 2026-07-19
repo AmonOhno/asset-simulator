@@ -11,6 +11,7 @@ import {
   BalanceSheetView,
   ProfitLossView,
   RecurringTransaction,
+  Goal,
 } from '../types/common';
 import { useAuthStore, supabase } from './authStore';
 
@@ -21,11 +22,13 @@ interface FinancialState {
   journalAccounts: JournalAccount[]; // 勘定科目リスト
   journalEntries: JournalEntry[];
   regularJournalEntries: RecurringTransaction[];
+  goals: Goal[]; // 支出目標リスト
 
   // GET Actions
   getJournalAccounts: () => Promise<JournalAccount[]>;
   getCalendarJournalEntries: (startDate: string, endDate: string) => Promise<CalendarJournalEntry[]>; // カレンダー用VIEW
   getRegularJournalEntries: () => Promise<RecurringTransaction[]>;
+  getGoals: () => Promise<Goal[]>;
   getBalanceSheetView: (asOfDate?: string) => Promise<BalanceSheetView[]>;
   getProfitLossStatementView: (startDate?: string, endDate?: string) => Promise<ProfitLossView[]>;
 
@@ -33,12 +36,15 @@ interface FinancialState {
   addJournalAccount: (account: Omit<JournalAccount, 'id'>) => Promise<void>;
   addJournalEntry: (entry: Omit<JournalEntry, 'id'>) => Promise<void>;
   addRegularJournalEntry: (entry: Omit<RecurringTransaction, 'id'>) => Promise<void>;
+  addGoal: (goal: Omit<Goal, 'id'>) => Promise<void>;
   updateJournalAccount: (account: JournalAccount) => Promise<void>;
   updateJournalEntry: (entry: JournalEntry) => Promise<void>;
   updateRegularJournalEntry: (entry: RecurringTransaction) => Promise<void>;
+  updateGoal: (goal: Goal) => Promise<void>;
   deleteJournalAccount: (account: JournalAccount) => Promise<void>;
   deleteJournalEntry: (entry: JournalEntry) => Promise<void>;
   deleteRegularJournalEntry: (entry: RecurringTransaction) => Promise<void>;
+  deleteGoal: (goal: Goal) => Promise<void>;
   executeRegularJournalEntry: (entry: RecurringTransaction) => Promise<void>; // 個別実行
   executeDueRegularJournalEntries: () => Promise<{executed: number, details: any[]}>; // 期限が来ている定期取引を実行
 }
@@ -87,6 +93,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
         journalAccounts: [],
         journalEntries: [],
         regularJournalEntries: [],
+        goals: [],
       });
       return;
     }
@@ -97,6 +104,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
   journalAccounts: [],
   journalEntries: [],
   regularJournalEntries: [],
+  goals: [],
 
   // --- CRUD Actions ---
   getJournalAccounts: async (): Promise<JournalAccount[]> => {
@@ -159,6 +167,25 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
     } catch (error) {
       console.error('Failed to fetch regular journal entries:', error);
       return get().regularJournalEntries;
+    }
+  },
+
+  getGoals: async (): Promise<Goal[]> => {
+    const { userId } = useAuthStore.getState();
+    if (!userId) return [];
+
+    try {
+      const { data, error } = await supabase
+        .from('goals')
+        .select('*')
+        .eq('user_id', userId);
+      if (error) throw error;
+      const goals = toCamelCase(data || []);
+      set(() => ({ goals }));
+      return goals;
+    } catch (error) {
+      console.error('Failed to fetch goals:', error);
+      return get().goals;
     }
   },
 
@@ -246,6 +273,29 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
     }
   },
 
+  addGoal: async (goal: Omit<Goal, 'id'>): Promise<void> => {
+    const { userId } = useAuthStore.getState();
+    if (!userId) return;
+
+    try {
+      const newGoal = {
+        ...toSnakeCase(goal),
+        id: `goal_${crypto.randomUUID()}`,
+        user_id: userId,
+      };
+      const { data, error } = await supabase
+        .from('goals')
+        .insert(newGoal)
+        .select()
+        .single();
+      if (error) throw error;
+      const added = toCamelCase(data);
+      set(() => ({ goals: [...get().goals, added] }));
+    } catch (error) {
+      console.error("Failed to add goal:", error);
+    }
+  },
+
   updateJournalAccount: async (account: JournalAccount): Promise<void> => {
     const { userId } = useAuthStore.getState();
     if (!userId) return;
@@ -323,6 +373,28 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
     }
   },
 
+  updateGoal: async (goal: Goal): Promise<void> => {
+    const { userId } = useAuthStore.getState();
+    if (!userId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('goals')
+        .update({ amount: goal.amount })
+        .eq('id', goal.id)
+        .eq('user_id', userId)
+        .select()
+        .single();
+      if (error) throw error;
+      const updated = toCamelCase(data);
+      set(() => ({
+        goals: get().goals.map((g) => g.id === updated.id ? updated : g),
+      }));
+    } catch (error) {
+      console.error("Failed to update goal:", error);
+    }
+  },
+
   deleteJournalAccount: async (account: JournalAccount): Promise<void> => {
     const { userId } = useAuthStore.getState();
     if (!userId) return;
@@ -377,6 +449,25 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
       }));
     } catch (error) {
       console.error("Failed to delete regular journal entry:", error);
+    }
+  },
+
+  deleteGoal: async (goal: Goal): Promise<void> => {
+    const { userId } = useAuthStore.getState();
+    if (!userId) return;
+
+    try {
+      const { error } = await supabase
+        .from('goals')
+        .delete()
+        .eq('id', goal.id)
+        .eq('user_id', userId);
+      if (error) throw error;
+      set(() => ({
+        goals: get().goals.filter((g) => g.id !== goal.id),
+      }));
+    } catch (error) {
+      console.error("Failed to delete goal:", error);
     }
   },
 

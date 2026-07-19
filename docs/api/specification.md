@@ -41,6 +41,7 @@
   | 仕訳エントリー | `je_` | `addJournalEntry`, `insertRecurringExecution` |
   | 定期仕訳 | `reg_` | `addRegularJournalEntry` |
   | スケジュールイベント | `event_` | `eventsStore.addEvent` |
+  | 支出目標 | `goal_` | `addGoal` |
 
 ---
 
@@ -63,6 +64,10 @@
 | `schedule_events` | insert | `addEvent` | — | — |
 | `schedule_events` | update | `updateEvent` | `event_id`, `user_id` | — |
 | `schedule_events` | delete | `deleteEvent` | `event_id`, `user_id` | — |
+| `goals` | select | `getGoals` | `user_id = :userId` | — |
+| `goals` | insert | `addGoal` | — | — |
+| `goals` | update | `updateGoal` | `id`, `user_id` | — |
+| `goals` | delete | `deleteGoal` | `id`, `user_id` | — |
 
 新規仕訳エントリーの作成（`journal_entries` への insert）は PostgREST 直接ではなく **RPC `create_journal_entry`** を経由する（残高更新をアトミックに行うため）。
 
@@ -157,6 +162,10 @@
 | `updateJournalEntry` | `(entry: JournalEntry) => Promise<void>` | 全フィールド update（`amount` は `parseFloat`） | 同上 |
 | `updateRegularJournalEntry` | `(entry: RecurringTransaction) => Promise<void>` | `toSnakeCase(entry)` を丸ごと update | 同上 |
 | `deleteJournalAccount` / `deleteJournalEntry` / `deleteRegularJournalEntry` | `(entity) => Promise<void>` | delete → state から filter で除去 | 同上 |
+| `getGoals` | `() => Promise<Goal[]>` | `goals` を取得し state に反映 | `console.error` して現在の state を返す |
+| `addGoal` | `(goal: Omit<Goal,'id'>) => Promise<void>` | `goal_` ID 発行 → `toSnakeCase` → insert → state に追加 | `console.error`（呼び出し元には伝播しない） |
+| `updateGoal` | `(goal: Goal) => Promise<void>` | `amount` を update → state を置換 | 同上 |
+| `deleteGoal` | `(goal: Goal) => Promise<void>` | delete → state から filter で除去 | 同上 |
 | `executeRegularJournalEntry` | `(entry: RecurringTransaction) => Promise<void>` | 定期取引を1件手動実行（下記参照）。実行後に `getJournalAccounts` / `getRegularJournalEntries` を呼び直す | `console.error`（同日重複実行は内部で `throw` するが catch されて握りつぶされる） |
 | `executeDueRegularJournalEntries` | `() => Promise<{executed:number, details:any[]}>` | 全定期取引を走査し当日実行対象を一括実行 | エラーを再 throw する（呼び出し元で catch が必要） |
 
