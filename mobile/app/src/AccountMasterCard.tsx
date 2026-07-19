@@ -25,12 +25,15 @@ const categoryLabel: Record<string, string> = {
 export function AccountMasterCard() {
   const journalAccounts = useFinancialStore((s) => s.journalAccounts);
   const addJournalAccount = useFinancialStore((s) => s.addJournalAccount);
+  const updateJournalAccount = useFinancialStore((s) => s.updateJournalAccount);
   const deleteJournalAccount = useFinancialStore((s) => s.deleteJournalAccount);
 
   const [isExpanded, setIsExpanded] = useState(true);
   const [name, setName] = useState("");
   const [category, setCategory] = useState<AccountCategory>("Asset");
+  const [includeInSummary, setIncludeInSummary] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const addAccount = async () => {
     if (!name) {
@@ -39,13 +42,27 @@ export function AccountMasterCard() {
     }
     setBusy(true);
     try {
-      await addJournalAccount({ name, category, balance: 0, user_id: "" });
+      await addJournalAccount({ name, category, balance: 0, includeInSummary, user_id: "" });
       setName("");
+      setIncludeInSummary(true);
     } catch (error) {
       console.error("Failed to add journal account:", error);
       alert("勘定科目の追加に失敗しました。通信を確認してください。");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const toggleIncludeInSummary = async (acc: (typeof journalAccounts)[number]) => {
+    const isIncluded = acc.includeInSummary !== false;
+    setTogglingId(acc.id);
+    try {
+      await updateJournalAccount({ ...acc, includeInSummary: !isIncluded });
+    } catch (error) {
+      console.error("Failed to update journal account:", error);
+      alert("勘定科目の更新に失敗しました。通信を確認してください。");
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -67,6 +84,14 @@ export function AccountMasterCard() {
               sizeVariant="M"
             />
           </div>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+            <input
+              type="checkbox"
+              checked={includeInSummary}
+              onChange={(e) => setIncludeInSummary(e.target.checked)}
+            />
+            サマリー（純資産合計）に含める
+          </label>
           <CommonButton label={busy ? "追加中..." : "勘定科目を追加"} onClick={addAccount} />
         </div>
       </CardBodyHead>
@@ -93,15 +118,34 @@ export function AccountMasterCard() {
                 <div style={{ fontWeight: 700, fontSize: 14 }}>{acc.name}</div>
                 <div style={{ fontSize: 12, color: "#6B7280" }}>
                   {categoryLabel[acc.category] ?? acc.category}
+                  {acc.includeInSummary === false ? "・サマリー対象外" : ""}
                 </div>
               </div>
-              <CommonButton
-                label="削除"
-                sizeVariant="S"
-                fontSize="S"
-                colorVariant="secondary"
-                onClick={() => deleteJournalAccount(acc)}
-              />
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <CommonButton
+                  label={
+                    togglingId === acc.id
+                      ? "更新中..."
+                      : acc.includeInSummary === false
+                        ? "サマリーに含める"
+                        : "サマリーから除外"
+                  }
+                  sizeVariant="S"
+                  fontSize="S"
+                  colorVariant="secondary"
+                  onClick={() => {
+                    if (togglingId === acc.id) return;
+                    toggleIncludeInSummary(acc);
+                  }}
+                />
+                <CommonButton
+                  label="削除"
+                  sizeVariant="S"
+                  fontSize="S"
+                  colorVariant="secondary"
+                  onClick={() => deleteJournalAccount(acc)}
+                />
+              </div>
             </div>
           ))}
         </div>

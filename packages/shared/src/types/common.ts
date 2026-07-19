@@ -42,10 +42,11 @@ export type AccountCategory = 'Asset' | 'Liability' | 'Equity' | 'Revenue' | 'Ex
  * ユーザーが仕訳で選択する科目です。
  */
 export interface JournalAccount {
-  id: string; 
-  name: string; 
+  id: string;
+  name: string;
   category: AccountCategory;
   balance: number;
+  includeInSummary: boolean; // 貸借対照表サマリーに含めるか（false: 変動資産等をサマリー集計から除外）
   user_id: string; // ユーザーID
 }
 

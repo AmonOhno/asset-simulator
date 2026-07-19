@@ -171,6 +171,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
         id: `jacc_${crypto.randomUUID()}`,
         name: account.name,
         category: account.category,
+        include_in_summary: account.includeInSummary,
         user_id: userId,
       };
       const { data, error } = await supabase
@@ -252,7 +253,11 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
     try {
       const { data, error } = await supabase
         .from('journal_accounts')
-        .update({ name: account.name, category: account.category })
+        .update({
+          name: account.name,
+          category: account.category,
+          include_in_summary: account.includeInSummary,
+        })
         .eq('id', account.id)
         .eq('user_id', userId)
         .select()

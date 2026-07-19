@@ -4,6 +4,7 @@ import {
   useFinancialStore,
   useEventsStore,
   formatDateLocal,
+  filterSummaryIncludedRows,
 } from "@asset-simulator/shared";
 import type { ProfitLossView, BalanceSheetView, CalendarJournalEntry } from "@asset-simulator/shared";
 import "./App.css";
@@ -44,6 +45,7 @@ const defaults = getDefaultDates();
 
 function App() {
   const { session, client, setSession, refreshSession, signOut } = useAuthStore();
+  const journalAccounts = useFinancialStore((s) => s.journalAccounts);
   const getJournalAccounts = useFinancialStore((s) => s.getJournalAccounts);
   const getRegularJournalEntries = useFinancialStore((s) => s.getRegularJournalEntries);
   const getProfitLossStatementView = useFinancialStore((s) => s.getProfitLossStatementView);
@@ -131,11 +133,17 @@ function App() {
     return revenue - expense;
   }, [plRows]);
 
+  // サマリーに含めない設定（変動資産等）の勘定科目を BS 集計から除外
+  const bsRowsForSummary = useMemo(
+    () => filterSummaryIncludedRows(bsRows, journalAccounts),
+    [bsRows, journalAccounts]
+  );
+
   const netAssets = useMemo(() => {
-    const assets = bsRows.filter((r) => r.category === "Asset").reduce((s, r) => s + r.sumAmount, 0);
-    const liabilities = bsRows.filter((r) => r.category === "Liability").reduce((s, r) => s + r.sumAmount, 0);
+    const assets = bsRowsForSummary.filter((r) => r.category === "Asset").reduce((s, r) => s + r.sumAmount, 0);
+    const liabilities = bsRowsForSummary.filter((r) => r.category === "Liability").reduce((s, r) => s + r.sumAmount, 0);
     return assets - liabilities;
-  }, [bsRows]);
+  }, [bsRowsForSummary]);
 
   // ダッシュボード最上部の期間指定。
   // PL は指定期間、BS の基準日は期間の終了日に同期し、各パネルの金額表示を更新する。
@@ -237,7 +245,7 @@ function App() {
               {isNetAssetsOpen && (
                 <BalanceSheetCard
                   appliedAsOfDate={bsAsOfDate}
-                  rows={bsRows}
+                  rows={bsRowsForSummary}
                   onApply={(d) => setBsAsOfDate(d)}
                 />
               )}
