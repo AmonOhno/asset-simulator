@@ -4,11 +4,12 @@
 create table if not exists goals (
   id text primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
-  account_id text not null references journal_accounts(id) on delete cascade,
+  account_id text not null,
   period text not null check (period in ('day', 'month')),
   amount numeric not null check (amount >= 0),
   created_at timestamptz not null default now(),
-  unique (user_id, account_id, period)
+  unique (user_id, account_id, period),
+  foreign key (account_id, user_id) references journal_accounts (id, user_id) on delete cascade
 );
 
 comment on table goals is '勘定科目ごと・期間（日次/月次）ごとの支出目標。id はクライアント側で goal_<uuid> 形式を発行する。';
