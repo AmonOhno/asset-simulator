@@ -102,7 +102,7 @@ App (desktop/src/App.tsx)
 
 | コンポーネント | ファイル | 責務 | 使用するストアアクション |
 |---------------|---------|------|------------------------|
-| `App` | `mobile/app/src/App.tsx` | 認証監視・タブ切り替え・PL/BS 期間の一括管理・取引入力/編集ダイアログの開閉 | `getJournalAccounts`, `getRegularJournalEntries`, `fetchEvents`, `getProfitLossStatementView`, `getBalanceSheetView` |
+| `App` | `mobile/app/src/App.tsx` | 認証監視・タブ切り替え・PL/BS 期間の一括管理・支出目標用の月次期間（`goalMonthRange`）の導出（月単位プリセット選択中は表示中の期間、それ以外は期間設定に基づく現在の月次期間）・取引入力/編集ダイアログの開閉 | `getJournalAccounts`, `getRegularJournalEntries`, `fetchEvents`, `getProfitLossStatementView`, `getBalanceSheetView` |
 | `LoginScreen` | `LoginScreen.tsx` | 未ログイン時のログイン画面（Supabase Auth UI） | なし（`useAuthStore` の `client` のみ） |
 | `CalendarCard` | `CalendarCard.tsx` | 月表示のカレンダー。日付タップで選択、ダブルタップで取引入力ダイアログを開く。選択日の取引一覧・編集/削除 | `getCalendarJournalEntries`, `deleteJournalEntry` |
 | `TransactionEntryCard` | `TransactionEntryCard.tsx` | 取引の新規登録／編集（`entry` props の有無でモード切替） | `addJournalEntry`, `updateJournalEntry`, `getJournalAccounts`（残高反映のため再取得） |
@@ -110,7 +110,7 @@ App (desktop/src/App.tsx)
 | `BalanceSheetCard` | `BalanceSheetCard.tsx` | 資産・負債・純資産の明細サマリーリスト（基準日プリセット: 今日/今月末/先月末） | なし（`rows` は props） |
 | `RecurringTransactionCard` | `RecurringTransactionCard.tsx` | 定期取引の一覧・追加（ダイアログ）・実行・削除・期限到来分一括実行 | `addRegularJournalEntry`, `deleteRegularJournalEntry`, `executeRegularJournalEntry`, `executeDueRegularJournalEntries` |
 | `AccountMasterCard` | `AccountMasterCard.tsx` | 勘定科目の追加・一覧・**削除**（desktop の勘定科目管理は編集のみで削除なし） | `addJournalAccount`, `deleteJournalAccount` |
-| `GoalCard` | `GoalCard.tsx` | 費用科目ごと・期間（日次/月次）ごとの支出目標の設定（ダイアログ、同一科目・期間は金額を上書き）・一覧・進捗表示（当日/当月の実績支出との比較バー）・削除。`transaction` タブと `pl-bs` タブの両方から利用可能 | `getGoals`, `addGoal`, `updateGoal`, `deleteGoal`, `getProfitLossStatementView`（実績取得） |
+| `GoalCard` | `GoalCard.tsx` | 費用科目ごと・期間（日次/月次）ごとの支出目標の設定（ダイアログ、同一科目・期間は金額を上書き）・一覧・進捗表示（対象期間・達成率%・残額/超過額・実績支出との比較バー）・削除。月次の対象期間は props の `monthRange`（ダッシュボードの月次指定期間と同期、`App` が導出）、日次は当日。`refreshSignal` の変化で実績を再取得。`transaction` タブと `pl-bs` タブの両方から利用可能 | `getGoals`, `addGoal`, `updateGoal`, `deleteGoal`, `getProfitLossStatementView`（実績取得） |
 
 モバイル版には勘定科目の「編集」機能はない（追加・削除のみ）。desktop 版には「削除」機能がない（追加・編集のみ）。
 
@@ -269,8 +269,17 @@ TransactionEntryCard.registerEntry()
 - desktop `DateRangePicker`: プリセットは `'1-week'`/`'1-month'`/`'1-year'`/`'custom'`という別名で保持し、内部で `PeriodPreset`（`'week'`/`'month'`/`'year'`/`'custom'`）にマッピングしてから shared 関数を呼ぶ
 - mobile `PeriodSelector`: `PeriodPreset` をそのまま state に持つ。前後移動ボタンは custom 以外で表示
 
+### 6.6 支出目標（月次）との同期（mobile）
+
+mobile の `GoalCard`（支出目標）の月次目標は、ダッシュボードの月次指定期間と同じ期間で実績を集計する。`App` が `goalMonthRange` を導出して `GoalCard` に渡す:
+
+- 月単位プリセット選択中: 表示中の期間（前後移動した期間を含む）をそのまま使用
+- 週/年/カスタム選択中: 現在の `PeriodSettings`（`startDayOfMonth`・`holidayAdjustment`）で `computePeriodRange('month', settings)` を計算して使用
+
+日次目標の対象期間は常に当日。
+
 ---
 
 ## 更新日時
 
-最終更新: 2026-07-03
+最終更新: 2026-07-19

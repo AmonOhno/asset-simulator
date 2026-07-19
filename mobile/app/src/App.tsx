@@ -146,6 +146,13 @@ function App() {
     return assets - liabilities;
   }, [bsRowsForSummary]);
 
+  // 支出目標（月次）の対象期間。ダッシュボードの月次指定期間と同期する:
+  // 月単位プリセット選択中は表示中の期間そのもの、それ以外は期間設定（開始日・休日ずらし）に基づく現在の月次期間。
+  const goalMonthRange = useMemo(() => {
+    if (periodPreset === "month") return { startDate: plStartDate, endDate: plEndDate };
+    return computePeriodRange("month", periodSettings)!;
+  }, [periodPreset, plStartDate, plEndDate, periodSettings]);
+
   // ダッシュボード最上部の期間指定。
   // PL は指定期間、BS の基準日は期間の終了日に同期し、各パネルの金額表示を更新する。
   const handleDashboardPeriodChange = (startDate: string, endDate: string) => {
@@ -185,7 +192,7 @@ function App() {
               refreshSignal={entriesVersion}
               onEntryChanged={() => setEntriesVersion((v) => v + 1)}
             />
-            <GoalCard />
+            <GoalCard monthRange={goalMonthRange} refreshSignal={entriesVersion} />
           </div>
         );
       case "pl-bs":
@@ -253,8 +260,8 @@ function App() {
               )}
             </div>
 
-            {/* 支出目標パネル: 勘定科目ごと・日次/月次の支出目標を設定・進捗確認 */}
-            <GoalCard />
+            {/* 支出目標パネル: 勘定科目ごと・日次/月次の支出目標を設定・進捗確認（月次はダッシュボードの月次指定期間と同期） */}
+            <GoalCard monthRange={goalMonthRange} refreshSignal={entriesVersion} />
           </div>
         );
       case "recurring":

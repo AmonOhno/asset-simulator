@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { useFinancialStore, todayLocalString, formatDateLocal } from "@asset-simulator/shared";
+import { useFinancialStore, todayLocalString } from "@asset-simulator/shared";
 import type { Goal, GoalPeriod } from "@asset-simulator/shared";
+import type { PeriodRange } from "@mobile-components/periodSelector.utils";
 import { Card, CardBodyHead, CardBodyMain } from "@mobile-components/Card";
 import { SelectInput } from "@mobile-components/SelectInput";
 import { NumericInput } from "@mobile-components/NumericInput";
@@ -19,10 +20,22 @@ const periodLabel: Record<GoalPeriod, string> = {
   month: "月次",
 };
 
+const periodBadgeStyle: Record<GoalPeriod, { background: string; color: string }> = {
+  day: { background: "#F0FDF4", color: "#15803D" },
+  month: { background: "#EFF6FF", color: "#1D4ED8" },
+};
+
 // 目標期間ごとの実績金額 (勘定科目ID -> 実績支出額)
 type ActualByAccount = Record<GoalPeriod, Record<string, number>>;
 
-export function GoalCard() {
+interface GoalCardProps {
+  /** 月次目標の対象期間。ダッシュボードの月次指定期間と同期した値を App から受け取る */
+  monthRange: PeriodRange;
+  /** 取引の登録・編集・削除で増分されるシグナル。変化時に実績を再取得する */
+  refreshSignal?: number;
+}
+
+export function GoalCard({ monthRange, refreshSignal }: GoalCardProps) {
   const journalAccounts = useFinancialStore((s) => s.journalAccounts);
   const goals = useFinancialStore((s) => s.goals);
   const getGoals = useFinancialStore((s) => s.getGoals);
@@ -43,13 +56,11 @@ export function GoalCard() {
     getGoals();
   }, [getGoals]);
 
-  // 目標に対する実績支出（当日分・当月分）を取得し、進捗表示に利用する
+  // 目標に対する実績支出（日次は当日分、月次はダッシュボードの月次指定期間分）を取得し、進捗表示に利用する
   useEffect(() => {
     if (goals.length === 0) return;
     let isMounted = true;
     const today = todayLocalString();
-    const now = new Date();
-    const monthStart = formatDateLocal(new Date(now.getFullYear(), now.getMonth(), 1));
 
     const toActualMap = (rows: { category: string; accountId: string; sumAmount: number }[]) => {
       const map: Record<string, number> = {};
@@ -61,7 +72,7 @@ export function GoalCard() {
 
     Promise.all([
       getProfitLossStatementView(today, today),
-      getProfitLossStatementView(monthStart, today),
+      getProfitLossStatementView(monthRange.startDate, monthRange.endDate),
     ]).then(([dayRows, monthRows]) => {
       if (!isMounted) return;
       setActualByAccount({ day: toActualMap(dayRows), month: toActualMap(monthRows) });
@@ -70,7 +81,7 @@ export function GoalCard() {
     return () => {
       isMounted = false;
     };
-  }, [goals, getProfitLossStatementView]);
+  }, [goals, monthRange.startDate, monthRange.endDate, refreshSignal, getProfitLossStatementView]);
 
   // 支出目標は費用科目に対して設定する
   const expenseAccountOptions = useMemo(
@@ -150,8 +161,10 @@ export function GoalCard() {
             )}
             {goals.map((goal) => {
               const actual = actualByAccount[goal.period]?.[goal.accountId] ?? 0;
-              const rate = goal.amount > 0 ? Math.min(actual / goal.amount, 1) : 0;
+              const percent = goal.amount > 0 ? Math.round((actual / goal.amount) * 100) : 0;
               const overBudget = actual > goal.amount;
+              const periodText =
+                goal.period === "month" ? `${monthRange.startDate} 〜 ${monthRange.endDate}` : todayLocalString();
               return (
                 <div
                   key={goal.id}
@@ -163,12 +176,31 @@ export function GoalCard() {
                     borderRadius: 8,
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                    <div style={{ display: "grid", gap: 2 }}>
-                      <div style={{ fontWeight: 700, fontSize: 14 }}>{accountName[goal.accountId] ?? goal.accountId}</div>
-                      <div style={{ fontSize: 12, color: "#6B7280" }}>
-                        {periodLabel[goal.period]}目標 ・ ¥{goal.amount.toLocaleString()}
-                      </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          fontSize: 14,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {accountName[goal.accountId] ?? goal.accountId}
+                      </span>
+                      <span
+                        style={{
+                          flexShrink: 0,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          padding: "2px 8px",
+                          borderRadius: 999,
+                          ...periodBadgeStyle[goal.period],
+                        }}
+                      >
+                        {periodLabel[goal.period]}
+                      </span>
                     </div>
                     <CommonButton
                       label="削除"
@@ -178,19 +210,37 @@ export function GoalCard() {
                       onClick={() => deleteGoal(goal)}
                     />
                   </div>
+                  <div style={{ fontSize: 12, color: "#6B7280" }}>対象期間: {periodText}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <div style={{ flex: 1, height: 6, borderRadius: 3, background: "#E5E7EB", overflow: "hidden" }}>
                       <div
                         style={{
-                          width: `${rate * 100}%`,
+                          width: `${Math.min(percent, 100)}%`,
                           height: "100%",
                           background: overBudget ? "#EF4444" : "#3B82F6",
                         }}
                       />
                     </div>
-                    <div style={{ fontSize: 12, color: overBudget ? "#EF4444" : "#6B7280", whiteSpace: "nowrap" }}>
-                      ¥{actual.toLocaleString()} / ¥{goal.amount.toLocaleString()}
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: overBudget ? "#EF4444" : "#374151",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {percent}%
                     </div>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 12 }}>
+                    <span style={{ color: "#6B7280" }}>
+                      実績 ¥{actual.toLocaleString()} / 目標 ¥{goal.amount.toLocaleString()}
+                    </span>
+                    <span style={{ fontWeight: 600, color: overBudget ? "#EF4444" : "#059669" }}>
+                      {overBudget
+                        ? `¥${(actual - goal.amount).toLocaleString()} 超過`
+                        : `残り ¥${(goal.amount - actual).toLocaleString()}`}
+                    </span>
                   </div>
                 </div>
               );
@@ -215,6 +265,11 @@ export function GoalCard() {
                 sizeVariant="S"
               />
             </div>
+          </div>
+          <div style={{ fontSize: 12, color: "#6B7280", textAlign: "left" }}>
+            {period === "month"
+              ? `対象期間: ${monthRange.startDate} 〜 ${monthRange.endDate}（ダッシュボードの月次指定期間と同期）`
+              : `対象期間: 当日（${todayLocalString()}）`}
           </div>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <NumericInput value={amount} unit="円" onBlur={setAmount} sizeVariant="M" />
