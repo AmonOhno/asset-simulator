@@ -13,6 +13,8 @@ export {
 export type { PeriodPreset, PeriodRange, PeriodSettings } from './utils/period';
 export { isExecutionDate, getNextExecutionDate } from './utils/recurrence';
 export { filterSummaryIncludedRows } from './utils/balanceSheet';
+export { aggregateFrequentEntrySets } from './utils/frequentEntries';
+export type { FrequentEntrySet, FrequentEntrySource } from './utils/frequentEntries';
 export type {
     Account,
     CreditCard,

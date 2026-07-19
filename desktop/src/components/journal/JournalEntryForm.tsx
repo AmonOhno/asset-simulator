@@ -1,10 +1,11 @@
 // src/components/JournalEntryForm.tsx
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useFinancialStore, todayLocalString } from '@asset-simulator/shared';
+import type { FrequentEntrySet } from '@asset-simulator/shared';
 
 export const JournalEntryForm: React.FC = () => {
-  const { journalAccounts, addJournalEntry } = useFinancialStore();
+  const { journalAccounts, addJournalEntry, getFrequentJournalEntrySets } = useFinancialStore();
 
   const [visible, setVisible] = useState(true);
 
@@ -13,6 +14,28 @@ export const JournalEntryForm: React.FC = () => {
   const [debitAccountId, setDebitAccountId] = useState('');
   const [creditAccountId, setCreditAccountId] = useState('');
   const [amount, setAmount] = useState('');
+  const [suggestions, setSuggestions] = useState<FrequentEntrySet[]>([]);
+
+  // 直近の仕訳から「よく使う取引入力値セット」を取得してサジェストする
+  useEffect(() => {
+    let isMounted = true;
+    getFrequentJournalEntrySets().then((sets) => {
+      if (isMounted) setSuggestions(sets);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [getFrequentJournalEntrySets]);
+
+  const accountName = (id: string) =>
+    journalAccounts.find((acc) => acc.id === id)?.name ?? '不明';
+
+  const applySuggestion = (suggestion: FrequentEntrySet) => {
+    setDescription(suggestion.description);
+    setDebitAccountId(suggestion.debitAccountId);
+    setCreditAccountId(suggestion.creditAccountId);
+    setAmount(String(suggestion.amount));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +75,23 @@ export const JournalEntryForm: React.FC = () => {
       </div>
       {visible && (
         <div className="card-body">
+          {suggestions.length > 0 && (
+            <div className="mb-3">
+              <div className="form-label">よく使う入力</div>
+              <div className="d-flex flex-wrap gap-2">
+                {suggestions.map((s) => (
+                  <button
+                    key={`${s.description}-${s.debitAccountId}-${s.creditAccountId}-${s.amount}`}
+                    type="button"
+                    className="btn btn-outline-primary btn-sm"
+                    onClick={() => applySuggestion(s)}
+                  >
+                    {s.description} ¥{s.amount.toLocaleString()}（{accountName(s.debitAccountId)} / {accountName(s.creditAccountId)}）
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <form onSubmit={handleSubmit}>
           <div className="mb-3">
             <label htmlFor="date" className="form-label">日付</label>
