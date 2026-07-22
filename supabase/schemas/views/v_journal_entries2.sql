@@ -1,6 +1,6 @@
 -- 仕訳一覧表示用ビュー（借方・貸方の勘定科目名を結合）
 
-CREATE OR REPLACE VIEW "public"."v_journal_entries2" AS
+CREATE OR REPLACE VIEW "public"."v_journal_entries2" WITH (security_invoker='true') AS
  SELECT "ent"."date",
     "ent"."description",
     "deb"."category" AS "debit_category",

@@ -1,6 +1,6 @@
 -- 損益計算書用ビュー（収益・費用カテゴリごとの集計）
 
-CREATE OR REPLACE VIEW "public"."v_profit_loss_statement" AS
+CREATE OR REPLACE VIEW "public"."v_profit_loss_statement" WITH (security_invoker='true') AS
  WITH "cre" AS (
          SELECT "ent"."user_id",
             "ent"."credit_account_id" AS "account_id",
