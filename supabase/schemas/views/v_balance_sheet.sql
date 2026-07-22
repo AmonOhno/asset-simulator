@@ -1,6 +1,6 @@
 -- 貸借対照表用ビュー（勘定科目カテゴリごとの残高集計）
 
-CREATE OR REPLACE VIEW "public"."v_balance_sheet" AS
+CREATE OR REPLACE VIEW "public"."v_balance_sheet" WITH (security_invoker='true') AS
  WITH "cre" AS (
          SELECT "ent"."user_id",
             "ent"."credit_account_id" AS "account_id",
