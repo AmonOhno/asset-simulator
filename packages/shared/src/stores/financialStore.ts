@@ -4,6 +4,8 @@ import { persist } from 'zustand/middleware';
 import { toCamelCase, toSnakeCase } from '../utils/caseConvert';
 import { formatDateLocal, todayLocalString } from '../utils/dateUtils';
 import { isExecutionDate } from '../utils/recurrence';
+import { aggregateFrequentEntrySets } from '../utils/frequentEntries';
+import type { FrequentEntrySet } from '../utils/frequentEntries';
 import {
   JournalAccount,
   JournalEntry,
@@ -27,6 +29,7 @@ interface FinancialState {
   // GET Actions
   getJournalAccounts: () => Promise<JournalAccount[]>;
   getCalendarJournalEntries: (startDate: string, endDate: string) => Promise<CalendarJournalEntry[]>; // カレンダー用VIEW
+  getFrequentJournalEntrySets: (limit?: number) => Promise<FrequentEntrySet[]>; // 取引入力サジェスト用
   getRegularJournalEntries: () => Promise<RecurringTransaction[]>;
   getGoals: () => Promise<Goal[]>;
   getBalanceSheetView: (asOfDate?: string) => Promise<BalanceSheetView[]>;
@@ -48,6 +51,9 @@ interface FinancialState {
   executeRegularJournalEntry: (entry: RecurringTransaction) => Promise<void>; // 個別実行
   executeDueRegularJournalEntries: () => Promise<{executed: number, details: any[]}>; // 期限が来ている定期取引を実行
 }
+
+// 「よく使う取引入力値セット」の集計対象とする直近仕訳の件数
+const FREQUENT_ENTRY_LOOKBACK_COUNT = 200;
 
 // 定期取引の実行（仕訳挿入 + last_executed_date 更新）を行う共通処理。
 // executeRegularJournalEntry / executeDueRegularJournalEntries の両方から利用する。
@@ -146,6 +152,26 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
       return toCamelCase(data || []) as CalendarJournalEntry[];
     } catch (error) {
       console.error('Failed to fetch calendar journal entries:', error);
+      return [];
+    }
+  },
+
+  // 直近の仕訳から「よく使う取引入力値セット」を集計して返す（取引入力画面のサジェスト用。state には保存しない）
+  getFrequentJournalEntrySets: async (limit = 5): Promise<FrequentEntrySet[]> => {
+    const { userId } = useAuthStore.getState();
+    if (!userId) return [];
+
+    try {
+      const { data, error } = await supabase
+        .from('journal_entries')
+        .select('date, description, debit_account_id, credit_account_id, amount')
+        .eq('user_id', userId)
+        .order('date', { ascending: false })
+        .limit(FREQUENT_ENTRY_LOOKBACK_COUNT);
+      if (error) throw error;
+      return aggregateFrequentEntrySets(toCamelCase(data || []), limit);
+    } catch (error) {
+      console.error('Failed to fetch frequent journal entry sets:', error);
       return [];
     }
   },

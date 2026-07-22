@@ -53,6 +53,7 @@
 | `journal_accounts` | insert | `addJournalAccount` | — | — |
 | `journal_accounts` | update | `updateJournalAccount` | `id`, `user_id` | — |
 | `journal_accounts` | delete | `deleteJournalAccount` | `id`, `user_id` | — |
+| `journal_entries` | select | `getFrequentJournalEntrySets`（取引入力サジェスト用の直近仕訳取得） | `user_id = :userId` | `date` 降順（直近200件に limit） |
 | `journal_entries` | insert | `insertRecurringExecution`（定期取引実行時の内部ヘルパー） | — | — |
 | `journal_entries` | update | `updateJournalEntry` | `id`, `user_id` | — |
 | `journal_entries` | delete | `deleteJournalEntry` | `id`, `user_id` | — |
@@ -152,6 +153,7 @@
 |-----------|-----------|---------|-------------|
 | `getJournalAccounts` | `() => Promise<JournalAccount[]>` | `journal_accounts` を取得し state に反映 | `console.error` して現在の state を返す |
 | `getCalendarJournalEntries` | `(startDate, endDate) => Promise<CalendarJournalEntry[]>` | VIEW `v_journal_entries_for_calendar` を期間指定で取得（state には保存しない） | `console.error` して `[]` を返す |
+| `getFrequentJournalEntrySets` | `(limit?) => Promise<FrequentEntrySet[]>` | `journal_entries` の直近200件から（摘要・借方・貸方・金額）の組み合わせを `aggregateFrequentEntrySets`（`utils/frequentEntries.ts`）で集計し、出現回数順に上位 `limit` 件（デフォルト5）を返す（state には保存しない） | `console.error` して `[]` を返す |
 | `getRegularJournalEntries` | `() => Promise<RecurringTransaction[]>` | `regular_journal_entries` を取得し state に反映 | `console.error` して現在の state を返す |
 | `getBalanceSheetView` | `(asOfDate?) => Promise<BalanceSheetView[]>` | RPC `fn_balance_sheet` 呼び出し | `console.error` して `[]` |
 | `getProfitLossStatementView` | `(startDate?, endDate?) => Promise<ProfitLossView[]>` | RPC `fn_profit_loss` 呼び出し | `console.error` して `[]` |

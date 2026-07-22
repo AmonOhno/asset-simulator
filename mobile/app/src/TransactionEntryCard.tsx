@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useFinancialStore, todayLocalString } from "@asset-simulator/shared";
-import type { CalendarJournalEntry } from "@asset-simulator/shared";
+import type { CalendarJournalEntry, FrequentEntrySet } from "@asset-simulator/shared";
 import { Card, CardBodyMain } from "@mobile-components/Card";
 import { DateInput } from "@mobile-components/DateInput";
 import { TextInput } from "@mobile-components/TextInput";
@@ -28,6 +28,7 @@ export default function TransactionEntryCard({
   const addJournalEntry = useFinancialStore((s) => s.addJournalEntry);
   const updateJournalEntry = useFinancialStore((s) => s.updateJournalEntry);
   const getJournalAccounts = useFinancialStore((s) => s.getJournalAccounts);
+  const getFrequentJournalEntrySets = useFinancialStore((s) => s.getFrequentJournalEntrySets);
 
   const isEditMode = entry != null;
 
@@ -41,11 +42,39 @@ export default function TransactionEntryCard({
   const [amount, setAmount] = useState(() => entry?.amount ?? 0);
   const [submitting, setSubmitting] = useState(false);
   const [count, setCount] = useState(0);
+  // NumericInput は内部 state を持つため、サジェスト適用時は key を変えて再マウントし表示値を反映する
+  const [amountFieldKey, setAmountFieldKey] = useState(0);
+  const [suggestions, setSuggestions] = useState<FrequentEntrySet[]>([]);
 
   const accountOptions = useMemo(
     () => [PLACEHOLDER, ...journalAccounts.map((acc) => ({ label: acc.name, value: acc.id }))],
     [journalAccounts]
   );
+
+  const accountNameById = useMemo(
+    () => new Map(journalAccounts.map((acc) => [acc.id, acc.name])),
+    [journalAccounts]
+  );
+
+  // 新規登録モードでは、直近の仕訳から「よく使う取引入力値セット」を取得してサジェストする
+  useEffect(() => {
+    if (isEditMode) return;
+    let isMounted = true;
+    getFrequentJournalEntrySets().then((sets) => {
+      if (isMounted) setSuggestions(sets);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [isEditMode, getFrequentJournalEntrySets]);
+
+  const applySuggestion = (suggestion: FrequentEntrySet) => {
+    setDescription(suggestion.description);
+    setDebitAccountId(suggestion.debitAccountId);
+    setCreditAccountId(suggestion.creditAccountId);
+    setAmount(suggestion.amount);
+    setAmountFieldKey((prev) => prev + 1);
+  };
 
   const validate = () => {
     if (!date) {
@@ -82,6 +111,7 @@ export default function TransactionEntryCard({
       onEntryAdded?.();
       setDescription("");
       setAmount(0);
+      setAmountFieldKey((prev) => prev + 1);
       setCount((prev) => prev + 1);
     } catch (error) {
       console.error("Failed to register journal entry:", error);
@@ -125,6 +155,41 @@ export default function TransactionEntryCard({
     >
       <CardBodyMain>
         <div style={{ display: "grid", gap: 12 }}>
+          {!isEditMode && suggestions.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ fontSize: 13, color: "#6B7280", textAlign: "left" }}>よく使う入力</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {suggestions.map((s) => (
+                  <button
+                    key={`${s.description}-${s.debitAccountId}-${s.creditAccountId}-${s.amount}`}
+                    type="button"
+                    onClick={() => applySuggestion(s)}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-start",
+                      gap: 2,
+                      padding: "6px 10px",
+                      borderRadius: 8,
+                      border: "1px solid #BFDBFE",
+                      background: "#EFF6FF",
+                      color: "#1F2937",
+                      fontSize: 13,
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                  >
+                    <span style={{ fontWeight: 600 }}>
+                      {s.description} ¥{s.amount.toLocaleString()}
+                    </span>
+                    <span style={{ fontSize: 11, color: "#6B7280" }}>
+                      {accountNameById.get(s.debitAccountId) ?? "不明"} / {accountNameById.get(s.creditAccountId) ?? "不明"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <DateInput value={date} onChange={setDate} sizeVariant="M" />
             <TextInput
@@ -154,6 +219,7 @@ export default function TransactionEntryCard({
               />
             </div>
             <NumericInput
+              key={amountFieldKey}
               value={amount}
               unit="円"
               placeholder="0"
