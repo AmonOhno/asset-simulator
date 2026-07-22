@@ -89,6 +89,7 @@ asset-simulator/
 | `docs/api/myos_integration.md` | MyOS 連携用の読み取り専用 Finance API（Edge Function）仕様 |
 | `docs/database/er_diagram.puml` | DB ER 図（PlantUML） |
 | `docs/database/schema.md` | テーブル定義・カラム説明・VIEW・RPC |
+| `docs/database/development_policy.md` | Supabase スキーマのリポジトリ管理・Docker ローカル開発・マイグレーション運用方針 |
 | `docs/test/scenarios.md` | 自動テストの観点一覧・手動テストシナリオ・回帰観点 |
 
 ## Issue駆動開発

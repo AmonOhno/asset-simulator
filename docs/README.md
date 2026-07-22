@@ -27,6 +27,7 @@ Asset Simulator の設計ドキュメント一覧です。API サーバー（Exp
 |---------|------|
 | [database/er_diagram.puml](database/er_diagram.puml) | DB ER 図（PlantUML） |
 | [database/schema.md](database/schema.md) | テーブル定義・カラム説明・VIEW・RPC |
+| [database/development_policy.md](database/development_policy.md) | Supabase スキーマのリポジトリ管理・Docker ローカル開発・マイグレーション運用方針 |
 
 ## テスト
 
