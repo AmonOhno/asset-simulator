@@ -1,6 +1,6 @@
 -- カレンダー表示用の仕訳ビュー
 
-CREATE OR REPLACE VIEW "public"."v_journal_entries_for_calendar" AS
+CREATE OR REPLACE VIEW "public"."v_journal_entries_for_calendar" WITH (security_invoker='true') AS
  SELECT "ent"."id",
     "ent"."date",
     "ent"."description",
