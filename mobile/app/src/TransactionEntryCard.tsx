@@ -155,41 +155,6 @@ export default function TransactionEntryCard({
     >
       <CardBodyMain>
         <div style={{ display: "grid", gap: 12 }}>
-          {!isEditMode && suggestions.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <div style={{ fontSize: 13, color: "#6B7280", textAlign: "left" }}>よく使う入力</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {suggestions.map((s) => (
-                  <button
-                    key={`${s.description}-${s.debitAccountId}-${s.creditAccountId}-${s.amount}`}
-                    type="button"
-                    onClick={() => applySuggestion(s)}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-start",
-                      gap: 2,
-                      padding: "6px 10px",
-                      borderRadius: 8,
-                      border: "1px solid #BFDBFE",
-                      background: "#EFF6FF",
-                      color: "#1F2937",
-                      fontSize: 13,
-                      cursor: "pointer",
-                      textAlign: "left",
-                    }}
-                  >
-                    <span style={{ fontWeight: 600 }}>
-                      {s.description} ¥{s.amount.toLocaleString()}
-                    </span>
-                    <span style={{ fontSize: 11, color: "#6B7280" }}>
-                      {accountNameById.get(s.debitAccountId) ?? "不明"} / {accountNameById.get(s.creditAccountId) ?? "不明"}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <DateInput value={date} onChange={setDate} sizeVariant="M" />
             <TextInput
@@ -241,6 +206,41 @@ export default function TransactionEntryCard({
             sizeVariant="S"
             onClick={isEditMode ? updateEntry : registerEntry}
           />
+          {!isEditMode && suggestions.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ fontSize: 13, color: "#6B7280", textAlign: "left" }}>よく使う入力</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {suggestions.map((s) => (
+                  <button
+                    key={`${s.description}-${s.debitAccountId}-${s.creditAccountId}-${s.amount}`}
+                    type="button"
+                    onClick={() => applySuggestion(s)}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-start",
+                      gap: 2,
+                      padding: "6px 10px",
+                      borderRadius: 8,
+                      border: "1px solid #BFDBFE",
+                      background: "#EFF6FF",
+                      color: "#1F2937",
+                      fontSize: 13,
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                  >
+                    <span style={{ fontWeight: 600 }}>
+                      {s.description} ¥{s.amount.toLocaleString()}
+                    </span>
+                    <span style={{ fontSize: 11, color: "#6B7280" }}>
+                      {accountNameById.get(s.debitAccountId) ?? "不明"} / {accountNameById.get(s.creditAccountId) ?? "不明"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </CardBodyMain>
     </Card>
