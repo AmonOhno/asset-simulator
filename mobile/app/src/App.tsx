@@ -86,7 +86,6 @@ function App() {
   }, [session, fetchEvents, getJournalAccounts, getRegularJournalEntries]);
 
   const [activeTab, setActiveTab] = useState<TabId>("transaction");
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [entryDialogDate, setEntryDialogDate] = useState<string | null>(null);
   const [editingEntry, setEditingEntry] = useState<CalendarJournalEntry | null>(null);
   const [entriesVersion, setEntriesVersion] = useState(0);
@@ -161,10 +160,6 @@ function App() {
     setBsAsOfDate(endDate);
   };
 
-  const handleDateSelect = (date: string) => {
-    setSelectedDate(date);
-  };
-
   const handleDateDoubleClick = (date: string) => {
     setEditingEntry(null);
     setEntryDialogDate(date);
@@ -183,18 +178,8 @@ function App() {
   const renderContent = () => {
     switch (activeTab) {
       case "transaction":
-        return (
-          <div style={{ display: "grid", gap: 24 }}>
-            <CalendarCard
-              onDateSelect={handleDateSelect}
-              onDateDoubleClick={handleDateDoubleClick}
-              onEditEntry={handleEditEntry}
-              refreshSignal={entriesVersion}
-              onEntryChanged={() => setEntriesVersion((v) => v + 1)}
-            />
-            <GoalCard monthRange={goalMonthRange} refreshSignal={entriesVersion} />
-          </div>
-        );
+        // CalendarCard は常時マウントするため renderContent の外側で描画する
+        return <GoalCard monthRange={goalMonthRange} refreshSignal={entriesVersion} />;
       case "pl-bs":
         return (
           <div style={{ display: "grid", gap: 16 }}>
@@ -269,12 +254,7 @@ function App() {
       case "accounts":
         return <AccountMasterCard />;
       default:
-        return (
-          <div style={{ display: "grid", gap: 24 }}>
-            <CalendarCard onDateSelect={handleDateSelect} />
-            {selectedDate && <TransactionEntryCard selectedDate={selectedDate} />}
-          </div>
-        );
+        return null;
     }
   };
 
@@ -289,17 +269,28 @@ function App() {
         <CommonButton label="ログアウト" sizeVariant="M" colorVariant="secondary" onClick={signOut} />
       </header>
       <div style={{ flex: 1, overflowY: "auto", padding: 20 }}>
-        <div style={{ maxWidth: 900, width: "100%" }}>{renderContent()}</div>
+        {/*
+          CalendarCard は常時マウントし表示のみ切り替える。
+          タブを移動して戻ったときに勘定科目フィルタ・表示中の月・選択日がリセットされるのを防ぐ。
+        */}
+        <div style={{ maxWidth: 900, width: "100%", display: "grid", gap: 24 }}>
+          <div style={{ display: activeTab === "transaction" ? "block" : "none" }}>
+            <CalendarCard
+              onDateDoubleClick={handleDateDoubleClick}
+              onEditEntry={handleEditEntry}
+              refreshSignal={entriesVersion}
+              onEntryChanged={() => setEntriesVersion((v) => v + 1)}
+            />
+          </div>
+          {renderContent()}
+        </div>
       </div>
       <nav style={{ flexShrink: 0, display: "flex", flexDirection: "row", overflowX: "auto", borderTop: "1px solid #E5E7EB", background: "#FFFFFF" }}>
         {tabs.map((tab) => (
           <button
             style={{ padding: "20px 24px", minHeight: 60, border: "none", borderBottom: activeTab === tab.id ? "3px solid #3B82F6" : "3px solid transparent", background: activeTab === tab.id ? "#EFF6FF" : "transparent", color: activeTab === tab.id ? "#1F2937" : "#6B7280", fontSize: 15, fontWeight: activeTab === tab.id ? 600 : 400, whiteSpace: "nowrap", minWidth: "fit-content", cursor: "pointer", transition: "all 0.2s ease" }}
             key={tab.id}
-            onClick={() => {
-              setActiveTab(tab.id);
-              setSelectedDate(null);
-            }}
+            onClick={() => setActiveTab(tab.id)}
           >
             {tab.label}
           </button>

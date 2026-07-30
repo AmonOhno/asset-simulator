@@ -102,7 +102,7 @@ App (desktop/src/App.tsx)
 
 | コンポーネント | ファイル | 責務 | 使用するストアアクション |
 |---------------|---------|------|------------------------|
-| `App` | `mobile/app/src/App.tsx` | 認証監視・タブ切り替え・PL/BS 期間の一括管理・支出目標用の月次期間（`goalMonthRange`）の導出（月単位プリセット選択中は表示中の期間、それ以外は期間設定に基づく現在の月次期間）・取引入力/編集ダイアログの開閉 | `getJournalAccounts`, `getRegularJournalEntries`, `fetchEvents`, `getProfitLossStatementView`, `getBalanceSheetView` |
+| `App` | `mobile/app/src/App.tsx` | 認証監視・タブ切り替え（`CalendarCard` は常時マウントし `display` で表示のみ切り替えることで、タブ移動後もフィルタ・表示月・選択日を保持）・PL/BS 期間の一括管理・支出目標用の月次期間（`goalMonthRange`）の導出（月単位プリセット選択中は表示中の期間、それ以外は期間設定に基づく現在の月次期間）・取引入力/編集ダイアログの開閉 | `getJournalAccounts`, `getRegularJournalEntries`, `fetchEvents`, `getProfitLossStatementView`, `getBalanceSheetView` |
 | `LoginScreen` | `LoginScreen.tsx` | 未ログイン時のログイン画面（Supabase Auth UI） | なし（`useAuthStore` の `client` のみ） |
 | `CalendarCard` | `CalendarCard.tsx` | 月表示のカレンダー。日付タップで選択、ダブルタップで取引入力ダイアログを開く。選択日の取引一覧・編集/削除。勘定科目セレクト（初期値「すべて」）で取引を絞り込み（借方・貸方のどちらかが一致、日付セルのドット表示にも反映） | `getCalendarJournalEntries`, `deleteJournalEntry`（`journalAccounts` を購読） |
 | `TransactionEntryCard` | `TransactionEntryCard.tsx` | 取引の新規登録／編集（`entry` props の有無でモード切替）。新規登録モードでは「よく使う入力」サジェスト（直近仕訳の頻出セット）を登録ボタンの下に表示し、タップで摘要・借方・貸方・金額をフォームに反映 | `addJournalEntry`, `updateJournalEntry`, `getJournalAccounts`（残高反映のため再取得）, `getFrequentJournalEntrySets`（新規モードのみ） |
