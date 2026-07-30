@@ -34,6 +34,8 @@ interface SelectInputProps {
   onChange: (value: string) => void;
   sizeVariant?: SizeVariant;
   fontSize?: FontSizeVariant;
+  /** label の htmlFor と紐づける場合に指定 */
+  id?: string;
 }
 
 const styles = {
@@ -80,7 +82,7 @@ function ChevronDownIcon() {
   );
 }
 
-export function SelectInput({ options, value, onChange, sizeVariant = "Full", fontSize = "M" }: SelectInputProps) {
+export function SelectInput({ options, value, onChange, sizeVariant = "Full", fontSize = "M", id }: SelectInputProps) {
   const wrapperStyle: CSSProperties = {
     ...styles.wrapper,
     width: sizeWidthMap[sizeVariant],
@@ -95,6 +97,7 @@ export function SelectInput({ options, value, onChange, sizeVariant = "Full", fo
   return (
     <div style={wrapperStyle}>
       <select
+        id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         style={selectStyle}
