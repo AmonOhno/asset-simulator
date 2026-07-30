@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { useFinancialStore, formatDateLocal } from "@asset-simulator/shared";
 import type { CalendarJournalEntry } from "@asset-simulator/shared";
 import { Card, CardBodyHead, CardBodyMain } from "@mobile-components/Card";
 import { CommonButton } from "@mobile-components/CommonButton";
+import { SelectInput } from "@mobile-components/SelectInput";
 
 interface CalendarCardProps {
   onDateDoubleClick?: (date: string) => void;
@@ -15,6 +16,9 @@ interface CalendarCardProps {
 }
 
 const fmt = formatDateLocal;
+
+/** 勘定科目フィルタ未選択（すべて表示）を表す値 */
+const ALL_ACCOUNTS = "";
 
 function getMonthDays(year: number, month: number) {
   const end = new Date(year, month + 1, 0);
@@ -36,12 +40,16 @@ function getWeekdayLabels() {
 export default function CalendarCard({ onDateDoubleClick, onDateSelect, onEditEntry, refreshSignal, onEntryChanged }: CalendarCardProps) {
   const getCalendarJournalEntries = useFinancialStore((s) => s.getCalendarJournalEntries);
   const deleteJournalEntry = useFinancialStore((s) => s.deleteJournalEntry);
+  const journalAccounts = useFinancialStore((s) => s.journalAccounts);
 
   const [monthOffset, setMonthOffset] = useState(0);
   const today = new Date();
   const currentMonth = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
   const [selectedDate, setSelectedDate] = useState(() => fmt(today));
   const [entries, setEntries] = useState<CalendarJournalEntry[]>([]);
+  /** 勘定科目フィルタ（借方・貸方のどちらかが一致する取引を表示） */
+  const [accountFilter, setAccountFilter] = useState<string>(ALL_ACCOUNTS);
+  const accountFilterId = useId();
 
   const monthStart = fmt(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1));
   const monthEnd = fmt(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0));
@@ -65,17 +73,38 @@ export default function CalendarCard({ onDateDoubleClick, onDateSelect, onEditEn
   const firstWeekday = currentMonth.getDay();
   const selected = selectedDate;
 
+  const accountOptions = useMemo(
+    () => [
+      { label: "すべて", value: ALL_ACCOUNTS },
+      ...journalAccounts.map((acc) => ({ label: acc.name, value: acc.id })),
+    ],
+    [journalAccounts]
+  );
+
+  // 選択中の科目が削除された場合はフィルタ未選択として扱う
+  const activeAccountFilter =
+    accountFilter !== ALL_ACCOUNTS && journalAccounts.some((acc) => acc.id === accountFilter)
+      ? accountFilter
+      : ALL_ACCOUNTS;
+
+  const accountFilteredEntries = useMemo(() => {
+    if (activeAccountFilter === ALL_ACCOUNTS) return entries;
+    return entries.filter(
+      (e) => e.debitAccountId === activeAccountFilter || e.creditAccountId === activeAccountFilter
+    );
+  }, [entries, activeAccountFilter]);
+
   const countByDate = useMemo(() => {
     const map: Record<string, number> = {};
-    entries.forEach((e) => {
+    accountFilteredEntries.forEach((e) => {
       map[e.date] = (map[e.date] ?? 0) + 1;
     });
     return map;
-  }, [entries]);
+  }, [accountFilteredEntries]);
 
   const filteredEntries = useMemo(
-    () => entries.filter((e) => e.date === selected),
-    [entries, selected]
+    () => accountFilteredEntries.filter((e) => e.date === selected),
+    [accountFilteredEntries, selected]
   );
 
   const handleDelete = async (entry: CalendarJournalEntry) => {
@@ -135,6 +164,21 @@ export default function CalendarCard({ onDateDoubleClick, onDateSelect, onEditEn
           >
             次月
           </button>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12 }}>
+          <label htmlFor={accountFilterId} style={{ fontSize: 14, color: "#4B5563", whiteSpace: "nowrap" }}>
+            勘定科目
+          </label>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <SelectInput
+              id={accountFilterId}
+              options={accountOptions}
+              value={activeAccountFilter}
+              onChange={setAccountFilter}
+              sizeVariant="Full"
+              fontSize="S"
+            />
+          </div>
         </div>
       </CardBodyHead>
       <CardBodyMain>
@@ -207,7 +251,11 @@ export default function CalendarCard({ onDateDoubleClick, onDateSelect, onEditEn
         </div>
         <div style={{ marginTop: 16, fontSize: 14, color: "#4B5563" }}>
           {filteredEntries.length === 0 ? (
-            <div style={{ color: "#9CA3AF", fontSize: 13 }}>この日の取引はありません。日付をダブルタップして登録できます。</div>
+            <div style={{ color: "#9CA3AF", fontSize: 13 }}>
+              {activeAccountFilter === ALL_ACCOUNTS
+                ? "この日の取引はありません。日付をダブルタップして登録できます。"
+                : "選択中の勘定科目に該当する取引はこの日にありません。"}
+            </div>
           ) : (
             <div style={{ display: "grid", gap: 8 }}>
               {filteredEntries.map((entry) => (
