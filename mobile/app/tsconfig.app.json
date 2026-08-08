@@ -7,6 +7,15 @@
     "types": ["vite/client"],
     "skipLibCheck": true,
 
+    /* Path mapping: TypeScript は Vite の resolve.alias を読まないため、
+       mobile/vite.config.ts のエイリアスをここにも書かないと TS2307 になる。
+       shared は mobile/tsconfig.app.json と同様、実行時は vite alias でソース参照、
+       型検査はビルド済み dist 宣言を参照する（mobile 側の strict 設定を shared に波及させないため）。 */
+    "paths": {
+      "@mobile-components/*": ["../components/*"],
+      "@asset-simulator/shared": ["../../packages/shared/dist/index"]
+    },
+
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
@@ -21,5 +30,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "../web-new/.storybook/DataGrid.stories.tsx", "../web-new/.storybook/DateInput.stories.tsx", "../web-new/.storybook/NumericInput.stories.tsx", "../web-new/.storybook/SelectInput.stories.tsx", "../web-new/.storybook/TextInput.stories.tsx", "../web-new/.storybook/CommonButton.stories.tsx", "../web-new/.storybook/Card.stories.tsx"]
+  "include": ["src"]
 }
