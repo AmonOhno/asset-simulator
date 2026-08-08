@@ -19,6 +19,7 @@ import { PanelButton } from "@mobile-components/PanelButton";
 import { CommonButton } from "@mobile-components/CommonButton";
 import { Dialog } from "@mobile-components/Dialog";
 import { PeriodSelector } from "@mobile-components/PeriodSelector";
+import { TextInput } from "@mobile-components/TextInput";
 import { computePeriodRange, DEFAULT_PERIOD_SETTINGS, type PeriodPreset, type PeriodSettings } from "@mobile-components/periodSelector.utils";
 import LoginScreen from "./LoginScreen";
 
@@ -43,6 +44,26 @@ function getDefaultDates() {
 }
 
 const defaults = getDefaultDates();
+
+const MEMO_STORAGE_PREFIX = "asset-simulator:memo:";
+
+// メモは DB に保存せず端末の localStorage に置く。
+// プライベートブラウズ等で localStorage が使えない環境では、画面内の保持だけに退避する。
+function readStoredMemo(userId: string): string {
+  try {
+    return localStorage.getItem(MEMO_STORAGE_PREFIX + userId) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function writeStoredMemo(userId: string, value: string) {
+  try {
+    localStorage.setItem(MEMO_STORAGE_PREFIX + userId, value);
+  } catch {
+    // 保存できない環境では復元を諦める
+  }
+}
 
 function App() {
   const { session, client, setSession, refreshSession, signOut } = useAuthStore();
@@ -103,6 +124,24 @@ function App() {
   // 各パネルのサマリーリストの表示/非表示
   const [isProfitOpen, setIsProfitOpen] = useState(false);
   const [isNetAssetsOpen, setIsNetAssetsOpen] = useState(false);
+
+  // タブ配下ではなくヘッダーに置くメモ。ユーザー単位で localStorage に保持する。
+  const userId = session?.user?.id ?? null;
+  const [memo, setMemo] = useState(() => (userId ? readStoredMemo(userId) : ""));
+
+  // ログイン・ユーザー切り替えでメモを読み直す（レンダー中の state リセットパターン）
+  const [memoUserId, setMemoUserId] = useState(userId);
+  if (memoUserId !== userId) {
+    setMemoUserId(userId);
+    setMemo(userId ? readStoredMemo(userId) : "");
+  }
+
+  // 保存は入力時のみ。memo を依存に持つ effect で保存すると、
+  // ユーザー切り替え直後に前ユーザーのメモで上書きしてしまう。
+  const handleMemoChange = (value: string) => {
+    setMemo(value);
+    if (userId) writeStoredMemo(userId, value);
+  };
 
   // PL/BS ビューはサーバー集計を取得（日付変更・取引登録時に再取得）
   useEffect(() => {
@@ -264,9 +303,24 @@ function App() {
 
   return (
     <main style={{ display: "flex", flexDirection: "column", height: "100dvh", overflow: "hidden", background: "#F3F4F6", color: "#111827" }}>
-      <header style={{ flexShrink: 0, display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: "12px 20px", borderBottom: "1px solid #E5E7EB", gap: 12 }}>
-        <h1 style={{ margin: 0, fontSize: 20, color: "#4B5563", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1, minWidth: 0 }}>取引管理ダッシュボード</h1>
-        <CommonButton label="ログアウト" sizeVariant="M" colorVariant="secondary" onClick={signOut} />
+      <header style={{ flexShrink: 0, display: "flex", flexDirection: "column", padding: "10px 20px", borderBottom: "1px solid #E5E7EB", gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+          <h1 style={{ margin: 0, fontSize: 16, color: "#4B5563", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1, minWidth: 0 }}>取引管理ダッシュボード</h1>
+          <CommonButton label="ログアウト" sizeVariant="M" colorVariant="secondary" onClick={signOut} />
+        </div>
+        {/* メモはタブ配下ではなくヘッダーに置き、タブを切り替えても表示と入力内容を保つ */}
+        <label style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 12, color: "#6B7280", flexShrink: 0 }}>メモ</span>
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <TextInput
+              placeholder="この端末にのみ保存されます"
+              sizeVariant="Full"
+              fontSize="S"
+              value={memo}
+              onChange={handleMemoChange}
+            />
+          </span>
+        </label>
       </header>
       <div style={{ flex: 1, overflowY: "auto", padding: 20 }}>
         {/*
