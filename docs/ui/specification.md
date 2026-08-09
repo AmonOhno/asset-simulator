@@ -62,17 +62,17 @@ App (desktop/src/App.tsx)
 
 ### 2.3 各コンポーネントの責務
 
-| コンポーネント | ファイル | 責務 | 使用するストアアクション |
+| コンポーネント | ファイル | 責務 | 使用するストアアクション/クエリ |
 |---------------|---------|------|------------------------|
-| `App` | `src/App.tsx` | 認証状態監視・タブ切り替え・初回データ取得 | `getJournalAccounts`, `getRegularJournalEntries`, `fetchEvents` |
-| `JournalEntryForm` | `components/journal/JournalEntryForm.tsx` | 仕訳の新規登録フォーム。カードヘッダークリックで折りたたみ。「よく使う入力」サジェスト（直近仕訳の頻出セット）をタップするとフォームに反映 | `addJournalEntry`, `getFrequentJournalEntrySets`（`journalAccounts` を購読） |
-| `MainCalendar` | `components/MainCalendar.tsx` | `react-calendar` による月間カレンダー。日別の仕訳・イベント表示、借方/貸方フィルタ、費用/収益サマリー | `getCalendarJournalEntries`（月が変わるたびに再取得）, `updateJournalEntry`（編集モーダル保存時） |
+| `App` | `src/App.tsx` | 認証状態監視・タブ切り替え・初回データ取得 | `fetchJournalAccounts`, `fetchRegularJournalEntries`, `fetchEvents` |
+| `JournalEntryForm` | `components/journal/JournalEntryForm.tsx` | 仕訳の新規登録フォーム。カードヘッダークリックで折りたたみ。「よく使う入力」サジェスト（直近仕訳の頻出セット）をタップするとフォームに反映 | `addJournalEntry`（アクション）, `fetchFrequentEntrySets`（`@asset-simulator/shared` の純粋クエリ、直接 import）（`journalAccounts` を購読） |
+| `MainCalendar` | `components/MainCalendar.tsx` | `react-calendar` による月間カレンダー。日別の仕訳・イベント表示、借方/貸方フィルタ、費用/収益サマリー | `fetchCalendarJournalEntries`（純粋クエリ、直接 import。月が変わるたびに再取得）, `updateJournalEntry`（アクション、編集モーダル保存時） |
 | `JournalEntriesModal` | `components/journal/JournalEntriesModal.tsx` | `MainCalendar` から開く仕訳編集モーダル（フィールド編集のみ、保存は呼び出し元） | なし（props 経由の callback） |
-| `JournalDashboard` | `components/journal/JournalDashboard.tsx` | BS/PL の表示。期間・基準日は `localStorage` に `userId` ごとに永続化 | `getBalanceSheetView`, `getProfitLossStatementView` |
+| `JournalDashboard` | `components/journal/JournalDashboard.tsx` | BS/PL の表示。期間・基準日は `localStorage` に `userId` ごとに永続化 | `fetchBalanceSheet`, `fetchProfitLoss`（いずれも純粋クエリ、直接 import） |
 | `DateRangePicker` | `components/common/DateRangePicker.tsx` | 週/月/年/カスタムのプリセット選択 UI。shared の `computePeriodRange`/`shiftPeriodRange` を呼ぶ | ストア未使用（shared/utils のみ） |
-| `RecurringTransactionManager` | `components/journal/RecurringTransactionManager.tsx` | 定期取引の一覧・フィルタ・ソート・実行。マウント時+10分間隔で期限到来分を自動実行 | `getRegularJournalEntries`, `addRegularJournalEntry`, `updateRegularJournalEntry`, `deleteRegularJournalEntry`, `executeRegularJournalEntry`, `executeDueRegularJournalEntries` |
+| `RecurringTransactionManager` | `components/journal/RecurringTransactionManager.tsx` | 定期取引の一覧・フィルタ・ソート・実行。マウント時+10分間隔で期限到来分を自動実行 | `fetchRegularJournalEntries`, `addRegularJournalEntry`, `updateRegularJournalEntry`, `deleteRegularJournalEntry`, `executeRegularJournalEntry`, `executeDueRegularJournalEntries` |
 | `RecurringTransactionFormModal` | `components/journal/RecurringTransactionFormModal.tsx` | 定期取引の新規作成・編集用モーダル（頻度に応じて入力項目が切り替わる） | なし（`RecurringTransactionManager` から `formData`/`onChange`/`onSave` を受け取る） |
-| `JournalAccountManager` | `components/journal/JournalAccountManager.tsx` | 勘定科目の追加・編集一覧。`isSystemAccount()`（`acc_`/`card_` プレフィックス）はカテゴリ編集を禁止 | `addJournalAccount`, `updateJournalAccount`, `getJournalAccounts` |
+| `JournalAccountManager` | `components/journal/JournalAccountManager.tsx` | 勘定科目の追加・編集一覧。`isSystemAccount()`（`acc_`/`card_` プレフィックス）はカテゴリ編集を禁止 | `addJournalAccount`, `updateJournalAccount`, `fetchJournalAccounts` |
 | `EventScheduleForm` | `components/event/EventScheduleForm.tsx` | イベントの新規登録・編集フォーム（`editingEvent` props があれば編集モード） | `addEvent`（新規時のみ。編集時は親の `onSave` 経由で `updateEvent`） |
 | `EventScheduleManager` | `components/event/EventScheduleManager.tsx` | イベント一覧（すべて/今後/過去フィルタ）、編集・削除 | `updateEvent`, `deleteEvent`（`events` を購読） |
 
@@ -100,17 +100,17 @@ App (desktop/src/App.tsx)
 
 ### 3.2 各カードの責務
 
-| コンポーネント | ファイル | 責務 | 使用するストアアクション |
+| コンポーネント | ファイル | 責務 | 使用するストアアクション/クエリ |
 |---------------|---------|------|------------------------|
-| `App` | `mobile/app/src/App.tsx` | 認証監視・タブ切り替え（`CalendarCard` は常時マウントし `display` で表示のみ切り替えることで、タブ移動後もフィルタ・表示月・選択日を保持）・PL/BS 期間の一括管理・支出目標用の月次期間（`goalMonthRange`）の導出（月単位プリセット選択中は表示中の期間、それ以外は期間設定に基づく現在の月次期間）・取引入力/編集ダイアログの開閉 | `getJournalAccounts`, `getRegularJournalEntries`, `fetchEvents`, `getProfitLossStatementView`, `getBalanceSheetView` |
+| `App` | `mobile/app/src/App.tsx` | 認証監視・タブ切り替え（`CalendarCard` は常時マウントし `display` で表示のみ切り替えることで、タブ移動後もフィルタ・表示月・選択日を保持）・PL/BS 期間の一括管理・支出目標用の月次期間（`goalMonthRange`）の導出（月単位プリセット選択中は表示中の期間、それ以外は期間設定に基づく現在の月次期間）・取引入力/編集ダイアログの開閉 | `fetchJournalAccounts`, `fetchRegularJournalEntries`, `fetchEvents`（アクション）, `fetchProfitLoss`, `fetchBalanceSheet`（純粋クエリ、直接 import） |
 | `LoginScreen` | `LoginScreen.tsx` | 未ログイン時のログイン画面（Supabase Auth UI） | なし（`useAuthStore` の `client` のみ） |
-| `CalendarCard` | `CalendarCard.tsx` | 月表示のカレンダー。日付タップで選択、ダブルタップで取引入力ダイアログを開く。選択日の取引一覧・編集/削除。勘定科目セレクト（初期値「すべて」）で取引を絞り込み（借方・貸方のどちらかが一致、日付セルのドット表示にも反映） | `getCalendarJournalEntries`, `deleteJournalEntry`（`journalAccounts` を購読） |
-| `TransactionEntryCard` | `TransactionEntryCard.tsx` | 取引の新規登録／編集（`entry` props の有無でモード切替）。新規登録モードでは「よく使う入力」サジェスト（直近仕訳の頻出セット）を登録ボタンの下に表示し、タップで摘要・借方・貸方・金額をフォームに反映 | `addJournalEntry`, `updateJournalEntry`, `getJournalAccounts`（残高反映のため再取得）, `getFrequentJournalEntrySets`（新規モードのみ） |
+| `CalendarCard` | `CalendarCard.tsx` | 月表示のカレンダー。日付タップで選択、ダブルタップで取引入力ダイアログを開く。選択日の取引一覧・編集/削除。勘定科目セレクト（初期値「すべて」）で取引を絞り込み（借方・貸方のどちらかが一致、日付セルのドット表示にも反映） | `fetchCalendarJournalEntries`（純粋クエリ、直接 import）, `deleteJournalEntry`（アクション）（`journalAccounts` を購読） |
+| `TransactionEntryCard` | `TransactionEntryCard.tsx` | 取引の新規登録／編集（`entry` props の有無でモード切替）。新規登録モードでは「よく使う入力」サジェスト（直近仕訳の頻出セット）を登録ボタンの下に表示し、タップで摘要・借方・貸方・金額をフォームに反映 | `addJournalEntry`, `updateJournalEntry`, `fetchJournalAccounts`（アクション、残高反映のため再取得）, `fetchFrequentEntrySets`（純粋クエリ、直接 import、新規モードのみ） |
 | `ProfitLossStatementCard` | `ProfitLossStatementCard.tsx` | 収益・費用の明細サマリーリスト（`PeriodSelector` 内包） | なし（`rows` は `App` から props で受け取る） |
 | `BalanceSheetCard` | `BalanceSheetCard.tsx` | 資産・負債・純資産の明細サマリーリスト（基準日プリセット: 今日/今月末/先月末） | なし（`rows` は props） |
 | `RecurringTransactionCard` | `RecurringTransactionCard.tsx` | 定期取引の一覧・追加（ダイアログ）・実行・削除・期限到来分一括実行 | `addRegularJournalEntry`, `deleteRegularJournalEntry`, `executeRegularJournalEntry`, `executeDueRegularJournalEntries` |
 | `AccountMasterCard` | `AccountMasterCard.tsx` | 勘定科目の追加・一覧・**削除**（desktop の勘定科目管理は編集のみで削除なし） | `addJournalAccount`, `deleteJournalAccount` |
-| `GoalCard` | `GoalCard.tsx` | 費用科目ごと・期間（日次/月次）ごとの支出目標の設定（ダイアログ、同一科目・期間は金額を上書き）・一覧・進捗表示（対象期間・達成率%・残額/超過額・実績支出との比較バー）・削除。月次の対象期間は props の `monthRange`（ダッシュボードの月次指定期間と同期、`App` が導出）、日次は当日。`refreshSignal` の変化で実績を再取得。`transaction` タブと `pl-bs` タブの両方から利用可能 | `getGoals`, `addGoal`, `updateGoal`, `deleteGoal`, `getProfitLossStatementView`（実績取得） |
+| `GoalCard` | `GoalCard.tsx` | 費用科目ごと・期間（日次/月次）ごとの支出目標の設定（ダイアログ、同一科目・期間は金額を上書き）・一覧・進捗表示（対象期間・達成率%・残額/超過額・実績支出との比較バー）・削除。月次の対象期間は props の `monthRange`（ダッシュボードの月次指定期間と同期、`App` が導出）、日次は当日。`refreshSignal` の変化で実績を再取得。`transaction` タブと `pl-bs` タブの両方から利用可能 | `fetchGoals`, `addGoal`, `updateGoal`, `deleteGoal`（アクション）, `fetchProfitLoss`（純粋クエリ、直接 import、実績取得） |
 
 モバイル版には勘定科目の「編集」機能はない（追加・削除のみ）。desktop 版には「削除」機能がない（追加・編集のみ）。
 
@@ -184,18 +184,20 @@ desktop 版は借方・貸方が同一科目でも登録をブロックしない
 
 | ストア | 主な state | 主なアクション |
 |-------|-----------|---------------|
-| `useFinancialStore` | `journalAccounts`, `journalEntries`, `regularJournalEntries` | 詳細は [`docs/api/specification.md`](../api/specification.md#ストアアクション一覧) |
+| `useFinancialStore` | `journalAccounts`, `regularJournalEntries`, `goals` | 詳細は [`docs/api/specification.md`](../api/specification.md#ストアアクション一覧) |
 | `useEventsStore` | `events` | `fetchEvents`, `addEvent`, `updateEvent`, `deleteEvent` |
 | `useAuthStore` | `session`, `userId`, `client` | `setSession`, `refreshSession`, `signOut` |
 
-`useFinancialStore` は `persist` ミドルウェアで `localStorage`（キー `financial-store`）に永続化される。
+`useFinancialStore` は `persist` ミドルウェアで `localStorage`（キー `financial-store`）に永続化される。`partialize` で永続化対象を `journalAccounts` / `regularJournalEntries` / `goals` の3つに限定している。
+
+カレンダー仕訳取得・「よく使う入力」サジェスト取得・BS/PL 取得は state を持たない読み取り専用クエリのため `useFinancialStore` のアクションではなく、`packages/shared/src/queries/`（`fetchCalendarJournalEntries` / `fetchFrequentEntrySets` / `fetchBalanceSheet` / `fetchProfitLoss`）から `@asset-simulator/shared` 経由で直接 import して呼ぶ。詳細は [`docs/api/specification.md`](../api/specification.md#純粋クエリ一覧packagessharedsrcqueries) を参照。
 
 ### 5.2 リフレッシュルール
 
 **ミューテーション後は変更したリソースのアクションだけを呼ぶ。** 広範囲な「全データ再取得」関数は存在しない。
 
-- 仕訳登録・更新後: `getJournalAccounts()`（残高が変わるため）を呼ぶ実装が多い（例: mobile `TransactionEntryCard`）
-- 定期取引実行後: `executeRegularJournalEntry`/`executeDueRegularJournalEntries` の内部で `getJournalAccounts()` + `getRegularJournalEntries()` を呼び直す
+- 仕訳登録・更新後: `fetchJournalAccounts()`（残高が変わるため）を呼ぶ実装が多い（例: mobile `TransactionEntryCard`）
+- 定期取引実行後: `executeRegularJournalEntry`/`executeDueRegularJournalEntries` の内部で `fetchJournalAccounts()` + `fetchRegularJournalEntries()` を呼び直す
 - イベント CRUD 後: `addEvent`/`updateEvent`/`deleteEvent` が自身で state を更新するため、`fetchEvents()` の再呼び出しは不要（コード内コメントにも明記）
 
 ### 5.3 初回データ取得（desktop / mobile 共通パターン）
@@ -205,10 +207,10 @@ App
 ├─ useEffect（認証監視）
 │   └─ refreshSession() → setSession() / onAuthStateChange → setSession()
 ├─ useEffect（session 依存, ref で一度だけ）
-│   └─ getJournalAccounts() + getRegularJournalEntries()（初回のみ）
+│   └─ fetchJournalAccounts() + fetchRegularJournalEntries()（初回のみ）
 │   └─ fetchEvents()（毎回）
 └─ 各タブ/カード
-    └─ ストアの state を購読、必要に応じて自身で個別データ（カレンダー月別データ・BS/PL 等）を取得
+    └─ ストアの state を購読、必要に応じて自身で個別データ（カレンダー月別データ・BS/PL 等、shared/queries の純粋クエリを直接呼ぶ）を取得
 ```
 
 - desktop: `activeTab` が `calendar`/`events` のときは `fetchEvents()` を再実行（実際のタブ ID は `transactions`/`events` などのため、この判定は現状ヒットしにくい実装になっている点に留意）
@@ -219,7 +221,7 @@ App
 ```
 TransactionEntryCard.registerEntry()
 └─ addJournalEntry()  … RPC create_journal_entry
-   └─ getJournalAccounts()  … 残高反映
+   └─ fetchJournalAccounts()  … 残高反映
       └─ onEntryAdded?.()  … App の entriesVersion をインクリメント
          └─ CalendarCard / PL・BS カードが再取得・再描画
 ```

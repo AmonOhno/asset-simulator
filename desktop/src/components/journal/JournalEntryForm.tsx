@@ -1,11 +1,12 @@
 // src/components/JournalEntryForm.tsx
 
 import React, { useEffect, useState } from 'react';
-import { useFinancialStore, todayLocalString } from '@asset-simulator/shared';
+import { useFinancialStore, fetchFrequentEntrySets, todayLocalString } from '@asset-simulator/shared';
 import type { FrequentEntrySet } from '@asset-simulator/shared';
 
 export const JournalEntryForm: React.FC = () => {
-  const { journalAccounts, addJournalEntry, getFrequentJournalEntrySets } = useFinancialStore();
+  const journalAccounts = useFinancialStore((s) => s.journalAccounts);
+  const addJournalEntry = useFinancialStore((s) => s.addJournalEntry);
 
   const [visible, setVisible] = useState(true);
 
@@ -19,13 +20,13 @@ export const JournalEntryForm: React.FC = () => {
   // 直近の仕訳から「よく使う取引入力値セット」を取得してサジェストする
   useEffect(() => {
     let isMounted = true;
-    getFrequentJournalEntrySets().then((sets) => {
+    fetchFrequentEntrySets().then((sets) => {
       if (isMounted) setSuggestions(sets);
     });
     return () => {
       isMounted = false;
     };
-  }, [getFrequentJournalEntrySets]);
+  }, []);
 
   const accountName = (id: string) =>
     journalAccounts.find((acc) => acc.id === id)?.name ?? '不明';

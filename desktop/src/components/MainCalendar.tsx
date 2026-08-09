@@ -4,16 +4,16 @@ import 'react-calendar/dist/Calendar.css';
 import './MainCalendar.css';
 import './utilities.css';
 import './cards.css';
-import { useFinancialStore, useEventsStore, formatDateLocal } from '@asset-simulator/shared';
+import { useFinancialStore, useEventsStore, fetchCalendarJournalEntries, formatDateLocal } from '@asset-simulator/shared';
 import type { CalendarJournalEntry, JournalEntry, ScheduleEvent } from '@asset-simulator/shared';
 import { JournalEntriesModal } from './journal/JournalEntriesModal';
 
 type CalendarTileProps = TileArgs;
 
 export const MainCalendar: React.FC = () => {
-  const { journalAccounts } = useFinancialStore();
-  const { updateJournalEntry, getCalendarJournalEntries } = useFinancialStore();
-  const { events } = useEventsStore();
+  const journalAccounts = useFinancialStore((s) => s.journalAccounts);
+  const updateJournalEntry = useFinancialStore((s) => s.updateJournalEntry);
+  const events = useEventsStore((s) => s.events);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [currentMonth, setCurrentMonth] = useState<{ year: number; month: number }>({
     year: new Date().getFullYear(),
@@ -56,7 +56,7 @@ export const MainCalendar: React.FC = () => {
     const fetch = async () => {
       try {
         const { startDate, endDate } = getMonthDateRange(year, month);
-        const entries = await getCalendarJournalEntries(startDate, endDate);
+        const entries = await fetchCalendarJournalEntries(startDate, endDate);
         setMonthlyJournalEntries(entries);
       } catch (error) {
         console.error('Error fetching monthly calendar journal entries:', error);
@@ -65,7 +65,7 @@ export const MainCalendar: React.FC = () => {
     };
 
     fetch();
-  }, [currentMonth, getCalendarJournalEntries, getMonthDateRange]);
+  }, [currentMonth, getMonthDateRange]);
 
 // --- useCallbackで関数を安定化 ---
 const getEntriesForDate = useCallback(
@@ -196,7 +196,7 @@ useEffect(() => {
         
         // カレンダーを再描画するため、月間データを再取得
         const { startDate, endDate } = getMonthDateRange(currentMonth.year, currentMonth.month);
-        const entries = await getCalendarJournalEntries(startDate, endDate);
+        const entries = await fetchCalendarJournalEntries(startDate, endDate);
         setMonthlyJournalEntries(entries);
         
         setEditingEntry(null);

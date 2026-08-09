@@ -20,8 +20,8 @@ type Tab = 'JournalDashboard' | 'transactions' | 'masters' | 'recurring' | 'even
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('transactions');
   const transactionGroupActive = activeTab === 'transactions' || activeTab === 'recurring';
-  const getJournalAccounts = useFinancialStore((state) => state.getJournalAccounts);
-  const getRegularJournalEntries = useFinancialStore((state) => state.getRegularJournalEntries);
+  const fetchJournalAccounts = useFinancialStore((state) => state.fetchJournalAccounts);
+  const fetchRegularJournalEntries = useFinancialStore((state) => state.fetchRegularJournalEntries);
   const fetchEvents = useEventsStore((state) => state.fetchEvents);
   const { session, client, setSession, refreshSession, signOut } = useAuthStore();
 
@@ -55,12 +55,12 @@ function App() {
   useEffect(() => {
     if (!session) return;
     if (!hasFetchedFinancialRef.current) {
-      getJournalAccounts();
-      getRegularJournalEntries();
+      fetchJournalAccounts();
+      fetchRegularJournalEntries();
       hasFetchedFinancialRef.current = true;
     }
     fetchEvents();
-  }, [session, fetchEvents, getJournalAccounts, getRegularJournalEntries]);
+  }, [session, fetchEvents, fetchJournalAccounts, fetchRegularJournalEntries]);
 
   // タブ切り替え時の追加データ更新
   const prevTabRef = useRef<Tab | null>(null);

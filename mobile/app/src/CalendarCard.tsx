@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useState } from "react";
-import { useFinancialStore, formatDateLocal } from "@asset-simulator/shared";
+import { useFinancialStore, fetchCalendarJournalEntries, formatDateLocal } from "@asset-simulator/shared";
 import type { CalendarJournalEntry } from "@asset-simulator/shared";
 import { Card, CardBodyHead, CardBodyMain } from "@mobile-components/Card";
 import { CommonButton } from "@mobile-components/CommonButton";
@@ -38,7 +38,6 @@ function getWeekdayLabels() {
 }
 
 export default function CalendarCard({ onDateDoubleClick, onDateSelect, onEditEntry, refreshSignal, onEntryChanged }: CalendarCardProps) {
-  const getCalendarJournalEntries = useFinancialStore((s) => s.getCalendarJournalEntries);
   const deleteJournalEntry = useFinancialStore((s) => s.deleteJournalEntry);
   const journalAccounts = useFinancialStore((s) => s.journalAccounts);
 
@@ -55,19 +54,19 @@ export default function CalendarCard({ onDateDoubleClick, onDateSelect, onEditEn
   const monthEnd = fmt(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0));
 
   const refreshEntries = async () => {
-    const rows = await getCalendarJournalEntries(monthStart, monthEnd);
+    const rows = await fetchCalendarJournalEntries(monthStart, monthEnd);
     setEntries(rows);
   };
 
   useEffect(() => {
     let isMounted = true;
-    getCalendarJournalEntries(monthStart, monthEnd).then((rows) => {
+    fetchCalendarJournalEntries(monthStart, monthEnd).then((rows) => {
       if (isMounted) setEntries(rows);
     });
     return () => {
       isMounted = false;
     };
-  }, [monthStart, monthEnd, refreshSignal, getCalendarJournalEntries]);
+  }, [monthStart, monthEnd, refreshSignal]);
 
   const days = getMonthDays(currentMonth.getFullYear(), currentMonth.getMonth());
   const firstWeekday = currentMonth.getDay();

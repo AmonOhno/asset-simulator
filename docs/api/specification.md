@@ -11,6 +11,7 @@
 - [VIEW](#view)
 - [RPC 関数一覧](#rpc-関数一覧)
 - [ストアアクション一覧](#ストアアクション一覧)
+- [純粋クエリ一覧（packages/shared/src/queries/）](#純粋クエリ一覧packagessharedsrcqueries)
 - [定期取引の実行仕様](#定期取引の実行仕様)
 
 ---
@@ -49,15 +50,15 @@
 
 | テーブル | 操作 | 呼び出し元アクション | フィルタ | ソート順 |
 |---------|------|---------------------|---------|---------|
-| `journal_accounts` | select | `getJournalAccounts` | `user_id = :userId` | `category` 昇順 → `name` 昇順 |
+| `journal_accounts` | select | `fetchJournalAccounts`（financialStore アクション） | `user_id = :userId` | `category` 昇順 → `name` 昇順 |
 | `journal_accounts` | insert | `addJournalAccount` | — | — |
 | `journal_accounts` | update | `updateJournalAccount` | `id`, `user_id` | — |
 | `journal_accounts` | delete | `deleteJournalAccount` | `id`, `user_id` | — |
-| `journal_entries` | select | `getFrequentJournalEntrySets`（取引入力サジェスト用の直近仕訳取得） | `user_id = :userId` | `date` 降順（直近200件に limit） |
+| `journal_entries` | select | `fetchFrequentEntrySets`（`packages/shared/src/queries/journalEntries.ts` の純粋クエリ。取引入力サジェスト用の直近仕訳取得） | `user_id = :userId` | `date` 降順（直近200件に limit） |
 | `journal_entries` | insert | `insertRecurringExecution`（定期取引実行時の内部ヘルパー） | — | — |
 | `journal_entries` | update | `updateJournalEntry` | `id`, `user_id` | — |
 | `journal_entries` | delete | `deleteJournalEntry` | `id`, `user_id` | — |
-| `regular_journal_entries` | select | `getRegularJournalEntries`, `executeRegularJournalEntry`（単票取得）, `executeDueRegularJournalEntries`（全件取得） | `user_id = :userId`（単票取得は `id` も指定） | `start_date` 降順（一覧取得時） |
+| `regular_journal_entries` | select | `fetchRegularJournalEntries`（financialStore アクション）, `executeRegularJournalEntry`（単票取得）, `executeDueRegularJournalEntries`（全件取得） | `user_id = :userId`（単票取得は `id` も指定） | `start_date` 降順（一覧取得時） |
 | `regular_journal_entries` | insert | `addRegularJournalEntry` | — | — |
 | `regular_journal_entries` | update | `updateRegularJournalEntry`, `insertRecurringExecution`（`last_executed_date` 更新） | `id`, `user_id` | — |
 | `regular_journal_entries` | delete | `deleteRegularJournalEntry` | `id`, `user_id` | — |
@@ -65,7 +66,7 @@
 | `schedule_events` | insert | `addEvent` | — | — |
 | `schedule_events` | update | `updateEvent` | `event_id`, `user_id` | — |
 | `schedule_events` | delete | `deleteEvent` | `event_id`, `user_id` | — |
-| `goals` | select | `getGoals` | `user_id = :userId` | — |
+| `goals` | select | `fetchGoals`（financialStore アクション） | `user_id = :userId` | — |
 | `goals` | insert | `addGoal` | — | — |
 | `goals` | update | `updateGoal` | `id`, `user_id` | — |
 | `goals` | delete | `deleteGoal` | `id`, `user_id` | — |
@@ -82,7 +83,7 @@
 
 | 呼び出し元 | フィルタ | ソート順 |
 |-----------|---------|---------|
-| `getCalendarJournalEntries(startDate, endDate)` | `user_id`, `date >= startDate`, `date <= endDate` | `date` 降順 |
+| `fetchCalendarJournalEntries(startDate, endDate)`（`packages/shared/src/queries/journalEntries.ts` の純粋クエリ） | `user_id`, `date >= startDate`, `date <= endDate` | `date` 降順 |
 
 対応する型は `packages/shared/src/types/common.ts` の `CalendarJournalEntry`（`debitAccountName`, `debitAccountCategory`, `creditAccountName`, `creditAccountCategory` を含む）。
 
@@ -115,7 +116,7 @@
 
 - **引数**: `p_user_id: string`, `p_end_date: string`（`YYYY-MM-DD`。省略時は `todayLocalString()`）
 - **戻り値行**: `user_id`, `account_id`, `category`, `name`, `sum_amount`（フロントでは `toCamelCase` 後に型 `BalanceSheetView` として扱う）
-- **呼び出し元**: `financialStore.getBalanceSheetView`
+- **呼び出し元**: `fetchBalanceSheet`（`packages/shared/src/queries/reports.ts` の純粋クエリ。ストアアクションではない）
 - **使用例**:
   ```ts
   const { data } = await supabase.rpc('fn_balance_sheet', {
@@ -123,7 +124,7 @@
     p_user_id: userId,
   });
   ```
-- **サマリー除外（変動資産等）**: RPC の戻り値自体は `journal_accounts.include_in_summary` によるフィルタを行わない。`include_in_summary = false` の勘定科目をダッシュボードの合計・明細から除くのはフロントエンドの責務で、`filterSummaryIncludedRows`（`@asset-simulator/shared`）を `getBalanceSheetView` の結果に適用する
+- **サマリー除外（変動資産等）**: RPC の戻り値自体は `journal_accounts.include_in_summary` によるフィルタを行わない。`include_in_summary = false` の勘定科目をダッシュボードの合計・明細から除くのはフロントエンドの責務で、`filterSummaryIncludedRows`（`@asset-simulator/shared`）を `fetchBalanceSheet` の結果に適用する
 
 ### `fn_profit_loss(p_user_id, p_start_date, p_end_date)`
 
@@ -131,7 +132,7 @@
 
 - **引数**: `p_user_id: string`, `p_start_date: string`（省略時は当月1日）, `p_end_date: string`（省略時は本日）
 - **戻り値行**: `user_id`, `account_id`, `category`, `name`, `sum_amount`（型 `ProfitLossView`）
-- **呼び出し元**: `financialStore.getProfitLossStatementView`
+- **呼び出し元**: `fetchProfitLoss`（`packages/shared/src/queries/reports.ts` の純粋クエリ。ストアアクションではない）
 - **使用例**:
   ```ts
   const { data } = await supabase.rpc('fn_profit_loss', {
@@ -149,26 +150,25 @@
 
 ### financialStore（`packages/shared/src/stores/financialStore.ts`）
 
+state に書き込む「取得系」アクションは `fetchXxx` 名で統一している（`journalEntries` state は未使用のため廃止済み。カレンダー取得・サジェスト取得・BS/PL 取得は state を持たないため、下記[純粋クエリ一覧](#純粋クエリ一覧packagessharedsrcqueries)を参照）。
+
 | アクション | シグネチャ | 処理概要 | エラー時挙動 |
 |-----------|-----------|---------|-------------|
-| `getJournalAccounts` | `() => Promise<JournalAccount[]>` | `journal_accounts` を取得し state に反映 | `console.error` して現在の state を返す |
-| `getCalendarJournalEntries` | `(startDate, endDate) => Promise<CalendarJournalEntry[]>` | VIEW `v_journal_entries_for_calendar` を期間指定で取得（state には保存しない） | `console.error` して `[]` を返す |
-| `getFrequentJournalEntrySets` | `(limit?) => Promise<FrequentEntrySet[]>` | `journal_entries` の直近200件から（摘要・借方・貸方・金額）の組み合わせを `aggregateFrequentEntrySets`（`utils/frequentEntries.ts`）で集計し、出現回数順に上位 `limit` 件（デフォルト5）を返す（state には保存しない） | `console.error` して `[]` を返す |
-| `getRegularJournalEntries` | `() => Promise<RecurringTransaction[]>` | `regular_journal_entries` を取得し state に反映 | `console.error` して現在の state を返す |
-| `getBalanceSheetView` | `(asOfDate?) => Promise<BalanceSheetView[]>` | RPC `fn_balance_sheet` 呼び出し | `console.error` して `[]` |
-| `getProfitLossStatementView` | `(startDate?, endDate?) => Promise<ProfitLossView[]>` | RPC `fn_profit_loss` 呼び出し | `console.error` して `[]` |
+| `fetchJournalAccounts` | `() => Promise<JournalAccount[]>` | `journal_accounts` を取得し state に反映 | `console.error` して現在の state を返す |
+| `fetchRegularJournalEntries` | `() => Promise<RecurringTransaction[]>` | `regular_journal_entries` を取得し state に反映 | `console.error` して現在の state を返す |
 | `addJournalAccount` | `(account: Omit<JournalAccount,'id'>) => Promise<void>` | `jacc_` ID 発行 → insert（`name`/`category`/`include_in_summary`）→ state に追加 | `console.error`（呼び出し元には伝播しない） |
-| `addJournalEntry` | `(entry: Omit<JournalEntry,'id'>) => Promise<void>` | `je_` ID 発行 → RPC `create_journal_entry` → state に追加 | 同上 |
+| `addJournalEntry` | `(entry: Omit<JournalEntry,'id'>) => Promise<void>` | `je_` ID 発行 → RPC `create_journal_entry` | 同上 |
 | `addRegularJournalEntry` | `(entry: Omit<RecurringTransaction,'id'>) => Promise<void>` | `reg_` ID 発行 → `toSnakeCase` → insert → state に追加 | 同上 |
 | `updateJournalAccount` | `(account: JournalAccount) => Promise<void>` | `name`/`category`/`include_in_summary` を update → state を置換 | 同上 |
-| `updateJournalEntry` | `(entry: JournalEntry) => Promise<void>` | 全フィールド update（`amount` は `parseFloat`） | 同上 |
+| `updateJournalEntry` | `(entry: JournalEntry) => Promise<void>` | 全フィールド update（`amount` は `parseFloat`）。`journalEntries` state は持たないため state 更新なし | 同上 |
 | `updateRegularJournalEntry` | `(entry: RecurringTransaction) => Promise<void>` | `toSnakeCase(entry)` を丸ごと update | 同上 |
-| `deleteJournalAccount` / `deleteJournalEntry` / `deleteRegularJournalEntry` | `(entity) => Promise<void>` | delete → state から filter で除去 | 同上 |
-| `getGoals` | `() => Promise<Goal[]>` | `goals` を取得し state に反映 | `console.error` して現在の state を返す |
+| `deleteJournalAccount` / `deleteRegularJournalEntry` | `(entity) => Promise<void>` | delete → state から filter で除去 | 同上 |
+| `deleteJournalEntry` | `(entry: JournalEntry) => Promise<void>` | delete。`journalEntries` state は持たないため state 更新なし | 同上 |
+| `fetchGoals` | `() => Promise<Goal[]>` | `goals` を取得し state に反映 | `console.error` して現在の state を返す |
 | `addGoal` | `(goal: Omit<Goal,'id'>) => Promise<void>` | `goal_` ID 発行 → `toSnakeCase` → insert → state に追加 | `console.error`（呼び出し元には伝播しない） |
 | `updateGoal` | `(goal: Goal) => Promise<void>` | `amount` を update → state を置換 | 同上 |
 | `deleteGoal` | `(goal: Goal) => Promise<void>` | delete → state から filter で除去 | 同上 |
-| `executeRegularJournalEntry` | `(entry: RecurringTransaction) => Promise<void>` | 定期取引を1件手動実行（下記参照）。実行後に `getJournalAccounts` / `getRegularJournalEntries` を呼び直す | `console.error`（同日重複実行は内部で `throw` するが catch されて握りつぶされる） |
+| `executeRegularJournalEntry` | `(entry: RecurringTransaction) => Promise<void>` | 定期取引を1件手動実行（下記参照）。実行後に `fetchJournalAccounts` / `fetchRegularJournalEntries` を呼び直す | `console.error`（同日重複実行は内部で `throw` するが catch されて握りつぶされる） |
 | `executeDueRegularJournalEntries` | `() => Promise<{executed:number, details:any[]}>` | 全定期取引を走査し当日実行対象を一括実行 | エラーを再 throw する（呼び出し元で catch が必要） |
 
 ### eventsStore（`packages/shared/src/stores/eventsStore.ts`）
@@ -189,6 +189,26 @@
 | `signOut` | `() => Promise<void>` | `supabase.auth.signOut()` の上で `session`/`userId` を `null` にリセット |
 
 `useAuthStore` は `client: SupabaseClient` もそのまま公開しており、`Auth`（`@supabase/auth-ui-react`）コンポーネントに直接渡している（desktop の `App.tsx`、mobile の `LoginScreen.tsx`）。
+
+---
+
+## 純粋クエリ一覧（`packages/shared/src/queries/`）
+
+`set()` を呼ばない「取得のみ・state を持たない」クエリはストアのアクションではなく、モジュールスコープの素の async 関数として `packages/shared/src/queries/` に置く。呼び出し側は Zustand フックを経由せず `@asset-simulator/shared` から直接 import して呼ぶ（例: `import { fetchBalanceSheet } from '@asset-simulator/shared'`）。内部実装（引数・フィルタ・エラーハンドリング）はストア時代から変更していない。
+
+### journalEntries.ts
+
+| 関数 | シグネチャ | 処理概要 | エラー時挙動 |
+|-----|-----------|---------|-------------|
+| `fetchCalendarJournalEntries` | `(startDate, endDate) => Promise<CalendarJournalEntry[]>` | VIEW `v_journal_entries_for_calendar` を期間指定で取得 | `console.error` して `[]` を返す |
+| `fetchFrequentEntrySets` | `(limit?) => Promise<FrequentEntrySet[]>` | `journal_entries` の直近200件（`FREQUENT_ENTRY_LOOKBACK_COUNT`）から（摘要・借方・貸方・金額）の組み合わせを `aggregateFrequentEntrySets`（`utils/frequentEntries.ts`）で集計し、出現回数順に上位 `limit` 件（デフォルト5）を返す | `console.error` して `[]` を返す |
+
+### reports.ts
+
+| 関数 | シグネチャ | 処理概要 | エラー時挙動 |
+|-----|-----------|---------|-------------|
+| `fetchBalanceSheet` | `(asOfDate?) => Promise<BalanceSheetView[]>` | RPC `fn_balance_sheet` 呼び出し | `console.error` して `[]` |
+| `fetchProfitLoss` | `(startDate?, endDate?) => Promise<ProfitLossView[]>` | RPC `fn_profit_loss` 呼び出し | `console.error` して `[]` |
 
 ---
 

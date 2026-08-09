@@ -3,25 +3,23 @@ import { useFinancialStore, RecurringTransaction, getNextExecutionDate, todayLoc
 import { RecurringTransactionFormModal } from './RecurringTransactionFormModal';
 
 export const RecurringTransactionManager: React.FC = () => {
-  const { 
-    journalAccounts, 
-    addRegularJournalEntry,
-    updateRegularJournalEntry,
-    deleteRegularJournalEntry,
-    executeRegularJournalEntry,
-    executeDueRegularJournalEntries
-  } = useFinancialStore();
-  
-  const { regularJournalEntries, getRegularJournalEntries } = useFinancialStore();
+  const journalAccounts = useFinancialStore((s) => s.journalAccounts);
+  const addRegularJournalEntry = useFinancialStore((s) => s.addRegularJournalEntry);
+  const updateRegularJournalEntry = useFinancialStore((s) => s.updateRegularJournalEntry);
+  const deleteRegularJournalEntry = useFinancialStore((s) => s.deleteRegularJournalEntry);
+  const executeRegularJournalEntry = useFinancialStore((s) => s.executeRegularJournalEntry);
+  const executeDueRegularJournalEntries = useFinancialStore((s) => s.executeDueRegularJournalEntries);
+  const regularJournalEntries = useFinancialStore((s) => s.regularJournalEntries);
+  const fetchRegularJournalEntries = useFinancialStore((s) => s.fetchRegularJournalEntries);
 
   // 初回ロード時に定期取引データを取得
   const hasFetchedRef = React.useRef(false);
   useEffect(() => {
     if (!hasFetchedRef.current) {
-      getRegularJournalEntries();
+      fetchRegularJournalEntries();
       hasFetchedRef.current = true;
     }
-  }, [getRegularJournalEntries]);
+  }, [fetchRegularJournalEntries]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Partial<RecurringTransaction> | null>(null);

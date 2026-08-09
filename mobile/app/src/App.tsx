@@ -3,6 +3,8 @@ import {
   useAuthStore,
   useFinancialStore,
   useEventsStore,
+  fetchProfitLoss,
+  fetchBalanceSheet,
   formatDateLocal,
   filterSummaryIncludedRows,
 } from "@asset-simulator/shared";
@@ -68,10 +70,8 @@ function writeStoredMemo(userId: string, value: string) {
 function App() {
   const { session, client, setSession, refreshSession, signOut } = useAuthStore();
   const journalAccounts = useFinancialStore((s) => s.journalAccounts);
-  const getJournalAccounts = useFinancialStore((s) => s.getJournalAccounts);
-  const getRegularJournalEntries = useFinancialStore((s) => s.getRegularJournalEntries);
-  const getProfitLossStatementView = useFinancialStore((s) => s.getProfitLossStatementView);
-  const getBalanceSheetView = useFinancialStore((s) => s.getBalanceSheetView);
+  const fetchJournalAccounts = useFinancialStore((s) => s.fetchJournalAccounts);
+  const fetchRegularJournalEntries = useFinancialStore((s) => s.fetchRegularJournalEntries);
   const fetchEvents = useEventsStore((s) => s.fetchEvents);
 
   // 認証状態の監視
@@ -99,12 +99,12 @@ function App() {
   useEffect(() => {
     if (!session) return;
     if (!hasFetchedRef.current) {
-      getJournalAccounts();
-      getRegularJournalEntries();
+      fetchJournalAccounts();
+      fetchRegularJournalEntries();
       hasFetchedRef.current = true;
     }
     fetchEvents();
-  }, [session, fetchEvents, getJournalAccounts, getRegularJournalEntries]);
+  }, [session, fetchEvents, fetchJournalAccounts, fetchRegularJournalEntries]);
 
   const [activeTab, setActiveTab] = useState<TabId>("transaction");
   const [entryDialogDate, setEntryDialogDate] = useState<string | null>(null);
@@ -147,24 +147,24 @@ function App() {
   useEffect(() => {
     if (!session) return;
     let isMounted = true;
-    getProfitLossStatementView(plStartDate, plEndDate).then((rows) => {
+    fetchProfitLoss(plStartDate, plEndDate).then((rows) => {
       if (isMounted) setPlRows(rows);
     });
     return () => {
       isMounted = false;
     };
-  }, [session, plStartDate, plEndDate, entriesVersion, getProfitLossStatementView]);
+  }, [session, plStartDate, plEndDate, entriesVersion]);
 
   useEffect(() => {
     if (!session) return;
     let isMounted = true;
-    getBalanceSheetView(bsAsOfDate).then((rows) => {
+    fetchBalanceSheet(bsAsOfDate).then((rows) => {
       if (isMounted) setBsRows(rows);
     });
     return () => {
       isMounted = false;
     };
-  }, [session, bsAsOfDate, entriesVersion, getBalanceSheetView]);
+  }, [session, bsAsOfDate, entriesVersion]);
 
   const profit = useMemo(() => {
     const revenue = plRows.filter((r) => r.category === "Revenue").reduce((s, r) => s + r.sumAmount, 0);

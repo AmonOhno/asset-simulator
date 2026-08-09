@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useFinancialStore, todayLocalString } from "@asset-simulator/shared";
+import { useFinancialStore, fetchFrequentEntrySets, todayLocalString } from "@asset-simulator/shared";
 import type { CalendarJournalEntry, FrequentEntrySet } from "@asset-simulator/shared";
 import { Card, CardBodyMain } from "@mobile-components/Card";
 import { DateInput } from "@mobile-components/DateInput";
@@ -27,8 +27,7 @@ export default function TransactionEntryCard({
   const journalAccounts = useFinancialStore((s) => s.journalAccounts);
   const addJournalEntry = useFinancialStore((s) => s.addJournalEntry);
   const updateJournalEntry = useFinancialStore((s) => s.updateJournalEntry);
-  const getJournalAccounts = useFinancialStore((s) => s.getJournalAccounts);
-  const getFrequentJournalEntrySets = useFinancialStore((s) => s.getFrequentJournalEntrySets);
+  const fetchJournalAccounts = useFinancialStore((s) => s.fetchJournalAccounts);
 
   const isEditMode = entry != null;
 
@@ -60,13 +59,13 @@ export default function TransactionEntryCard({
   useEffect(() => {
     if (isEditMode) return;
     let isMounted = true;
-    getFrequentJournalEntrySets().then((sets) => {
+    fetchFrequentEntrySets().then((sets) => {
       if (isMounted) setSuggestions(sets);
     });
     return () => {
       isMounted = false;
     };
-  }, [isEditMode, getFrequentJournalEntrySets]);
+  }, [isEditMode]);
 
   const applySuggestion = (suggestion: FrequentEntrySet) => {
     setDescription(suggestion.description);
@@ -107,7 +106,7 @@ export default function TransactionEntryCard({
     try {
       await addJournalEntry({ date, description, debitAccountId, creditAccountId, amount, user_id: "" });
       // 変更したリソースのみリフレッシュ（勘定科目の残高更新）
-      await getJournalAccounts();
+      await fetchJournalAccounts();
       onEntryAdded?.();
       setDescription("");
       setAmount(0);
@@ -136,7 +135,7 @@ export default function TransactionEntryCard({
         user_id: entry.userId,
       });
       // 変更したリソースのみリフレッシュ（勘定科目の残高更新）
-      await getJournalAccounts();
+      await fetchJournalAccounts();
       onEntryUpdated?.();
     } catch (error) {
       console.error("Failed to update journal entry:", error);
