@@ -144,11 +144,12 @@ export interface RecurringTransaction {
 export type GoalPeriod = 'day' | 'month';
 
 /**
- * 勘定科目ごと・期間（日次/月次）ごとの支出目標
+ * 対象勘定科目（1 件以上）の合計に対する、期間（日次/月次）ごとの支出目標
  */
 export interface Goal {
   id: string; // 'goal_<uuid>' 形式
-  accountId: string; // 対象勘定科目のID (JournalAccount.id)
+  name: string; // 目標の表示名（空文字の場合は対象勘定科目名から生成する）
+  accountIds: string[]; // 対象勘定科目のIDリスト (JournalAccount.id)。この合計を実績とする
   period: GoalPeriod; // 目標期間: day（日次）/ month（月次）
   amount: number; // 目標金額（円）
   userId: string; // ユーザーID

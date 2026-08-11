@@ -86,9 +86,18 @@ entity "schedule_events" as schedule_events {
 entity "goals" as goals {
   * id : string <<PK>>
   --
-  * account_id : string <<FK>>
+  * name : string
   * period : string
   * amount : numeric
+  * user_id : uuid <<FK>>
+  --
+  created_at : timestamp
+}
+
+entity "goal_accounts" as goal_accounts {
+  * goal_id : string <<PK>> <<FK>>
+  * account_id : string <<PK>> <<FK>>
+  --
   * user_id : uuid <<FK>>
   --
   created_at : timestamp
@@ -124,6 +133,7 @@ users ||--o{ schedule_events : "user_id"
 users ||--o{ accounts : "user_id"
 users ||--o{ credit_cards : "user_id"
 users ||--o{ goals : "user_id"
+users ||--o{ goal_accounts : "user_id"
 
 accounts ||--o| credit_cards : "linked_account_id"
 
@@ -133,7 +143,8 @@ journal_accounts ||--o{ journal_entries : "credit_account_id"
 journal_accounts ||--o{ regular_journal_entries : "debit_account_id"
 journal_accounts ||--o{ regular_journal_entries : "credit_account_id"
 
-journal_accounts ||--o{ goals : "account_id"
+goals ||--|{ goal_accounts : "goal_id"
+journal_accounts ||--o{ goal_accounts : "account_id"
 
 ' --- Notes ---
 note top of users
@@ -178,12 +189,16 @@ note bottom of schedule_events
 end note
 
 note bottom of goals
-  勘定科目ごと・期間(日次/月次)ごと
+  対象勘定科目(goal_accounts)の
+  合計に対する期間(日次/月次)ごと
   の支出目標。
   period: 'day'/'month'。
-  (user_id, account_id, period) は
-  一意制約あり(UI からは既存があれば
-  金額を上書き更新)。
+  name が空の場合は UI 側で対象
+  科目名から表示名を生成する。
+  goals + goal_accounts の保存は
+  RPC save_goal で一括して行う。
+  対象科目が 0 件になった目標は
+  トリガーで削除される。
 end note
 
 note bottom of accounts

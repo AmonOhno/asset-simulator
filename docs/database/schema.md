@@ -101,18 +101,38 @@ ER 図: [er_diagram.puml](er_diagram.puml)
 
 ### goals（支出目標）
 
-勘定科目ごと・期間（日次/月次）ごとの支出目標。型定義: `Goal`。
+対象勘定科目（`goal_accounts` に 1 件以上）の**合計**に対する、期間（日次/月次）ごとの支出目標。型定義: `Goal`。
 
 | カラム | 型 | 説明 |
 |-------|---|------|
 | id | text PK | `goal_<uuid>`（クライアント側で発行） |
 | user_id | uuid FK→auth.users | — |
-| account_id | text FK→journal_accounts | 対象勘定科目（費用科目を想定） |
+| name | text | 目標の表示名。空文字の場合は UI 側で対象勘定科目名から生成（既定値 `''`） |
 | period | string enum | `day`（日次） / `month`（月次）（型 `GoalPeriod`） |
 | amount | numeric | 目標金額（円） |
 | created_at | timestamptz | — |
 
-`unique(user_id, account_id, period)` 制約あり。同一勘定科目・期間に対しては1件のみ（UI からは既存があれば金額を更新）。
+`unique(id, user_id)` 制約あり（`goal_accounts` からの複合 FK 用）。
+対象勘定科目は `goal_accounts` に分離しているため、「1 科目 1 目標」の一意制約は持たない。
+同一の対象科目セット・期間での二重登録は UI 側（`isSameAccountSet` による重複判定）で抑止する。
+
+### goal_accounts（支出目標の対象勘定科目）
+
+1 つの支出目標に紐づく勘定科目。ここに紐づく科目の実績を合計して目標と比較する。
+
+| カラム | 型 | 説明 |
+|-------|---|------|
+| goal_id | text FK→goals | 対象の支出目標（`(goal_id, user_id)` → `goals(id, user_id)`、ON DELETE CASCADE） |
+| account_id | text FK→journal_accounts | 対象勘定科目（`(account_id, user_id)` → `journal_accounts(id, user_id)`、ON DELETE CASCADE。費用科目を想定） |
+| user_id | uuid FK→auth.users | — |
+| created_at | timestamptz | — |
+
+主キーは `(goal_id, account_id)`。
+`goals` と `goal_accounts` の書き込みが分離しないよう、保存は RPC `save_goal` で一括して行う（[api/specification.md](../api/specification.md) 参照）。
+
+トリガー `trg_goal_accounts_delete_orphan_goals`（AFTER DELETE）で、対象科目が 0 件になった `goals` 行を削除する。
+これにより、勘定科目を削除したときに対象が空の目標が残らない（`goals.account_id` があった頃の CASCADE 削除挙動を維持）。
+`save_goal` が対象科目の追加を削除より先に行うのは、入れ替え途中で対象が一時的に 0 件になりこのトリガーが発火するのを避けるため。
 
 ---
 

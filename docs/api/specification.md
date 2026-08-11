@@ -66,12 +66,12 @@
 | `schedule_events` | insert | `addEvent` | — | — |
 | `schedule_events` | update | `updateEvent` | `event_id`, `user_id` | — |
 | `schedule_events` | delete | `deleteEvent` | `event_id`, `user_id` | — |
-| `goals` | select | `fetchGoals`（financialStore アクション） | `user_id = :userId` | — |
-| `goals` | insert | `addGoal` | — | — |
-| `goals` | update | `updateGoal` | `id`, `user_id` | — |
+| `goals` | select | `fetchGoals`（financialStore アクション。`goal_accounts(account_id)` をネスト取得） | `user_id = :userId` | `created_at` 昇順 |
 | `goals` | delete | `deleteGoal` | `id`, `user_id` | — |
 
 新規仕訳エントリーの作成（`journal_entries` への insert）は PostgREST 直接ではなく **RPC `create_journal_entry`** を経由する（残高更新をアトミックに行うため）。
+
+支出目標の保存（`goals` の insert/update と `goal_accounts` の入れ替え）も同様に **RPC `save_goal`** を経由する（2 テーブルの書き込みが分離しないようにするため）。削除は `goals` の delete のみで、`goal_accounts` は FK の ON DELETE CASCADE で消える。逆に勘定科目の削除で対象科目が 0 件になった目標は、トリガー `trg_goal_accounts_delete_orphan_goals` が削除する。
 
 ---
 
@@ -107,6 +107,32 @@
       date, description, debitAccountId, creditAccountId, amount, user_id: userId,
     },
     update_balances: true,
+  });
+  ```
+
+### `save_goal(p_user_id, p_goal_id, p_name, p_period, p_amount, p_account_ids)`
+
+支出目標（`goals`）と対象勘定科目（`goal_accounts`）を 1 トランザクションで保存する。
+`p_goal_id` が未登録なら新規作成、登録済みなら更新（`ON CONFLICT (id) DO UPDATE`）として動作する。
+対象科目は「`p_account_ids` に含まれないものを削除 → 含まれるものを追加」で入れ替える。
+
+- **引数**:
+  - `p_user_id: string`
+  - `p_goal_id: string`（`goal_<uuid>`。クライアント側で発行）
+  - `p_name: string`（表示名。未入力時は空文字）
+  - `p_period: 'day' | 'month'`
+  - `p_amount: number`
+  - `p_account_ids: string[]`（1 件以上。空の場合は例外を送出）
+- **呼び出し元**: `financialStore.addGoal`, `financialStore.updateGoal`
+- **使用例**:
+  ```ts
+  const { error } = await supabase.rpc('save_goal', {
+    p_user_id: userId,
+    p_goal_id: `goal_${crypto.randomUUID()}`,
+    p_name: '食まわり合計',
+    p_period: 'month',
+    p_amount: 50000,
+    p_account_ids: ['jacc_food', 'jacc_eatout'],
   });
   ```
 
@@ -164,10 +190,10 @@ state に書き込む「取得系」アクションは `fetchXxx` 名で統一�
 | `updateRegularJournalEntry` | `(entry: RecurringTransaction) => Promise<void>` | `toSnakeCase(entry)` を丸ごと update | 同上 |
 | `deleteJournalAccount` / `deleteRegularJournalEntry` | `(entity) => Promise<void>` | delete → state から filter で除去 | 同上 |
 | `deleteJournalEntry` | `(entry: JournalEntry) => Promise<void>` | delete。`journalEntries` state は持たないため state 更新なし | 同上 |
-| `fetchGoals` | `() => Promise<Goal[]>` | `goals` を取得し state に反映 | `console.error` して現在の state を返す |
-| `addGoal` | `(goal: Omit<Goal,'id'>) => Promise<void>` | `goal_` ID 発行 → `toSnakeCase` → insert → state に追加 | `console.error`（呼び出し元には伝播しない） |
-| `updateGoal` | `(goal: Goal) => Promise<void>` | `amount` を update → state を置換 | 同上 |
-| `deleteGoal` | `(goal: Goal) => Promise<void>` | delete → state から filter で除去 | 同上 |
+| `fetchGoals` | `() => Promise<Goal[]>` | `goals` を `goal_accounts(account_id)` 付きで取得し、`accountIds: string[]` に整形して state に反映 | `console.error` して現在の state を返す |
+| `addGoal` | `(goal: Omit<Goal,'id'>) => Promise<void>` | `goal_` ID 発行 → RPC `save_goal`（目標本体 + 対象科目を一括保存）→ state に追加 | `console.error` した上で **再 throw**（呼び出し元で catch してエラー表示する） |
+| `updateGoal` | `(goal: Goal) => Promise<void>` | RPC `save_goal` で名前・期間・金額・対象科目セットを更新 → state を置換 | 同上 |
+| `deleteGoal` | `(goal: Goal) => Promise<void>` | delete（`goal_accounts` は CASCADE）→ state から filter で除去 | 同上 |
 | `executeRegularJournalEntry` | `(entry: RecurringTransaction) => Promise<void>` | 定期取引を1件手動実行（下記参照）。実行後に `fetchJournalAccounts` / `fetchRegularJournalEntries` を呼び直す | `console.error`（同日重複実行は内部で `throw` するが catch されて握りつぶされる） |
 | `executeDueRegularJournalEntries` | `() => Promise<{executed:number, details:any[]}>` | 全定期取引を走査し当日実行対象を一括実行 | エラーを再 throw する（呼び出し元で catch が必要） |
 
