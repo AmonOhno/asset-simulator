@@ -1,14 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
-import { useFinancialStore, fetchProfitLoss, todayLocalString } from "@asset-simulator/shared";
+import {
+  useFinancialStore,
+  fetchProfitLoss,
+  todayLocalString,
+  computeGoalProgress,
+  formatGoalLabel,
+  isSameAccountSet,
+} from "@asset-simulator/shared";
 import type { Goal, GoalPeriod } from "@asset-simulator/shared";
 import type { PeriodRange } from "@mobile-components/periodSelector.utils";
 import { Card, CardBodyHead, CardBodyMain } from "@mobile-components/Card";
 import { SelectInput } from "@mobile-components/SelectInput";
+import { MultiSelectInput } from "@mobile-components/MultiSelectInput";
 import { NumericInput } from "@mobile-components/NumericInput";
+import { TextInput } from "@mobile-components/TextInput";
 import { CommonButton } from "@mobile-components/CommonButton";
 import { Dialog } from "@mobile-components/Dialog";
-
-const PLACEHOLDER = { label: "選択してください", value: "" };
 
 const periodOptions: { label: string; value: GoalPeriod }[] = [
   { label: "日次", value: "day" },
@@ -45,7 +52,10 @@ export function GoalCard({ monthRange, refreshSignal }: GoalCardProps) {
 
   const [isExpanded, setIsExpanded] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [accountId, setAccountId] = useState("");
+  // 編集中の目標。null の場合は新規作成
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+  const [name, setName] = useState("");
+  const [accountIds, setAccountIds] = useState<string[]>([]);
   const [period, setPeriod] = useState<GoalPeriod>("month");
   const [amount, setAmount] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -84,10 +94,10 @@ export function GoalCard({ monthRange, refreshSignal }: GoalCardProps) {
 
   // 支出目標は費用科目に対して設定する
   const expenseAccountOptions = useMemo(
-    () => [
-      PLACEHOLDER,
-      ...journalAccounts.filter((a) => a.category === "Expense").map((a) => ({ label: a.name, value: a.id })),
-    ],
+    () =>
+      journalAccounts
+        .filter((a) => a.category === "Expense")
+        .map((a) => ({ label: a.name, value: a.id })),
     [journalAccounts]
   );
   const accountName = useMemo(() => {
@@ -98,14 +108,12 @@ export function GoalCard({ monthRange, refreshSignal }: GoalCardProps) {
     return map;
   }, [journalAccounts]);
 
-  const resetForm = () => {
-    setAccountId("");
-    setPeriod("month");
-    setAmount(0);
-  };
-
-  const openDialog = () => {
-    resetForm();
+  const openDialog = (goal?: Goal) => {
+    setEditingGoal(goal ?? null);
+    setName(goal?.name ?? "");
+    setAccountIds(goal?.accountIds ?? []);
+    setPeriod(goal?.period ?? "month");
+    setAmount(goal?.amount ?? 0);
     setIsDialogOpen(true);
   };
 
@@ -114,8 +122,8 @@ export function GoalCard({ monthRange, refreshSignal }: GoalCardProps) {
   };
 
   const saveGoal = async () => {
-    if (!accountId) {
-      alert("勘定科目を選択してください");
+    if (accountIds.length === 0) {
+      alert("対象の勘定科目を1つ以上選択してください");
       return;
     }
     if (!amount || amount <= 0) {
@@ -123,15 +131,18 @@ export function GoalCard({ monthRange, refreshSignal }: GoalCardProps) {
       return;
     }
 
+    // 同じ対象科目・期間の目標が既にある場合は、新規追加ではなくその目標を更新する
+    const duplicated = goals.find(
+      (g) => g.id !== editingGoal?.id && g.period === period && isSameAccountSet(g.accountIds, accountIds)
+    );
+    const target = editingGoal ?? duplicated;
+
     setBusy(true);
     try {
-      // 同じ勘定科目・期間の目標が既にある場合は金額を更新する
-      const existing = goals.find((g) => g.accountId === accountId && g.period === period);
-      if (existing) {
-        await updateGoal({ ...existing, amount });
+      if (target) {
+        await updateGoal({ ...target, name, accountIds, period, amount });
       } else {
-        const goal: Omit<Goal, "id"> = { accountId, period, amount, userId: "" };
-        await addGoal(goal);
+        await addGoal({ name, accountIds, period, amount, userId: "" });
       }
       closeDialog();
     } catch (error) {
@@ -139,6 +150,16 @@ export function GoalCard({ monthRange, refreshSignal }: GoalCardProps) {
       alert("支出目標の保存に失敗しました。通信を確認してください。");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const removeGoal = async (goal: Goal) => {
+    if (!window.confirm(`「${formatGoalLabel(goal, accountName)}」を削除しますか?`)) return;
+    try {
+      await deleteGoal(goal);
+    } catch (error) {
+      console.error("Failed to delete goal:", error);
+      alert("支出目標の削除に失敗しました。通信を確認してください。");
     }
   };
 
@@ -151,7 +172,7 @@ export function GoalCard({ monthRange, refreshSignal }: GoalCardProps) {
         onToggle={() => setIsExpanded((prev) => !prev)}
       >
         <CardBodyHead>
-          <CommonButton label="目標を設定" onClick={openDialog} />
+          <CommonButton label="目標を設定" onClick={() => openDialog()} />
         </CardBodyHead>
         <CardBodyMain>
           <div style={{ display: "grid", gap: 8 }}>
@@ -159,11 +180,13 @@ export function GoalCard({ monthRange, refreshSignal }: GoalCardProps) {
               <div style={{ color: "#6B7280", fontSize: 14 }}>設定された支出目標はありません。</div>
             )}
             {goals.map((goal) => {
-              const actual = actualByAccount[goal.period]?.[goal.accountId] ?? 0;
-              const percent = goal.amount > 0 ? Math.round((actual / goal.amount) * 100) : 0;
-              const overBudget = actual > goal.amount;
+              const { actual, percent, overBudget, diff } = computeGoalProgress(
+                goal,
+                actualByAccount[goal.period] ?? {}
+              );
               const periodText =
                 goal.period === "month" ? `${monthRange.startDate} 〜 ${monthRange.endDate}` : todayLocalString();
+              const targetNames = goal.accountIds.map((id) => accountName[id] ?? id);
               return (
                 <div
                   key={goal.id}
@@ -186,7 +209,7 @@ export function GoalCard({ monthRange, refreshSignal }: GoalCardProps) {
                           whiteSpace: "nowrap",
                         }}
                       >
-                        {accountName[goal.accountId] ?? goal.accountId}
+                        {formatGoalLabel(goal, accountName)}
                       </span>
                       <span
                         style={{
@@ -201,13 +224,26 @@ export function GoalCard({ monthRange, refreshSignal }: GoalCardProps) {
                         {periodLabel[goal.period]}
                       </span>
                     </div>
-                    <CommonButton
-                      label="削除"
-                      sizeVariant="S"
-                      fontSize="S"
-                      colorVariant="secondary"
-                      onClick={() => deleteGoal(goal)}
-                    />
+                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                      <CommonButton
+                        label="編集"
+                        sizeVariant="S"
+                        fontSize="S"
+                        colorVariant="secondary"
+                        onClick={() => openDialog(goal)}
+                      />
+                      <CommonButton
+                        label="削除"
+                        sizeVariant="S"
+                        fontSize="S"
+                        colorVariant="secondary"
+                        onClick={() => removeGoal(goal)}
+                      />
+                    </div>
+                  </div>
+                  {/* 対象科目が複数の場合、合計の内訳が分かるよう科目名を並べて表示する */}
+                  <div style={{ fontSize: 12, color: "#6B7280" }}>
+                    対象科目（{targetNames.length} 件）: {targetNames.join(" / ")}
                   </div>
                   <div style={{ fontSize: 12, color: "#6B7280" }}>対象期間: {periodText}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -233,12 +269,10 @@ export function GoalCard({ monthRange, refreshSignal }: GoalCardProps) {
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 12 }}>
                     <span style={{ color: "#6B7280" }}>
-                      実績 ¥{actual.toLocaleString()} / 目標 ¥{goal.amount.toLocaleString()}
+                      実績合計 ¥{actual.toLocaleString()} / 目標 ¥{goal.amount.toLocaleString()}
                     </span>
                     <span style={{ fontWeight: 600, color: overBudget ? "#EF4444" : "#059669" }}>
-                      {overBudget
-                        ? `¥${(actual - goal.amount).toLocaleString()} 超過`
-                        : `残り ¥${(goal.amount - actual).toLocaleString()}`}
+                      {overBudget ? `¥${diff.toLocaleString()} 超過` : `残り ¥${diff.toLocaleString()}`}
                     </span>
                   </div>
                 </div>
@@ -248,22 +282,43 @@ export function GoalCard({ monthRange, refreshSignal }: GoalCardProps) {
         </CardBodyMain>
       </Card>
 
-      <Dialog isOpen={isDialogOpen} onClose={closeDialog} title="支出目標の設定">
+      <Dialog isOpen={isDialogOpen} onClose={closeDialog} title={editingGoal ? "支出目標の編集" : "支出目標の設定"}>
         <div style={{ display: "grid", gap: 16 }}>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <div style={{ fontSize: 14, textAlign: "left" }}>勘定科目</div>
-              <SelectInput options={expenseAccountOptions} value={accountId} onChange={setAccountId} sizeVariant="M" />
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <div style={{ fontSize: 14, textAlign: "left" }}>目標名（任意）</div>
+            <TextInput
+              placeholder="例: 食まわり合計"
+              value={name}
+              onChange={setName}
+              sizeVariant="Full"
+            />
+            <div style={{ fontSize: 12, color: "#6B7280", textAlign: "left" }}>
+              未入力の場合は対象科目名から自動で表示します。
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <div style={{ fontSize: 14, textAlign: "left" }}>期間</div>
-              <SelectInput
-                options={periodOptions}
-                value={period}
-                onChange={(v) => setPeriod(v as GoalPeriod)}
-                sizeVariant="S"
-              />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <div style={{ fontSize: 14, textAlign: "left" }}>
+              対象の勘定科目（複数選択可・{accountIds.length} 件選択中）
             </div>
+            <MultiSelectInput
+              options={expenseAccountOptions}
+              values={accountIds}
+              onChange={setAccountIds}
+              sizeVariant="M"
+              emptyMessage="費用科目が登録されていません"
+            />
+            <div style={{ fontSize: 12, color: "#6B7280", textAlign: "left" }}>
+              選択した科目の実績を合計して目標と比較します。
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <div style={{ fontSize: 14, textAlign: "left" }}>期間</div>
+            <SelectInput
+              options={periodOptions}
+              value={period}
+              onChange={(v) => setPeriod(v as GoalPeriod)}
+              sizeVariant="S"
+            />
           </div>
           <div style={{ fontSize: 12, color: "#6B7280", textAlign: "left" }}>
             {period === "month"

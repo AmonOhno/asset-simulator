@@ -42,6 +42,35 @@ interface FinancialState {
   executeDueRegularJournalEntries: () => Promise<{executed: number, details: any[]}>; // 期限が来ている定期取引を実行
 }
 
+// goals + goal_accounts のネスト取得結果（camelCase 変換後）を Goal に整形する
+function toGoal(row: any): Goal {
+  const { goalAccounts, ...goal } = row;
+  return {
+    ...goal,
+    name: goal.name ?? '',
+    accountIds: (goalAccounts || []).map((a: { accountId: string }) => a.accountId),
+  };
+}
+
+// 目標本体（goals）と対象勘定科目（goal_accounts）を save_goal RPC で一括保存する。
+// addGoal / updateGoal の両方から利用する。
+async function saveGoalViaRpc(userId: string, goal: Goal): Promise<Goal> {
+  const accountIds = Array.from(new Set(goal.accountIds));
+  if (accountIds.length === 0) throw new Error('対象勘定科目が指定されていません');
+
+  const { error } = await supabase.rpc('save_goal', {
+    p_user_id: userId,
+    p_goal_id: goal.id,
+    p_name: goal.name ?? '',
+    p_period: goal.period,
+    p_amount: goal.amount,
+    p_account_ids: accountIds,
+  });
+  if (error) throw error;
+
+  return { ...goal, name: goal.name ?? '', accountIds, userId };
+}
+
 // 定期取引の実行（仕訳挿入 + last_executed_date 更新）を行う共通処理。
 // executeRegularJournalEntry / executeDueRegularJournalEntries の両方から利用する。
 async function insertRecurringExecution(
@@ -146,10 +175,11 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
     try {
       const { data, error } = await supabase
         .from('goals')
-        .select('*')
-        .eq('user_id', userId);
+        .select('*, goal_accounts(account_id)')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true });
       if (error) throw error;
-      const goals = toCamelCase(data || []);
+      const goals = toCamelCase(data || []).map(toGoal);
       set(() => ({ goals }));
       return goals;
     } catch (error) {
@@ -237,21 +267,12 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
     if (!userId) return;
 
     try {
-      const newGoal = {
-        ...toSnakeCase(goal),
-        id: `goal_${crypto.randomUUID()}`,
-        user_id: userId,
-      };
-      const { data, error } = await supabase
-        .from('goals')
-        .insert(newGoal)
-        .select()
-        .single();
-      if (error) throw error;
-      const added = toCamelCase(data);
+      // goals と goal_accounts の書き込みが分離しないよう RPC で一括保存する
+      const added = await saveGoalViaRpc(userId, { ...goal, id: `goal_${crypto.randomUUID()}` });
       set(() => ({ goals: [...get().goals, added] }));
     } catch (error) {
       console.error("Failed to add goal:", error);
+      throw error;
     }
   },
 
@@ -331,20 +352,13 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
     if (!userId) return;
 
     try {
-      const { data, error } = await supabase
-        .from('goals')
-        .update({ amount: goal.amount })
-        .eq('id', goal.id)
-        .eq('user_id', userId)
-        .select()
-        .single();
-      if (error) throw error;
-      const updated = toCamelCase(data);
+      const updated = await saveGoalViaRpc(userId, goal);
       set(() => ({
         goals: get().goals.map((g) => g.id === updated.id ? updated : g),
       }));
     } catch (error) {
       console.error("Failed to update goal:", error);
+      throw error;
     }
   },
 
@@ -418,6 +432,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
       }));
     } catch (error) {
       console.error("Failed to delete goal:", error);
+      throw error;
     }
   },
 

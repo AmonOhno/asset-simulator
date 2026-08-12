@@ -68,9 +68,11 @@ schema_paths = [
   "./schemas/tables/regular_journal_entries.sql",
   "./schemas/tables/schedule_events.sql",
   "./schemas/tables/goals.sql",
+  "./schemas/tables/goal_accounts.sql",
   "./schemas/tables/api_tokens.sql",
   "./schemas/functions/*.sql",
   "./schemas/views/*.sql",
+  "./schemas/triggers/*.sql",
   "./schemas/policies/*.sql",
   "./schemas/grants.sql",
 ]

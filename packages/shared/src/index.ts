@@ -16,6 +16,13 @@ export { isExecutionDate, getNextExecutionDate } from './utils/recurrence';
 export { filterSummaryIncludedRows } from './utils/balanceSheet';
 export { aggregateFrequentEntrySets } from './utils/frequentEntries';
 export type { FrequentEntrySet, FrequentEntrySource } from './utils/frequentEntries';
+export {
+    sumGoalActual,
+    computeGoalProgress,
+    isSameAccountSet,
+    formatGoalLabel,
+} from './utils/goals';
+export type { GoalProgress } from './utils/goals';
 export type {
     Account,
     CreditCard,
