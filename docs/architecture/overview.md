@@ -86,6 +86,8 @@ alias は `client/vite.config.ts` で定義:
 
 **リフレッシュルール**: ミューテーション後は変更したリソースのアクション（`fetchJournalAccounts()` 等）だけを個別に呼ぶ。広範囲な「全データ再取得」関数は持たない。`financialStore` は `useAuthStore.subscribe` でログアウトを検知し、`userId` が空になったらキャッシュをクリアする。
 
+**永続データのスキーマ変更ルール**: `financialStore` の `persist` は `version` を持つ（現在 `1`）。永続化対象（`journalAccounts` / `regularJournalEntries` / `goals`）の型を破壊的に変更する場合は、必ず `version` を上げて `migrate` に変換処理を追加すること。既存利用者の localStorage には旧形式が残っており、変換しないとレンダリング時に例外が発生してアプリ全体が白画面になる（#148）。
+
 ## shared/queries
 
 `state` を持たない「取得のみ」の純粋クエリは `packages/shared/src/queries/` に置き、ストアのアクションとは別のモジュールスコープの async 関数として公開する（呼び出し側は `@asset-simulator/shared` から直接 import する）。

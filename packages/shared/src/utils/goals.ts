@@ -1,6 +1,29 @@
 import { Goal } from '../types/common';
 
 /**
+ * 目標の対象勘定科目 ID を安全に取り出す。
+ * localStorage に #147 以前の形式（`accountId` 単数）が残っている場合は
+ * `accountIds` が undefined になるため、フォールバックして例外を防ぐ。
+ */
+const toAccountIds = (value: string[] | undefined | null): string[] =>
+  Array.isArray(value) ? value : [];
+
+/**
+ * localStorage に残っている #147 以前の形式の支出目標を現行の形状に変換する。
+ * 旧形式は対象勘定科目を `accountId`（単数）で持ち、`name` を持たない。
+ * 既に現行形式のものはそのまま返す。
+ */
+export const migrateLegacyGoal = (goal: any): Goal => {
+  const accountIds = Array.isArray(goal?.accountIds)
+    ? goal.accountIds
+    : goal?.accountId
+      ? [goal.accountId]
+      : [];
+  const { accountId: _legacyAccountId, ...rest } = goal ?? {};
+  return { ...rest, name: goal?.name ?? '', accountIds } as Goal;
+};
+
+/**
  * 支出目標の進捗。目標に紐づく全勘定科目の実績を合計して算出する。
  */
 export interface GoalProgress {
@@ -17,7 +40,8 @@ export interface GoalProgress {
 export const sumGoalActual = (
   accountIds: string[],
   actualByAccount: Record<string, number>
-): number => accountIds.reduce((sum, id) => sum + (actualByAccount[id] ?? 0), 0);
+): number =>
+  toAccountIds(accountIds).reduce((sum, id) => sum + (actualByAccount[id] ?? 0), 0);
 
 /**
  * 目標の進捗（実績合計・達成率・残額/超過額）を算出する。
@@ -42,9 +66,11 @@ export const computeGoalProgress = (
  * 「同じ対象科目・同じ期間」の目標を二重登録させないための重複チェックに使う。
  */
 export const isSameAccountSet = (a: string[], b: string[]): boolean => {
-  if (a.length !== b.length) return false;
-  const setB = new Set(b);
-  return a.every((id) => setB.has(id));
+  const listA = toAccountIds(a);
+  const listB = toAccountIds(b);
+  if (listA.length !== listB.length) return false;
+  const setB = new Set(listB);
+  return listA.every((id) => setB.has(id));
 };
 
 /**
@@ -57,7 +83,7 @@ export const formatGoalLabel = (
   maxNames = 2
 ): string => {
   if (goal.name) return goal.name;
-  const names = goal.accountIds.map((id) => accountNameById[id] ?? id);
+  const names = toAccountIds(goal.accountIds).map((id) => accountNameById[id] ?? id);
   if (names.length === 0) return '(対象科目なし)';
   if (names.length <= maxNames) return names.join(' + ');
   return `${names.slice(0, maxNames).join(' + ')} ほか ${names.length - maxNames} 件`;

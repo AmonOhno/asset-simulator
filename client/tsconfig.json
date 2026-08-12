@@ -8,9 +8,9 @@
     "skipLibCheck": true,
     "paths": {
       "@asset-simulator/shared": ["../packages/shared/src/index.ts"],
-      "@web/*": ["../web/src/*"],
-      "@mobile/*": ["../web-new/playground/src/*"],
-      "@mobile-components/*": ["../web-new/src/components/*"]
+      "@web/*": ["../desktop/src/*"],
+      "@mobile/*": ["../mobile/app/src/*"],
+      "@mobile-components/*": ["../mobile/components/*"]
     }
   },
   "include": ["src"]

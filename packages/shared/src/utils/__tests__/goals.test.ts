@@ -2,8 +2,18 @@ import {
   computeGoalProgress,
   formatGoalLabel,
   isSameAccountSet,
+  migrateLegacyGoal,
   sumGoalActual,
 } from '../goals';
+
+// #147 以前に localStorage へ保存された形式（accountId 単数・name なし）
+const legacyGoal = {
+  id: 'goal_1',
+  userId: 'u1',
+  accountId: 'jacc_food',
+  period: 'month' as const,
+  amount: 30000,
+};
 
 const actual = {
   jacc_food: 30000,
@@ -85,5 +95,66 @@ describe('formatGoalLabel', () => {
 
   it('対象科目が空の場合のフォールバック', () => {
     expect(formatGoalLabel({ name: '', accountIds: [] }, names)).toBe('(対象科目なし)');
+  });
+});
+
+describe('migrateLegacyGoal', () => {
+  it('旧形式の accountId を accountIds 配列に変換する', () => {
+    expect(migrateLegacyGoal(legacyGoal)).toEqual({
+      id: 'goal_1',
+      userId: 'u1',
+      name: '',
+      accountIds: ['jacc_food'],
+      period: 'month',
+      amount: 30000,
+    });
+  });
+
+  it('変換後に旧 accountId フィールドを残さない', () => {
+    expect(migrateLegacyGoal(legacyGoal)).not.toHaveProperty('accountId');
+  });
+
+  it('現行形式はそのまま維持する', () => {
+    const current = {
+      id: 'goal_2',
+      userId: 'u1',
+      name: '食まわり',
+      accountIds: ['jacc_food', 'jacc_eatout'],
+      period: 'month' as const,
+      amount: 50000,
+    };
+    expect(migrateLegacyGoal(current)).toEqual(current);
+  });
+
+  it('accountId も accountIds も無い場合は空配列にする', () => {
+    expect(migrateLegacyGoal({ id: 'goal_3', period: 'day', amount: 1000 }).accountIds).toEqual([]);
+  });
+});
+
+// 旧形式が migrate を経ずに復元されると画面が真っ白になっていた（#148）ため、
+// 各関数が accountIds 未定義でも例外を投げないことを保証する
+describe('accountIds が未定義でも例外を投げない', () => {
+  const brokenGoal = legacyGoal as unknown as { accountIds: string[]; amount: number; name: string };
+
+  it('sumGoalActual', () => {
+    expect(sumGoalActual(undefined as unknown as string[], actual)).toBe(0);
+  });
+
+  it('computeGoalProgress', () => {
+    expect(computeGoalProgress(brokenGoal, actual)).toEqual({
+      actual: 0,
+      percent: 0,
+      overBudget: false,
+      diff: 30000,
+    });
+  });
+
+  it('formatGoalLabel', () => {
+    expect(formatGoalLabel(brokenGoal, { jacc_food: '食費' })).toBe('(対象科目なし)');
+  });
+
+  it('isSameAccountSet', () => {
+    expect(isSameAccountSet(undefined as unknown as string[], [])).toBe(true);
+    expect(isSameAccountSet(undefined as unknown as string[], ['a'])).toBe(false);
   });
 });
