@@ -76,7 +76,7 @@ Given/When/Then 形式。特記のない限り desktop・mobile 双方で確認�
 
 | # | Given | When | Then |
 |---|-------|------|------|
-| 1 | 勘定科目未登録 | (desktop) 名称+カテゴリを入力し追加 | 一覧に追加され、`getJournalAccounts()` で最新化される |
+| 1 | 勘定科目未登録 | (desktop) 名称+カテゴリを入力し追加 | 一覧に追加され、`fetchJournalAccounts()` で最新化される |
 | 2 | 既存の通常勘定科目 | (desktop) 編集ボタンから名称/カテゴリを変更して保存 | 一覧が更新される |
 | 3 | `acc_`/`card_` プレフィックスの勘定科目を編集開始 | — | カテゴリ `<select>` が `disabled` になる（`isSystemAccount` 判定） |
 | 4 | 勘定科目未登録 | (mobile) 名称+カテゴリを入力し「勘定科目を追加」 | 一覧に反映される |
@@ -99,7 +99,7 @@ Given/When/Then 形式。特記のない限り desktop・mobile 双方で確認�
 
 | # | Given | When | Then |
 |---|-------|------|------|
-| 1 | カレンダー表示中 | 月を前後に移動する | `getCalendarJournalEntries(startDate, endDate)` が新しい月の範囲で再取得される（同じ月に戻っても再フェッチしない: `lastFetchRef`） |
+| 1 | カレンダー表示中 | 月を前後に移動する | `fetchCalendarJournalEntries(startDate, endDate)` が新しい月の範囲で再取得される（同じ月に戻っても再フェッチしない: `lastFetchRef`） |
 | 2 | 仕訳・イベントがある日 | 日付を選択 | 選択日の仕訳一覧・イベント一覧・費用/収益サマリーが表示される |
 | 3 | (desktop) 借方/貸方フィルタを設定 | 日付選択・タイル表示を確認 | フィルタ条件に合う仕訳のみが集計・表示される |
 | 4 | (mobile) 日付をダブルタップ | — | 取引入力ダイアログ（`TransactionEntryCard`）がその日付で開く |

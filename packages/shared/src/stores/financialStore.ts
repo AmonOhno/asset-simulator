@@ -2,16 +2,11 @@ import { create } from 'zustand';
 import type { StateCreator } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { toCamelCase, toSnakeCase } from '../utils/caseConvert';
-import { formatDateLocal, todayLocalString } from '../utils/dateUtils';
+import { todayLocalString } from '../utils/dateUtils';
 import { isExecutionDate } from '../utils/recurrence';
-import { aggregateFrequentEntrySets } from '../utils/frequentEntries';
-import type { FrequentEntrySet } from '../utils/frequentEntries';
 import {
   JournalAccount,
   JournalEntry,
-  CalendarJournalEntry,
-  BalanceSheetView,
-  ProfitLossView,
   RecurringTransaction,
   Goal,
 } from '../types/common';
@@ -22,18 +17,13 @@ import { useAuthStore, supabase } from './authStore';
 interface FinancialState {
   // Master Data
   journalAccounts: JournalAccount[]; // 勘定科目リスト
-  journalEntries: JournalEntry[];
   regularJournalEntries: RecurringTransaction[];
   goals: Goal[]; // 支出目標リスト
 
   // GET Actions
-  getJournalAccounts: () => Promise<JournalAccount[]>;
-  getCalendarJournalEntries: (startDate: string, endDate: string) => Promise<CalendarJournalEntry[]>; // カレンダー用VIEW
-  getFrequentJournalEntrySets: (limit?: number) => Promise<FrequentEntrySet[]>; // 取引入力サジェスト用
-  getRegularJournalEntries: () => Promise<RecurringTransaction[]>;
-  getGoals: () => Promise<Goal[]>;
-  getBalanceSheetView: (asOfDate?: string) => Promise<BalanceSheetView[]>;
-  getProfitLossStatementView: (startDate?: string, endDate?: string) => Promise<ProfitLossView[]>;
+  fetchJournalAccounts: () => Promise<JournalAccount[]>;
+  fetchRegularJournalEntries: () => Promise<RecurringTransaction[]>;
+  fetchGoals: () => Promise<Goal[]>;
 
   // CRUD Actions
   addJournalAccount: (account: Omit<JournalAccount, 'id'>) => Promise<void>;
@@ -51,9 +41,6 @@ interface FinancialState {
   executeRegularJournalEntry: (entry: RecurringTransaction) => Promise<void>; // 個別実行
   executeDueRegularJournalEntries: () => Promise<{executed: number, details: any[]}>; // 期限が来ている定期取引を実行
 }
-
-// 「よく使う取引入力値セット」の集計対象とする直近仕訳の件数
-const FREQUENT_ENTRY_LOOKBACK_COUNT = 200;
 
 // 定期取引の実行（仕訳挿入 + last_executed_date 更新）を行う共通処理。
 // executeRegularJournalEntry / executeDueRegularJournalEntries の両方から利用する。
@@ -97,7 +84,6 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
     if (!uid) {
       set({
         journalAccounts: [],
-        journalEntries: [],
         regularJournalEntries: [],
         goals: [],
       });
@@ -108,12 +94,11 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
   return ({
   // --- STATE ---
   journalAccounts: [],
-  journalEntries: [],
   regularJournalEntries: [],
   goals: [],
 
   // --- CRUD Actions ---
-  getJournalAccounts: async (): Promise<JournalAccount[]> => {
+  fetchJournalAccounts: async (): Promise<JournalAccount[]> => {
     const { userId } = useAuthStore.getState();
     if (!userId) return [];
 
@@ -134,49 +119,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
     }
   },
 
-  // カレンダー表示用VIEW `v_journal_entries_for_calendar` から仕訳を取得
-  // 勘定科目名とカテゴリが事前に JOIN されているため、クライアント側の find() 検索が不要
-  getCalendarJournalEntries: async (startDate: string, endDate: string): Promise<CalendarJournalEntry[]> => {
-    const { userId } = useAuthStore.getState();
-    if (!userId) return [];
-
-    try {
-      const { data, error } = await supabase
-        .from('v_journal_entries_for_calendar')
-        .select('*')
-        .eq('user_id', userId)
-        .gte('date', startDate)
-        .lte('date', endDate)
-        .order('date', { ascending: false });
-      if (error) throw error;
-      return toCamelCase(data || []) as CalendarJournalEntry[];
-    } catch (error) {
-      console.error('Failed to fetch calendar journal entries:', error);
-      return [];
-    }
-  },
-
-  // 直近の仕訳から「よく使う取引入力値セット」を集計して返す（取引入力画面のサジェスト用。state には保存しない）
-  getFrequentJournalEntrySets: async (limit = 5): Promise<FrequentEntrySet[]> => {
-    const { userId } = useAuthStore.getState();
-    if (!userId) return [];
-
-    try {
-      const { data, error } = await supabase
-        .from('journal_entries')
-        .select('date, description, debit_account_id, credit_account_id, amount')
-        .eq('user_id', userId)
-        .order('date', { ascending: false })
-        .limit(FREQUENT_ENTRY_LOOKBACK_COUNT);
-      if (error) throw error;
-      return aggregateFrequentEntrySets(toCamelCase(data || []), limit);
-    } catch (error) {
-      console.error('Failed to fetch frequent journal entry sets:', error);
-      return [];
-    }
-  },
-
-  getRegularJournalEntries: async (): Promise<RecurringTransaction[]> => {
+  fetchRegularJournalEntries: async (): Promise<RecurringTransaction[]> => {
     const { userId } = useAuthStore.getState();
     if (!userId) return [];
 
@@ -196,7 +139,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
     }
   },
 
-  getGoals: async (): Promise<Goal[]> => {
+  fetchGoals: async (): Promise<Goal[]> => {
     const { userId } = useAuthStore.getState();
     if (!userId) return [];
 
@@ -261,16 +204,6 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
         update_balances: true,
       });
       if (error) throw error;
-      const newEntry = toCamelCase({
-        id: entryId,
-        date: entry.date,
-        description: entry.description,
-        debit_account_id: entry.debitAccountId,
-        credit_account_id: entry.creditAccountId,
-        amount,
-        user_id: userId,
-      });
-      set(() => ({ journalEntries: [...get().journalEntries, newEntry] }));
     } catch (error) {
       console.error("Failed to add journal entry:", error);
     }
@@ -353,7 +286,7 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
     if (!userId) return;
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('journal_entries')
         .update({
           date: entry.date,
@@ -366,12 +299,6 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
         .eq('user_id', userId)
         .select();
       if (error) throw error;
-      if (data && data.length > 0) {
-        const updated = toCamelCase(data[0]);
-        set(() => ({
-          journalEntries: get().journalEntries.map((e) => e.id === updated.id ? updated : e),
-        }));
-      }
     } catch (error) {
       console.error("Failed to update journal entry:", error);
     }
@@ -451,9 +378,6 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
         .eq('id', entry.id)
         .eq('user_id', userId);
       if (error) throw error;
-      set(() => ({
-        journalEntries: get().journalEntries.filter((e) => e.id !== entry.id),
-      }));
     } catch (error) {
       console.error("Failed to delete journal entry:", error);
     }
@@ -518,8 +442,8 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
 
       await insertRecurringExecution(userId, dbEntry, today, entry.amount);
 
-      await get().getJournalAccounts();
-      await get().getRegularJournalEntries();
+      await get().fetchJournalAccounts();
+      await get().fetchRegularJournalEntries();
     } catch (error) {
       console.error("Failed to execute regular journal entry:", error);
     }
@@ -568,52 +492,13 @@ const financialStore: StateCreator<FinancialState> = (set, get) => {
         }
       }
 
-      await get().getJournalAccounts();
-      await get().getRegularJournalEntries();
+      await get().fetchJournalAccounts();
+      await get().fetchRegularJournalEntries();
 
       return { executed: executedEntries.length, details };
     } catch (error) {
       console.error("Failed to execute due regular journal entries:", error);
       throw error;
-    }
-  },
-
-  // --- VIEW Methods (Supabase RPC) ---
-  getBalanceSheetView: async (asOfDate?: string): Promise<BalanceSheetView[]> => {
-    const { userId } = useAuthStore.getState();
-    if (!userId) return [];
-
-    try {
-      const asOfDateStr = asOfDate || todayLocalString();
-      const { data, error } = await supabase
-        .rpc('fn_balance_sheet', { p_end_date: asOfDateStr, p_user_id: userId });
-      if (error) throw error;
-      return toCamelCase(data || []) as BalanceSheetView[];
-    } catch (error) {
-      console.error('Error fetching balance sheet view:', error);
-      return [];
-    }
-  },
-
-  getProfitLossStatementView: async (startDate?: string, endDate?: string): Promise<ProfitLossView[]> => {
-    const { userId } = useAuthStore.getState();
-    if (!userId) return [];
-
-    try {
-      const today = new Date();
-      const defaultStart = formatDateLocal(new Date(today.getFullYear(), today.getMonth(), 1));
-      const defaultEnd = todayLocalString();
-      const { data, error } = await supabase
-        .rpc('fn_profit_loss', {
-          p_start_date: startDate || defaultStart,
-          p_end_date: endDate || defaultEnd,
-          p_user_id: userId,
-        });
-      if (error) throw error;
-      return toCamelCase(data || []) as ProfitLossView[];
-    } catch (error) {
-      console.error('Error fetching profit/loss statement view:', error);
-      return [];
     }
   },
 
@@ -626,6 +511,12 @@ export const useFinancialStore = create<FinancialState>()(
     financialStore,
     {
       name: 'financial-store', // localStorage key
+      // 永続化対象を明示的に絞る（journalEntries 等の未使用 state を localStorage に残さない）
+      partialize: (state) => ({
+        journalAccounts: state.journalAccounts,
+        regularJournalEntries: state.regularJournalEntries,
+        goals: state.goals,
+      }),
     }
   )
 );

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useFinancialStore, todayLocalString } from "@asset-simulator/shared";
+import { useFinancialStore, fetchProfitLoss, todayLocalString } from "@asset-simulator/shared";
 import type { Goal, GoalPeriod } from "@asset-simulator/shared";
 import type { PeriodRange } from "@mobile-components/periodSelector.utils";
 import { Card, CardBodyHead, CardBodyMain } from "@mobile-components/Card";
@@ -38,11 +38,10 @@ interface GoalCardProps {
 export function GoalCard({ monthRange, refreshSignal }: GoalCardProps) {
   const journalAccounts = useFinancialStore((s) => s.journalAccounts);
   const goals = useFinancialStore((s) => s.goals);
-  const getGoals = useFinancialStore((s) => s.getGoals);
+  const fetchGoals = useFinancialStore((s) => s.fetchGoals);
   const addGoal = useFinancialStore((s) => s.addGoal);
   const updateGoal = useFinancialStore((s) => s.updateGoal);
   const deleteGoal = useFinancialStore((s) => s.deleteGoal);
-  const getProfitLossStatementView = useFinancialStore((s) => s.getProfitLossStatementView);
 
   const [isExpanded, setIsExpanded] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -53,8 +52,8 @@ export function GoalCard({ monthRange, refreshSignal }: GoalCardProps) {
   const [actualByAccount, setActualByAccount] = useState<ActualByAccount>({ day: {}, month: {} });
 
   useEffect(() => {
-    getGoals();
-  }, [getGoals]);
+    fetchGoals();
+  }, [fetchGoals]);
 
   // 目標に対する実績支出（日次は当日分、月次はダッシュボードの月次指定期間分）を取得し、進捗表示に利用する
   useEffect(() => {
@@ -71,8 +70,8 @@ export function GoalCard({ monthRange, refreshSignal }: GoalCardProps) {
     };
 
     Promise.all([
-      getProfitLossStatementView(today, today),
-      getProfitLossStatementView(monthRange.startDate, monthRange.endDate),
+      fetchProfitLoss(today, today),
+      fetchProfitLoss(monthRange.startDate, monthRange.endDate),
     ]).then(([dayRows, monthRows]) => {
       if (!isMounted) return;
       setActualByAccount({ day: toActualMap(dayRows), month: toActualMap(monthRows) });
@@ -81,7 +80,7 @@ export function GoalCard({ monthRange, refreshSignal }: GoalCardProps) {
     return () => {
       isMounted = false;
     };
-  }, [goals, monthRange.startDate, monthRange.endDate, refreshSignal, getProfitLossStatementView]);
+  }, [goals, monthRange.startDate, monthRange.endDate, refreshSignal]);
 
   // 支出目標は費用科目に対して設定する
   const expenseAccountOptions = useMemo(

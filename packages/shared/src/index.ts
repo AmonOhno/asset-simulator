@@ -1,6 +1,7 @@
 export * from './stores/authStore';
 export * from './stores/financialStore';
 export * from './stores/eventsStore';
+export { fetchCalendarJournalEntries, fetchFrequentEntrySets, fetchBalanceSheet, fetchProfitLoss } from './queries';
 export { toCamelCase, toSnakeCase } from './utils/caseConvert';
 export { formatDateLocal, todayLocalString, adjustWeekendDate } from './utils/dateUtils';
 export type { HolidayAdjustment } from './utils/dateUtils';

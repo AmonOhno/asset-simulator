@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useFinancialStore, useAuthStore, BalanceSheetView, ProfitLossView, formatDateLocal, filterSummaryIncludedRows } from '@asset-simulator/shared';
+import { useFinancialStore, useAuthStore, fetchBalanceSheet, fetchProfitLoss, BalanceSheetView, ProfitLossView, formatDateLocal, filterSummaryIncludedRows } from '@asset-simulator/shared';
 import { DateRangePicker, DateRange, DateRangeSettings } from '../common/DateRangePicker';
 
 export const JournalDashboard: React.FC = () => {
-  const { getBalanceSheetView, getProfitLossStatementView, journalAccounts } = useFinancialStore();
+  const journalAccounts = useFinancialStore((s) => s.journalAccounts);
   const { userId } = useAuthStore();
 
   const getInitialRange = (): DateRange => {
@@ -126,8 +126,8 @@ const getStoredDateRange = (): DateRange => {
       setIsLoading(true);
       try {
         const [bsRows, plRows] = await Promise.all([
-          getBalanceSheetView(bsAsOfDate),
-          getProfitLossStatementView(dateRange.startDate, dateRange.endDate)
+          fetchBalanceSheet(bsAsOfDate),
+          fetchProfitLoss(dateRange.startDate, dateRange.endDate)
         ]);
         setBsData(bsRows);
         setPlData(plRows);
@@ -138,7 +138,7 @@ const getStoredDateRange = (): DateRange => {
       }
     };
     fetchData();
-  }, [getBalanceSheetView, getProfitLossStatementView, bsAsOfDate, dateRange]);
+  }, [bsAsOfDate, dateRange]);
 
   const groupByCategory = (rows: BalanceSheetView[] | ProfitLossView[]): Record<string, number> => {
     const grouped: Record<string, number> = {};

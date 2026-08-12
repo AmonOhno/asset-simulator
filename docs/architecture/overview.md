@@ -46,12 +46,13 @@ asset-simulator/
 │   │       NumericInput, PanelButton, PeriodSelector, SelectInput, TextInput
 │   └── src/               # Storybook エントリー用スキャフォールド（Vite デフォルトテンプレート、アプリ本体ではない）
 ├── packages/
-│   └── shared/           # 共有型・ユーティリティ・Zustand ストア
+│   └── shared/           # 共有型・ユーティリティ・Zustand ストア・純粋クエリ
 │       └── src/
 │           ├── types/    # 型定義のみ（common.ts）
 │           ├── utils/    # ユーティリティ関数（caseConvert / dateUtils / period / recurrence）
 │           │   └── __tests__/  # Jest ユニットテスト
-│           └── stores/   # Zustand ストア（financialStore / eventsStore / authStore）
+│           ├── stores/   # Zustand ストア（financialStore / eventsStore / authStore）
+│           └── queries/  # state を持たない読み取り専用クエリ（journalEntries.ts / reports.ts）
 └── docs/                 # 設計ドキュメント（本ディレクトリ）
 ```
 
@@ -83,7 +84,16 @@ alias は `client/vite.config.ts` で定義:
 | eventsStore | `eventsStore.ts` | スケジュールイベントの CRUD |
 | authStore | `authStore.ts` | Supabase クライアント・セッション・`userId` |
 
-**リフレッシュルール**: ミューテーション後は変更したリソースのアクション（`getJournalAccounts()` 等）だけを個別に呼ぶ。広範囲な「全データ再取得」関数は持たない。`financialStore` は `useAuthStore.subscribe` でログアウトを検知し、`userId` が空になったらキャッシュをクリアする。
+**リフレッシュルール**: ミューテーション後は変更したリソースのアクション（`fetchJournalAccounts()` 等）だけを個別に呼ぶ。広範囲な「全データ再取得」関数は持たない。`financialStore` は `useAuthStore.subscribe` でログアウトを検知し、`userId` が空になったらキャッシュをクリアする。
+
+## shared/queries
+
+`state` を持たない「取得のみ」の純粋クエリは `packages/shared/src/queries/` に置き、ストアのアクションとは別のモジュールスコープの async 関数として公開する（呼び出し側は `@asset-simulator/shared` から直接 import する）。
+
+| ファイル | 内容 |
+|---------|------|
+| `journalEntries.ts` | `fetchCalendarJournalEntries`（カレンダー用VIEW取得）、`fetchFrequentEntrySets`（よく使う入力サジェスト集計）、`FREQUENT_ENTRY_LOOKBACK_COUNT` |
+| `reports.ts` | `fetchBalanceSheet` / `fetchProfitLoss`（BS/PL RPC 呼び出し） |
 
 ## shared/utils
 

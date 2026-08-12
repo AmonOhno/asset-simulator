@@ -36,7 +36,7 @@ asset-simulator/
 - `authStore.ts` — Supabase 認証セッション
 
 **リフレッシュルール**: ミューテーション後は変更したリソースのアクションだけを呼ぶ。  
-`getJournalAccounts()`, `getRegularJournalEntries()` 等を個別に呼ぶこと。  
+`fetchJournalAccounts()`, `fetchRegularJournalEntries()` 等を個別に呼ぶこと。  
 広範囲な「全データ再取得」関数は持たない。
 
 ### shared パッケージの分離ルール
@@ -46,6 +46,7 @@ asset-simulator/
 | `types/`    | 型定義のみ（ロジックなし） |
 | `utils/`    | ユーティリティ関数（`caseConvert.ts` 等） |
 | `stores/`   | Zustand ストア |
+| `queries/`  | Supabase から取得するだけで state を持たない読み取りクエリ（素の async 関数。ストアの `fetchXxx` アクションとは別物） |
 
 `types/common.ts` に変換関数を追加しないこと。
 

@@ -23,7 +23,7 @@ ER 図: [er_diagram.puml](er_diagram.puml)
 | created_at | timestamp | — |
 | updated_at | timestamp | — |
 
-ソート順（`getJournalAccounts`）: `category` 昇順 → `name` 昇順。
+ソート順（`fetchJournalAccounts`）: `category` 昇順 → `name` 昇順。
 
 `include_in_summary = false` の勘定科目は `fn_balance_sheet` の戻り値自体には引き続き含まれる（DB 側では絞り込まない）。除外はフロントエンド側で `filterSummaryIncludedRows`（`packages/shared/src/utils/balanceSheet.ts`）を用いて行う（desktop の `JournalDashboard`、mobile の `App`/`BalanceSheetCard` で共通利用）。
 
@@ -74,7 +74,7 @@ ER 図: [er_diagram.puml](er_diagram.puml)
 | created_at | timestamp | — |
 | updated_at | timestamp | — |
 
-ソート順（`getRegularJournalEntries`）: `start_date` 降順。
+ソート順（`fetchRegularJournalEntries`）: `start_date` 降順。
 
 > 旧版との差分: `holiday_div_of_month` は boolean ではなく文字列 enum。`public_holiday_ex_flg_of_week` のスペル修正（旧: `public_holiiday_ex_flg_week`。コード上の camelCase `publicHolidayExFlgOfWeek` に対応する snake_case）。`thu_flg_of_week` のスペル修正（旧: `thr_flg_of_week`）。`last_executed_date` を追加。`frequency` に `free` を追加。
 
