@@ -125,6 +125,7 @@ App (desktop/src/App.tsx)
 | `DataGrid<T>` | `DataGrid.tsx` | `data: T[]`, `columns: {label,key,width?,align?}[]`, `colorVariant?`(blue/red/gray)。ジェネリックなテーブル表示 |
 | `DateInput` | `DateInput.tsx` | `value`, `onChange`, `onBlur?`, `readOnly?`, `sizeVariant?`(S/M/L/Full), `fontSize?`。`min="2000-01-01"` `max="2100-12-31"` 固定 |
 | `Dialog` | `Dialog.tsx` | `isOpen`, `onClose`, `title?`, `children?`。`createPortal` で `document.body` に描画、Esc キーで閉じる |
+| `ErrorBoundary` | `ErrorBoundary.tsx` | `children`, `fallback?`。レンダリング中の例外を捕捉するクラスコンポーネント。`fallback` 未指定時は「再読み込み」と「保存データを削除して再読み込み」（`localStorage.clear()`）のボタン付きエラー画面を表示する。`client/src/main.tsx` と `mobile/app/src/main.tsx` の両エントリーでアプリ全体を包む |
 | `MultiSelectInput` | `MultiSelectInput.tsx` | `options: {label,value}[]`, `values: string[]`, `onChange`, `sizeVariant?`(S/M/L/Full。リストの最大高さ), `fontSize?`, `emptyMessage?`。チェックボックスによる複数選択（`select multiple` はモバイルで操作しにくいためリスト形式）。`onChange` は `options` の並び順で返す |
 | `NumericInput` | `NumericInput.tsx` | `value`, `unit?`, `min?`, `max?`, `error?`, `placeholder?`, `allowNegative?`（±ボタン表示）, `onBlur?`, `sizeVariant?`, `fontSize?`。ローカル文字列 state を持ち `onBlur` でのみ確定 |
 | `PanelButton` | `PanelButton.tsx` | `title`, `value`, `onClick`, `subText?`。金額サマリーの大きなボタン（純利益/純資産パネルなどで使用） |
@@ -190,6 +191,8 @@ desktop 版は借方・貸方が同一科目でも登録をブロックしない
 | `useAuthStore` | `session`, `userId`, `client` | `setSession`, `refreshSession`, `signOut` |
 
 `useFinancialStore` は `persist` ミドルウェアで `localStorage`（キー `financial-store`）に永続化される。`partialize` で永続化対象を `journalAccounts` / `regularJournalEntries` / `goals` の3つに限定している。
+
+永続データにはスキーマバージョン（現在 `version: 1`）を持たせている。**永続化対象の型を破壊的に変更する場合は必ず `version` を上げ、`migrate` に変換処理を追加すること。** 古い形式のまま復元されると、レンダリング中に例外が発生してアプリ全体が白画面になる（#148）。`version: 1` の `migrate` は #147 以前の目標（`accountId` 単数・`name` なし）を `accountIds: [accountId]` / `name: ''` に変換する（`migrateLegacyGoal`）。
 
 カレンダー仕訳取得・「よく使う入力」サジェスト取得・BS/PL 取得は state を持たない読み取り専用クエリのため `useFinancialStore` のアクションではなく、`packages/shared/src/queries/`（`fetchCalendarJournalEntries` / `fetchFrequentEntrySets` / `fetchBalanceSheet` / `fetchProfitLoss`）から `@asset-simulator/shared` 経由で直接 import して呼ぶ。詳細は [`docs/api/specification.md`](../api/specification.md#純粋クエリ一覧packagessharedsrcqueries) を参照。
 

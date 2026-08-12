@@ -55,6 +55,8 @@ npm test --workspace=packages/shared
 | `computeGoalProgress` | 複数科目の合計に対する達成率・残額を返すこと／超過時は `overBudget` と超過額を返すこと／目標金額 0 で 0 除算せず達成率 0 を返すこと |
 | `isSameAccountSet` | 順序が異なっても同一セットと判定すること／要素数・要素が異なれば `false` |
 | `formatGoalLabel` | `name` があればそれを使うこと／空なら対象科目名を連結すること／上限件数を超えたら「ほか N 件」に省略すること／対象科目が空の場合のフォールバック |
+| `migrateLegacyGoal` | 旧形式の `accountId`（単数）を `accountIds` 配列に変換すること／変換後に旧 `accountId` を残さないこと／現行形式はそのまま維持すること／どちらも無ければ空配列にすること |
+| 各関数の防御的挙動 | `accountIds` が未定義でも `sumGoalActual` / `computeGoalProgress` / `formatGoalLabel` / `isSameAccountSet` が例外を投げないこと（#148 の白画面再発防止） |
 
 ### 1.2 desktop のスモークテスト
 
@@ -155,6 +157,7 @@ Given/When/Then 形式。特記のない限り desktop・mobile 双方で確認�
 | 10 | ダイアログで対象科目を1件も選択していない | 「保存」を押す | バリデーションエラー（アラート表示）となり保存されない |
 | 11 | 複数科目の目標のうち1科目を、勘定科目管理から削除する | 勘定科目を削除 | `goal_accounts` が CASCADE で削除され対象科目から外れる。目標は残り、残りの科目の合計で集計される |
 | 12 | 対象科目が1件だけの目標の、その科目を削除する | 勘定科目を削除 | 対象科目が 0 件になるため `trg_goal_accounts_delete_orphan_goals` が目標自体を削除する |
+| 13 | #147 以前のアプリで目標を登録し、localStorage に旧形式（`accountId` 単数・`version` なし）が残っている | ログイン済みの同じブラウザで #148 以降のアプリを開く | 白画面にならず正常描画され、`persist` の `migrate` により `financial-store` が `version: 1` / `accountIds` 配列に変換される |
 
 ### 2.7 スケジュールイベント
 
@@ -214,3 +217,9 @@ Given/When/Then 形式。特記のない限り desktop・mobile 双方で確認�
 
 - **変更点**: `computePeriodRange`/`shiftPeriodRange` の月次終了日計算を「翌期間の（調整後）開始日の前日」に変更し、休日ずらし設定時の期間重複・欠落を解消
 - **確認手順**: `packages/shared/src/utils/__tests__/period.test.ts` の `#106 回帰テスト` を実行し、あわせてダッシュボードで開始日25日+休日前倒し/後倒しの設定にして前後の期間ボタンを連続操作し、表示範囲が重複・欠落しないことを目視確認する
+
+### 3.6 永続データのスキーマ変更と白画面（#148）
+
+- **変更点**: `financialStore` の `persist` に `version: 1` と `migrate` を追加し、#147 以前の目標（`accountId` 単数）を `accountIds` 配列へ変換するようにした。あわせて `goals.ts` の各関数を `accountIds` 未定義でも例外を投げないようにし、両エントリー（`client/src/main.tsx`・`mobile/app/src/main.tsx`）を `ErrorBoundary` で包んだ
+- **確認手順**: DevTools で `localStorage` の `financial-store` を旧形式（`{"state":{"goals":[{"id":"goal_1","accountId":"jacc_xxx","period":"month","amount":30000}]},"version":0}`）に書き換えてリロードし、白画面にならず目標が表示され、`version` が `1` に、目標が `accountIds` 配列に変換されることを確認する
+- **補足**: 永続化対象の型を破壊的に変更するときは必ず `version` を上げて `migrate` を追加すること（[`docs/architecture/overview.md`](../architecture/overview.md#状態管理) 参照）

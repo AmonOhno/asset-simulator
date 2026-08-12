@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware';
 import { toCamelCase, toSnakeCase } from '../utils/caseConvert';
 import { todayLocalString } from '../utils/dateUtils';
 import { isExecutionDate } from '../utils/recurrence';
+import { migrateLegacyGoal } from '../utils/goals';
 import {
   JournalAccount,
   JournalEntry,
@@ -526,6 +527,16 @@ export const useFinancialStore = create<FinancialState>()(
     financialStore,
     {
       name: 'financial-store', // localStorage key
+      // #147 で Goal が accountId（単数）から accountIds（複数）に変わったため、
+      // 旧形式のまま復元して描画時に例外を起こさないようマイグレーションする
+      version: 1,
+      migrate: (persisted: any, version: number) => {
+        if (version >= 1) return persisted;
+        return {
+          ...persisted,
+          goals: (persisted?.goals ?? []).map(migrateLegacyGoal),
+        };
+      },
       // 永続化対象を明示的に絞る（journalEntries 等の未使用 state を localStorage に残さない）
       partialize: (state) => ({
         journalAccounts: state.journalAccounts,
