@@ -110,7 +110,7 @@ App (desktop/src/App.tsx)
 | `BalanceSheetCard` | `BalanceSheetCard.tsx` | 資産・負債・純資産の明細サマリーリスト（基準日プリセット: 今日/今月末/先月末） | なし（`rows` は props） |
 | `RecurringTransactionCard` | `RecurringTransactionCard.tsx` | 定期取引の一覧・追加（ダイアログ）・実行・削除・期限到来分一括実行 | `addRegularJournalEntry`, `deleteRegularJournalEntry`, `executeRegularJournalEntry`, `executeDueRegularJournalEntries` |
 | `AccountMasterCard` | `AccountMasterCard.tsx` | 勘定科目の追加・一覧・**削除**（desktop の勘定科目管理は編集のみで削除なし） | `addJournalAccount`, `deleteJournalAccount` |
-| `GoalCard` | `GoalCard.tsx` | **複数の費用科目の合計**に対する期間（日次/月次）ごとの支出目標の設定（ダイアログ: 目標名（任意）・費用科目の複数選択（`MultiSelectInput`）・期間・金額）・一覧・進捗表示（対象科目一覧・対象期間・達成率%・残額/超過額・実績合計との比較バー）・編集・削除（確認ダイアログあり）。同一の対象科目セット・期間の目標が既にある場合は新規追加せず既存を更新する（`isSameAccountSet` で判定）。実績は対象科目の合計（`computeGoalProgress`）、表示名は `name` 未入力時に対象科目名から生成（`formatGoalLabel`）。月次の対象期間は props の `monthRange`（ダッシュボードの月次指定期間と同期、`App` が導出）、日次は当日。`refreshSignal` の変化で実績を再取得。`transaction` タブと `pl-bs` タブの両方から利用可能 | `fetchGoals`, `addGoal`, `updateGoal`, `deleteGoal`（アクション）, `fetchProfitLoss`（純粋クエリ、直接 import、実績取得） |
+| `GoalCard` | `GoalCard.tsx` | **複数の費用科目の合計**に対する期間（日次/月次）ごとの支出目標の設定（ダイアログ: 目標名（任意）・費用科目の複数選択（`MultiSelectInput`）・期間・金額）・一覧・進捗表示（対象科目一覧・対象期間・達成率%・残額/超過額・実績合計との比較バー）・編集・削除（確認ダイアログあり）。同一の対象科目セット・期間の目標が既にある場合は新規追加せず既存を更新する（`isSameAccountSet` で判定）。実績は対象科目の合計（`computeGoalProgress`）、表示名は `name` 未入力時に対象科目名から生成（`formatGoalLabel`）。月次の対象期間は props の `monthRange`（ダッシュボードの月次指定期間と同期、`App` が導出）、日次は当日。`refreshSignal` の変化で実績を再取得。`transaction` タブと `pl-bs` タブの両方から利用可能。保存・削除に失敗した場合は `describeSupabaseError` でエラーコードを原因説明に変換して表示する（通信断のときのみ通信環境の確認を促す） | `fetchGoals`, `addGoal`, `updateGoal`, `deleteGoal`（アクション）, `fetchProfitLoss`（純粋クエリ、直接 import、実績取得） |
 
 モバイル版には勘定科目の「編集」機能はない（追加・削除のみ）。desktop 版には「削除」機能がない（追加・編集のみ）。
 

@@ -106,6 +106,7 @@ alias は `client/vite.config.ts` で定義:
 | `period.ts` | `computePeriodRange` / `shiftPeriodRange`（週/月/年プリセットの期間計算）、`DEFAULT_PERIOD_SETTINGS` |
 | `recurrence.ts` | `isExecutionDate` / `getNextExecutionDate`（定期取引の実行日判定。daily/weekly/monthly/yearly/free に対応） |
 | `goals.ts` | `sumGoalActual` / `computeGoalProgress`（対象勘定科目の実績合計・達成率・残額の算出）、`isSameAccountSet`（対象科目セットの同一判定）、`formatGoalLabel`（目標の表示名生成） |
+| `supabaseError.ts` | `describeSupabaseError`（Supabase / PostgREST のエラーを利用者向けの原因説明に変換）、`isNetworkError`（通信断か否かの判定） |
 
 いずれも `packages/shared/src/index.ts` から named export され、`@asset-simulator/shared` としてインポート可能。`mobile/components/periodSelector.utils.ts` は `../../packages/shared/src/utils/period` を re-export するだけで、ロジックの実体は shared 側の一箇所に集約されている。
 

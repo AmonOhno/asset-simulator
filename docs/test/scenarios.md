@@ -58,6 +58,13 @@ npm test --workspace=packages/shared
 | `migrateLegacyGoal` | 旧形式の `accountId`（単数）を `accountIds` 配列に変換すること／変換後に旧 `accountId` を残さないこと／現行形式はそのまま維持すること／どちらも無ければ空配列にすること |
 | 各関数の防御的挙動 | `accountIds` が未定義でも `sumGoalActual` / `computeGoalProgress` / `formatGoalLabel` / `isSameAccountSet` が例外を投げないこと（#148 の白画面再発防止） |
 
+#### supabaseError.test.ts
+
+| 対象関数 | 観点 |
+|---------|------|
+| `isNetworkError` | supabase-js が fetch 失敗時に詰めるメッセージ（`Failed to fetch` / `NetworkError` / `Load failed`）を通信エラーと判定すること／サーバーから返ったエラー（`code` を持つ）は通信エラーとしないこと |
+| `describeSupabaseError` | 通信断のときだけ通信環境の確認を促すこと／`PGRST202`・`PGRST205`・`PGRST200`・`42883`・`42P01` はマイグレーション未適用の可能性を示すこと／`23503` は勘定科目の再読み込みを促すこと／`42501`・`PGRST301` は再ログインを促すこと／未知のコードはサーバーのメッセージとコードをそのまま見せること／メッセージが取れない場合もフォールバック文言を返すこと |
+
 ### 1.2 desktop のスモークテスト
 
 `desktop/src/App.test.tsx`（React Testing Library）。ヘッダー文言「会計＆資産シミュレーター」が描画されることのみを確認する簡易テスト。
@@ -158,6 +165,8 @@ Given/When/Then 形式。特記のない限り desktop・mobile 双方で確認�
 | 11 | 複数科目の目標のうち1科目を、勘定科目管理から削除する | 勘定科目を削除 | `goal_accounts` が CASCADE で削除され対象科目から外れる。目標は残り、残りの科目の合計で集計される |
 | 12 | 対象科目が1件だけの目標の、その科目を削除する | 勘定科目を削除 | 対象科目が 0 件になるため `trg_goal_accounts_delete_orphan_goals` が目標自体を削除する |
 | 13 | #147 以前のアプリで目標を登録し、localStorage に旧形式（`accountId` 単数・`version` なし）が残っている | ログイン済みの同じブラウザで #148 以降のアプリを開く | 白画面にならず正常描画され、`persist` の `migrate` により `financial-store` が `version: 1` / `accountIds` 配列に変換される |
+| 14 | リモート DB に `20260811000000_goals_multi_account.sql` が未適用（`save_goal` / `goal_accounts` が無い） | 目標を保存する | 「支出目標の保存に失敗しました。サーバー側にテーブルまたは関数がありません。DB のマイグレーションが未適用の可能性があります。（PGRST202）」と表示され、原因が画面から切り分けられる |
+| 15 | 機内モード等でオフライン | 目標を保存する | 「〜通信に失敗しました。通信環境を確認してもう一度お試しください。」と表示される（サーバーエラーと文言が区別される） |
 
 ### 2.7 スケジュールイベント
 
@@ -223,3 +232,9 @@ Given/When/Then 形式。特記のない限り desktop・mobile 双方で確認�
 - **変更点**: `financialStore` の `persist` に `version: 1` と `migrate` を追加し、#147 以前の目標（`accountId` 単数）を `accountIds` 配列へ変換するようにした。あわせて `goals.ts` の各関数を `accountIds` 未定義でも例外を投げないようにし、両エントリー（`client/src/main.tsx`・`mobile/app/src/main.tsx`）を `ErrorBoundary` で包んだ
 - **確認手順**: DevTools で `localStorage` の `financial-store` を旧形式（`{"state":{"goals":[{"id":"goal_1","accountId":"jacc_xxx","period":"month","amount":30000}]},"version":0}`）に書き換えてリロードし、白画面にならず目標が表示され、`version` が `1` に、目標が `accountIds` 配列に変換されることを確認する
 - **補足**: 永続化対象の型を破壊的に変更するときは必ず `version` を上げて `migrate` を追加すること（[`docs/architecture/overview.md`](../architecture/overview.md#状態管理) 参照）
+
+### 3.7 保存失敗の原因が画面から分からない問題
+
+- **変更点**: `GoalCard` の保存・削除失敗時のアラートが常に「通信を確認してください」だったため、実際の原因（RPC 未作成・権限不足・制約違反）が利用者にもログにも残らなかった。`describeSupabaseError`（`packages/shared/src/utils/supabaseError.ts`）で Supabase のエラーコードを利用者向けの原因説明に変換して表示するようにした
+- **確認手順**: 上記 2.6.1 の手動シナリオ 14・15 を実施する。ローカルスタックで再現する場合は `supabase db reset` 後に `DROP FUNCTION public.save_goal(uuid, text, text, text, numeric, text[]);` を実行してから目標を保存する
+- **補足**: マイグレーションのリモート反映は手動運用（[`docs/database/development_policy.md`](../database/development_policy.md) 6章）。`goals` 系のように新規 RPC・テーブルを伴う変更をマージしたら、`supabase db push --linked` を実行するまで本番では保存が失敗する

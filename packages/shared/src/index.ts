@@ -23,6 +23,7 @@ export {
     formatGoalLabel,
 } from './utils/goals';
 export type { GoalProgress } from './utils/goals';
+export { describeSupabaseError, isNetworkError } from './utils/supabaseError';
 export type {
     Account,
     CreditCard,
