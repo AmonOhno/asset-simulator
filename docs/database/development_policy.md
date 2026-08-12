@@ -201,12 +201,43 @@ supabase functions serve myos --env-file <env-file>
 6. **ドキュメント更新**: `docs/database/schema.md`・`er_diagram.puml`・
    `docs/api/specification.md` を変更内容に合わせて更新
 7. **PR 作成 → レビュー → マージ**（schemas/ と migrations/ の両方が PR に含まれること）
-8. **リモート反映**: マージ後に `supabase db push --linked` を実行（当面は手動運用。
-   将来的に GitHub Actions での自動化を検討）
+8. **リモート反映**: マージ時に GitHub Actions（`.github/workflows/deploy-supabase.yml`）が
+   `supabase db push --linked` を実行する（→ 6.1 節）。手動実行は不要
 
 ```
-Issue → branch → schemas/ 編集 → db diff -f で migration 生成 → db reset で検証 → PR → merge → db push
+Issue → branch → schemas/ 編集 → db diff -f で migration 生成 → db reset で検証 → PR → merge → Actions が db push
 ```
+
+### 6.1 リモート反映の自動化（GitHub Actions）
+
+`main` に `supabase/migrations/**` または `supabase/config.toml` の変更が入ると、
+`Apply Supabase migrations` ワークフローが起動して未適用のマイグレーションを本番へ反映する。
+
+| 項目 | 内容 |
+|------|------|
+| ワークフロー | `.github/workflows/deploy-supabase.yml` |
+| 起動条件 | `main` への push（`supabase/migrations/**`・`supabase/config.toml` 変更時）、および `workflow_dispatch` による手動実行 |
+| 実行内容 | `supabase link` → `supabase migration list --linked`（適用前後の状態をログに記録）→ `supabase db push --linked` |
+| 同時実行 | `concurrency: supabase-db-push` で直列化（DB への適用は巻き戻せないため、実行中のジョブはキャンセルしない） |
+| environment | `production`。承認を挟みたい場合はリポジトリ設定で required reviewers を追加する |
+
+**必要なシークレット**（リポジトリの Settings → Secrets and variables → Actions に登録。未登録の場合はワークフローが冒頭で明示的に失敗する）:
+
+| シークレット | 取得場所 |
+|-------------|---------|
+| `SUPABASE_ACCESS_TOKEN` | Supabase ダッシュボード → Account → Access Tokens |
+| `SUPABASE_PROJECT_ID` | プロジェクトの project-ref（ダッシュボード URL の `/project/<ref>` 部分） |
+| `SUPABASE_DB_PASSWORD` | プロジェクト作成時の DB パスワード（Settings → Database でリセット可能） |
+
+注意点:
+
+- 対象は**本番プロジェクトのみ**。ステージングへの反映は当面ローカルからの `supabase db push` で行う
+- `supabase db push` は「最後に適用されたバージョンより新しい」マイグレーションのみを適用する。
+  過去のタイムスタンプのファイルを後から追加した場合は適用対象にならないため、
+  マイグレーションのファイル名は必ず現在時刻で採番する（→ 7 章）
+- クライアント（`deploy-client.yml`）と DB のワークフローは独立して走る。
+  破壊的なスキーマ変更を含む場合は、旧クライアントが一時的に新スキーマを叩くことを前提に、
+  後方互換のある手順（カラム追加 → クライアント更新 → 旧カラム削除）に分割する
 
 ## 7. スキーマ・マイグレーション規約
 
@@ -254,6 +285,9 @@ supabase db diff --linked   # 差分なし = リポジトリとリモートが�
 
 - 差分が検出された場合は、原因（未 push のマイグレーション or ダッシュボード直接変更）を
   特定してから作業を開始する
+- リモート反映は自動化されている（→ 6.1 節）ため、`未 push のマイグレーション` は
+  「Actions が失敗したまま放置されている」ケースを指す。
+  該当ワークフロー（`Apply Supabase migrations`）の最新実行が成功しているかをあわせて確認する
 
 ## 9. セキュリティ・コミット規約
 
