@@ -6,6 +6,7 @@
  */
 
 import { create } from 'zustand';
+import { useShallow } from 'zustand/react/shallow';
 import {
   describeSupabaseError,
   supabase,
@@ -155,7 +156,11 @@ export const emptyPreference = (userId: string): CareerPreference => ({
   note: '',
 });
 
-/** ストアの状態から書類生成用のデータセットを組み立てる。 */
+/**
+ * ストアの状態から書類生成用のデータセットを組み立てる。
+ * 毎回新しいオブジェクトを返すため、購読には必ず `useCareerDataset` を使う
+ * （素の selector として渡すと zustand v5 では毎レンダーで別参照になり再描画が止まらない）。
+ */
 export const selectDataset = (state: CareerState): CareerDataset => ({
   profile: state.profile,
   skills: state.skills,
@@ -432,3 +437,7 @@ export const useCareerStore = create<CareerState>((set, get) => {
     deleteDocument: (id) => deleteRow(TABLE.documents, id, get().fetchDocuments),
   };
 });
+
+/** 書類生成用データセットの購読。浅い比較で不要な再描画を防ぐ。 */
+export const useCareerDataset = (): CareerDataset =>
+  useCareerStore(useShallow(selectDataset));

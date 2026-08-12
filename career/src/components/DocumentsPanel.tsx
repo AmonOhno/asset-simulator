@@ -4,7 +4,7 @@
  */
 
 import { useMemo, useState } from 'react';
-import { useCareerStore, selectDataset } from '../stores/careerStore';
+import { useCareerStore, useCareerDataset } from '../stores/careerStore';
 import type { DocumentKind } from '../types/career';
 import {
   DOCUMENT_KIND_LABEL,
@@ -20,7 +20,7 @@ const KIND_OPTIONS = (Object.keys(DOCUMENT_KIND_LABEL) as DocumentKind[]).map(
 );
 
 export const DocumentsPanel = ({ userId }: { userId: string }) => {
-  const dataset = useCareerStore(selectDataset);
+  const dataset = useCareerDataset();
   const applications = useCareerStore((s) => s.applications);
   const documents = useCareerStore((s) => s.documents);
   const saveDocument = useCareerStore((s) => s.saveDocument);

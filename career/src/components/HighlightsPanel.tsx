@@ -1,7 +1,7 @@
 /** 自己PR・職務要約・志望動機などの文章ブロックの編集画面。 */
 
 import { useState } from 'react';
-import { useCareerStore, selectDataset } from '../stores/careerStore';
+import { useCareerStore, useCareerDataset } from '../stores/careerStore';
 import type { CareerHighlight, HighlightKind } from '../types/career';
 import { HIGHLIGHT_KIND_LABEL } from '../lib/format';
 import { createId } from '../lib/ids';
@@ -39,7 +39,7 @@ export const HighlightsPanel = ({ userId }: { userId: string }) => {
   const highlights = useCareerStore((s) => s.highlights);
   const saveHighlight = useCareerStore((s) => s.saveHighlight);
   const deleteHighlight = useCareerStore((s) => s.deleteHighlight);
-  const dataset = useCareerStore(selectDataset);
+  const dataset = useCareerDataset();
 
   const [form, setForm] = useState<CareerHighlight>(() => emptyHighlight(userId));
   const [editingId, setEditingId] = useState<string | null>(null);

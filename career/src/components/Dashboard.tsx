@@ -7,7 +7,7 @@
  */
 
 import { useMemo } from 'react';
-import { useCareerStore, selectDataset } from '../stores/careerStore';
+import { useCareerStore, useCareerDataset } from '../stores/careerStore';
 import {
   RAISE_RATE,
   computeIncomeGap,
@@ -22,7 +22,7 @@ import { copyToClipboard } from '../lib/download';
 import { Button, Card, EmptyState, ScoreBar, Stat } from './ui';
 
 export const Dashboard = ({ onNavigate }: { onNavigate: (tab: string) => void }) => {
-  const dataset = useCareerStore(selectDataset);
+  const dataset = useCareerDataset();
   const applications = useCareerStore((s) => s.applications);
 
   const targetIncome = dataset.profile?.targetAnnualIncome ?? DEFAULT_TARGET_INCOME;
