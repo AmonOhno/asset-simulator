@@ -6,6 +6,7 @@ import {
   computeGoalProgress,
   formatGoalLabel,
   isSameAccountSet,
+  describeSupabaseError,
 } from "@asset-simulator/shared";
 import type { Goal, GoalPeriod } from "@asset-simulator/shared";
 import type { PeriodRange } from "@mobile-components/periodSelector.utils";
@@ -147,7 +148,7 @@ export function GoalCard({ monthRange, refreshSignal }: GoalCardProps) {
       closeDialog();
     } catch (error) {
       console.error("Failed to save goal:", error);
-      alert("支出目標の保存に失敗しました。通信を確認してください。");
+      alert(`支出目標の保存に失敗しました。${describeSupabaseError(error)}`);
     } finally {
       setBusy(false);
     }
@@ -159,7 +160,7 @@ export function GoalCard({ monthRange, refreshSignal }: GoalCardProps) {
       await deleteGoal(goal);
     } catch (error) {
       console.error("Failed to delete goal:", error);
-      alert("支出目標の削除に失敗しました。通信を確認してください。");
+      alert(`支出目標の削除に失敗しました。${describeSupabaseError(error)}`);
     }
   };
 
