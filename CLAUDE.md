@@ -5,6 +5,10 @@
 家計・資産のシミュレーターアプリ。複式簿記の仕訳を記録し、貸借対照表・損益計算書を表示する。
 Turborepo モノレポ構成。バックエンドは Supabase (PostgreSQL)。API サーバーは廃止済み（Zustand ストアで直接 RPC 呼び出し）。
 
+同じモノレポ・同じ Supabase プロジェクト上に、エンジニア転職用のキャリア設計アプリ
+`career/`（Career Compass）を持つ。ドメインは独立しており、共有するのは認証セッションと
+`packages/shared` のユーティリティのみ。
+
 ## ディレクトリ構成
 
 ```
@@ -15,6 +19,10 @@ asset-simulator/
 │   ├── app/        # モバイルアプリ本体（Zustand 結線・認証ゲート付き）
 │   ├── components/ # コンポーネントライブラリ（Storybook 対象）
 │   └── src/        # Storybook エントリー用スキャフォールド
+├── career/         # キャリア設計アプリ Career Compass (React 18 + Vite)
+│   ├── src/lib/    # 純粋関数（年収ギャップ・スコアリング・書類生成）
+│   ├── src/stores/ # careerStore（Supabase 直接アクセス）
+│   └── src/components/
 ├── packages/
 │   └── shared/     # 共有型・ユーティリティ・Zustand ストア
 ├── supabase/       # マイグレーション + Edge Functions（MyOS 連携 API 等）
@@ -50,6 +58,21 @@ asset-simulator/
 
 `types/common.ts` に変換関数を追加しないこと。
 
+### career/ の分離ルール
+
+`career/` は資産シミュレーターとはドメインが別。共有するのは認証セッション
+（`useAuthStore` / `supabase`）と `caseConvert` などのユーティリティのみで、
+キャリア関連の型・ストアは `packages/shared` に置かず `career/src/` に閉じる。
+
+| ディレクトリ | 置くもの |
+|-------------|---------|
+| `career/src/types/`      | 型定義のみ |
+| `career/src/lib/`        | 純粋関数（DB・React・`new Date()` に依存しない。基準日は引数で受ける） |
+| `career/src/stores/`     | Zustand ストア（Supabase 直接アクセス） |
+| `career/src/components/` | 画面 |
+
+スコアリングの重み・閾値はマジックナンバーを散らさず、`lib/` 内の定数に集約する。
+
 ### Supabase RPC 規則
 
 - RPC 引数の命名規則: `p_` プレフィックス（例: `p_user_id`, `p_end_date`）
@@ -72,6 +95,16 @@ asset-simulator/
 | スケジュールイベント | `event_` | `event_<uuid>` |
 | APIトークン | `tok_` | `tok_<uuid>` |
 | 支出目標 | `goal_` | `goal_<uuid>` |
+| キャリアプロフィール | `prof_` | `prof_<uuid>` |
+| 保有スキル | `skill_` | `skill_<uuid>` |
+| 職歴 | `exp_` | `exp_<uuid>` |
+| 経験プロジェクト | `proj_` | `proj_<uuid>` |
+| 学歴 | `edu_` | `edu_<uuid>` |
+| 資格 | `cert_` | `cert_<uuid>` |
+| 自己PR・職務要約 | `pr_` | `pr_<uuid>` |
+| 希望条件 | `pref_` | `pref_<uuid>` |
+| 応募 | `app_` | `app_<uuid>` |
+| 生成書類 | `doc_` | `doc_<uuid>` |
 
 ## セキュリティルール
 
@@ -92,6 +125,7 @@ asset-simulator/
 | `docs/database/schema.md` | テーブル定義・カラム説明・VIEW・RPC |
 | `docs/database/development_policy.md` | Supabase スキーマのリポジトリ管理・Docker ローカル開発・マイグレーション運用方針 |
 | `docs/test/scenarios.md` | 自動テストの観点一覧・手動テストシナリオ・回帰観点 |
+| `docs/career/specification.md` | Career Compass の画面構成・スコアリング算出仕様・書類生成仕様・テーブル一覧 |
 
 ## Issue駆動開発
 

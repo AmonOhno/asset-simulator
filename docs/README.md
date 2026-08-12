@@ -29,6 +29,12 @@ Asset Simulator の設計ドキュメント一覧です。API サーバー（Exp
 | [database/schema.md](database/schema.md) | テーブル定義・カラム説明・VIEW・RPC |
 | [database/development_policy.md](database/development_policy.md) | Supabase スキーマのリポジトリ管理・Docker ローカル開発・マイグレーション運用方針 |
 
+## キャリア設計アプリ（career/）
+
+| ファイル | 内容 |
+|---------|------|
+| [career/specification.md](career/specification.md) | 画面構成・年収ギャップ/到達力スコア/マッチ度の算出仕様・書類生成仕様・テーブル一覧 |
+
 ## テスト
 
 | ファイル | 内容 |

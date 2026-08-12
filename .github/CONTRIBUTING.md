@@ -7,6 +7,7 @@
 | `モバイル` | `mobile/` |
 | `デスクトップ` | `desktop/` |
 | `共有` | `packages/shared/` |
+| `キャリア` | `career/` |
 | `DB` | Supabase スキーマ・RPC |
 | `全体` | 複数スコープにまたがる変更 |
 

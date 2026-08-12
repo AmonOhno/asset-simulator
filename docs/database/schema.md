@@ -164,6 +164,133 @@ MyOS からの読み取り専用連携用。詳細は [`docs/api/myos_integratio
 
 ---
 
+## キャリア設計アプリのテーブル（career_*）
+
+`career/`（Career Compass）が使うテーブル群。資産シミュレーターのテーブルとは
+リレーションを持たず、`auth.users` のみを共有する。全テーブルで RLS を有効化し、
+`auth.uid() = user_id` の行だけを参照・更新できる。型定義: `career/src/types/career.ts`。
+
+仕様の詳細は [`docs/career/specification.md`](../career/specification.md) を参照。
+
+### career_profiles（基本情報）
+
+ユーザーごとに 1 行（`user_id` に UNIQUE）。
+
+| カラム | 型 | 説明 |
+|-------|---|------|
+| id | string PK | `prof_<uuid>` |
+| full_name / full_name_kana | string | 氏名・フリガナ（履歴書に転記） |
+| birth_date | date \| null | 生年月日。履歴書の満年齢算出に使う |
+| gender / email / phone / postal_code / address / nearest_station | string | 履歴書の基本情報欄 |
+| headline | string | 職務経歴書冒頭の一行キャッチ |
+| current_company / current_job_title | string | 現在の勤務先・肩書 |
+| years_of_experience | numeric \| null | エンジニア経験年数 |
+| current_annual_income | numeric \| null | 現年収（円） |
+| target_annual_income | numeric | 目標年収（円）。既定 10,000,000 |
+| job_change_target_date | date \| null | 転職希望時期 |
+| github_url / portfolio_url / linkedin_url / blog_url | string | 公開リンク（可視性スコアに使う） |
+
+### career_skills（保有スキル）
+
+| カラム | 型 | 説明 |
+|-------|---|------|
+| id | string PK | `skill_<uuid>` |
+| category | enum | language / framework / cloud / database / infra / data / security / tool / domain / management |
+| name | string | 技術名 |
+| level | int (1〜5) | 1: 学習中 〜 5: 他者を指導できる |
+| years_of_experience | numeric \| null | 実務経験年数 |
+| last_used_on | date \| null | 最終使用年月。鮮度スコアの算出に使う |
+| is_core | boolean | 書類の前面に出す主力スキル |
+| note / sort_order | string / int | — |
+
+ソート順（`fetchSkills`）: `sort_order` 昇順 → `level` 降順。
+
+### career_experiences（職歴）
+
+| カラム | 型 | 説明 |
+|-------|---|------|
+| id | string PK | `exp_<uuid>` |
+| company_name | string | 会社名 |
+| employment_type | enum | full_time / contract / dispatch / freelance / part_time / internship |
+| started_on / ended_on | date | `ended_on` が NULL なら在籍中（履歴書の「現在に至る」判定） |
+| job_title / department / industry | string | 役職・所属・業界 |
+| headcount | int \| null | 従業員数 |
+| annual_income | numeric \| null | 在籍時の年収（円） |
+| business_description / achievements | string | 事業内容・在籍中の実績 |
+
+### career_projects（経験プロジェクト）
+
+| カラム | 型 | 説明 |
+|-------|---|------|
+| id | string PK | `proj_<uuid>` |
+| experience_id | string \| null FK→career_experiences | 個人開発は NULL。職歴削除時は `SET NULL` |
+| name / role / industry | string | 案件名・役割・業界 |
+| started_on / ended_on | date \| null | 期間 |
+| team_size | int \| null | チーム規模 |
+| overview / responsibilities | string | 概要・担当業務 |
+| challenge / action / result | string | 課題 → 施策 → 成果 |
+| impact_metric | string | 定量成果。到達力スコアの「成果の定量化」に使う |
+| tech_stack / phases | text[] | 使用技術・担当工程 |
+| is_highlighted | boolean | 書類の先頭に出す主力プロジェクト |
+
+### career_educations（学歴） / career_certifications（資格）
+
+| テーブル | 主なカラム |
+|---------|-----------|
+| career_educations (`edu_`) | school_name, faculty, degree, started_on, ended_on, status（卒業 / 中退 / 在学中）, note |
+| career_certifications (`cert_`) | name, issuer, acquired_on, expires_on, score, note |
+
+### career_highlights（文章ブロック）
+
+| カラム | 型 | 説明 |
+|-------|---|------|
+| id | string PK | `pr_<uuid>` |
+| kind | enum | summary / self_pr / motivation / strength / future |
+| title / body | string | 識別用タイトル・本文 |
+| is_default | boolean | 書類生成時に既定で使うブロック（種別ごとに 1 件を想定） |
+
+### career_preferences（希望条件）
+
+ユーザーごとに 1 行（`user_id` に UNIQUE）。業務内容の希望と、それ以外の希望を 1 行にまとめる。
+
+| 区分 | カラム |
+|------|-------|
+| 業務内容 | desired_job_titles, desired_roles, desired_industries, desired_project_types, desired_tech_stack, avoid_tech_stack, desired_phases, desired_team_style |
+| 業務内容以外 | income_floor, desired_income_min, desired_income_ideal（既定 10,000,000）, desired_locations, remote_preference（full_remote / hybrid / onsite / any）, max_commute_minutes, acceptable_overtime_hours, min_holidays, side_job_required, flextime_required, desired_benefits, desired_company_sizes, desired_employment_types |
+| 優先順位 | must_have_conditions, nice_to_have_conditions, deal_breakers |
+| その他 | job_change_reason, note |
+
+配列カラムはすべて `text[]`、既定値は空配列。
+
+### career_applications（応募・選考管理）
+
+| カラム | 型 | 説明 |
+|-------|---|------|
+| id | string PK | `app_<uuid>` |
+| company_name / job_title / source / agent_name | string | 応募先と応募経路 |
+| status | enum | wishlist / applied / document_screening / interview_1 / interview_2 / interview_final / offer / accepted / rejected / declined |
+| applied_on / next_action / next_action_on | date / string | 応募日・次アクション |
+| income_range_min / income_range_max | numeric \| null | 求人票の提示レンジ（円） |
+| offered_income | numeric \| null | 実オファー年収（円） |
+| location / remote_policy / industry | string | 勤務地・リモート可否・業界 |
+| tech_stack / benefits | text[] | マッチ度算出に使う |
+| job_url / memo | string | — |
+
+ソート順（`fetchApplications`）: `next_action_on` 昇順 → `created_at` 降順。
+
+### career_documents（生成書類）
+
+| カラム | 型 | 説明 |
+|-------|---|------|
+| id | string PK | `doc_<uuid>` |
+| kind | enum | resume / career_history / skill_sheet |
+| format | enum | markdown / html / text |
+| title / content | string | 生成時のタイトル・本文 |
+| application_id | string \| null FK→career_applications | 応募先削除時は `SET NULL` |
+| generated_at | timestamp | 生成日時（一覧のソートキー） |
+
+---
+
 ## VIEW
 
 ### v_journal_entries_for_calendar

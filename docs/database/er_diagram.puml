@@ -125,6 +125,132 @@ entity "credit_cards" as credit_cards {
   * user_id : uuid <<FK>>
 }
 
+' --- Career Compass (career/) ---
+' 資産シミュレーターのテーブルとはリレーションを持たず、users のみを共有する。
+package "Career Compass (career/)" {
+  entity "career_profiles" as career_profiles {
+    * id : string <<PK>>
+    --
+    * user_id : uuid <<FK>> <<UQ>>
+    full_name : string
+    full_name_kana : string
+    birth_date : date
+    current_annual_income : numeric
+    * target_annual_income : numeric
+    job_change_target_date : date
+    github_url / portfolio_url / blog_url : string
+  }
+
+  entity "career_skills" as career_skills {
+    * id : string <<PK>>
+    --
+    * user_id : uuid <<FK>>
+    * category : string
+    * name : string
+    * level : integer
+    years_of_experience : numeric
+    last_used_on : date
+    * is_core : boolean
+  }
+
+  entity "career_experiences" as career_experiences {
+    * id : string <<PK>>
+    --
+    * user_id : uuid <<FK>>
+    * company_name : string
+    * employment_type : string
+    * started_on : date
+    ended_on : date
+    job_title : string
+    annual_income : numeric
+  }
+
+  entity "career_projects" as career_projects {
+    * id : string <<PK>>
+    --
+    * user_id : uuid <<FK>>
+    experience_id : string <<FK>>
+    * name : string
+    role : string
+    team_size : integer
+    challenge / action / result : string
+    impact_metric : string
+    tech_stack : text[]
+    phases : text[]
+    * is_highlighted : boolean
+  }
+
+  entity "career_educations" as career_educations {
+    * id : string <<PK>>
+    --
+    * user_id : uuid <<FK>>
+    * school_name : string
+    faculty : string
+    started_on / ended_on : date
+    * status : string
+  }
+
+  entity "career_certifications" as career_certifications {
+    * id : string <<PK>>
+    --
+    * user_id : uuid <<FK>>
+    * name : string
+    issuer : string
+    acquired_on / expires_on : date
+    score : string
+  }
+
+  entity "career_highlights" as career_highlights {
+    * id : string <<PK>>
+    --
+    * user_id : uuid <<FK>>
+    * kind : string
+    title : string
+    body : string
+    * is_default : boolean
+  }
+
+  entity "career_preferences" as career_preferences {
+    * id : string <<PK>>
+    --
+    * user_id : uuid <<FK>> <<UQ>>
+    desired_job_titles : text[]
+    desired_industries : text[]
+    desired_tech_stack : text[]
+    income_floor : numeric
+    * desired_income_ideal : numeric
+    desired_locations : text[]
+    * remote_preference : string
+    desired_benefits : text[]
+    must_have_conditions : text[]
+  }
+
+  entity "career_applications" as career_applications {
+    * id : string <<PK>>
+    --
+    * user_id : uuid <<FK>>
+    * company_name : string
+    job_title : string
+    * status : string
+    income_range_min / income_range_max : numeric
+    offered_income : numeric
+    tech_stack : text[]
+    benefits : text[]
+  }
+
+  entity "career_documents" as career_documents {
+    * id : string <<PK>>
+    --
+    * user_id : uuid <<FK>>
+    * kind : string
+    * format : string
+    title : string
+    content : string
+    application_id : string <<FK>>
+    * generated_at : timestamp
+  }
+}
+
 ' --- Relationships ---
 users ||--o{ journal_accounts : "user_id"
 users ||--o{ journal_entries : "user_id"
@@ -145,6 +271,20 @@ journal_accounts ||--o{ regular_journal_entries : "credit_account_id"
 
 goals ||--|{ goal_accounts : "goal_id"
 journal_accounts ||--o{ goal_accounts : "account_id"
+
+users ||--o| career_profiles : "user_id"
+users ||--o| career_preferences : "user_id"
+users ||--o{ career_skills : "user_id"
+users ||--o{ career_experiences : "user_id"
+users ||--o{ career_projects : "user_id"
+users ||--o{ career_educations : "user_id"
+users ||--o{ career_certifications : "user_id"
+users ||--o{ career_highlights : "user_id"
+users ||--o{ career_applications : "user_id"
+users ||--o{ career_documents : "user_id"
+
+career_experiences ||--o{ career_projects : "experience_id"
+career_applications ||--o{ career_documents : "application_id"
 
 ' --- Notes ---
 note top of users

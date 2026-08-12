@@ -6,7 +6,8 @@
   "workspaces": [
     "desktop",
     "packages/*",
-    "client"
+    "client",
+    "career"
   ],
   "scripts": {
     "dev": "npm run dev:desktop",
@@ -20,7 +21,10 @@
     "dev:mobile": "cd mobile && npm run dev",
     "storybook": "cd mobile && npm run storybook",
     "dev:client": "cd client && npm run dev",
-    "build:client": "cd client && npm run build"
+    "build:client": "cd client && npm run build",
+    "dev:career": "npx turbo run dev --filter=career",
+    "build:career": "npx turbo run build --filter=career",
+    "test:career": "npm run test --workspace=career"
   },
   "devDependencies": {
     "@types/node": "^16.18.126",

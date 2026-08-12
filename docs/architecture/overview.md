@@ -14,10 +14,11 @@ Turborepo モノレポ構成。バックエンドは Supabase（PostgreSQL + Pos
 | モバイル版フロントエンド | React 19 + TypeScript + Vite（`mobile/app/`） |
 | モバイル向けコンポーネントライブラリ | React 19 + Vite（`mobile/components/`）、Storybook で開発・確認 |
 | エントリーポイント | React 19 + Vite（`client/`）、デバイス判定で desktop/mobile を振り分け |
-| 状態管理 | Zustand（`@asset-simulator/shared`） |
+| キャリア設計アプリ | React 18 + TypeScript + Vite（`career/`）。認証セッションのみ共有する独立アプリ |
+| 状態管理 | Zustand（`@asset-simulator/shared`、`career/src/stores`） |
 | データベース・バックエンド | Supabase（PostgreSQL、PostgREST、RPC 関数） |
 | 認証 | Supabase Auth（JWT ベースのセッション。`@supabase/auth-ui-react` の Auth UI を使用） |
-| テスト | Jest（`packages/shared`）、React Testing Library（`desktop`） |
+| テスト | Jest（`packages/shared`、`career`）、React Testing Library（`desktop`） |
 
 ## ディレクトリ構成
 
@@ -45,6 +46,14 @@ asset-simulator/
 │   │   └── Card, CommonButton, DataGrid, DateInput, Dialog,
 │   │       NumericInput, PanelButton, PeriodSelector, SelectInput, TextInput
 │   └── src/               # Storybook エントリー用スキャフォールド（Vite デフォルトテンプレート、アプリ本体ではない）
+├── career/               # キャリア設計アプリ Career Compass（React 18 + Vite）
+│   └── src/
+│       ├── App.tsx              # タブ切り替え・認証ゲート・初回ロード
+│       ├── types/career.ts      # 型定義のみ
+│       ├── lib/                 # 純粋関数（compensation / marketValue / matching /
+│       │                        #   completeness / drafts / documents）
+│       ├── stores/careerStore.ts
+│       └── components/          # 画面（Dashboard / Profile / Skills / … / Documents）
 ├── packages/
 │   └── shared/           # 共有型・ユーティリティ・Zustand ストア・純粋クエリ
 │       └── src/

@@ -70,6 +70,18 @@ schema_paths = [
   "./schemas/tables/goals.sql",
   "./schemas/tables/goal_accounts.sql",
   "./schemas/tables/api_tokens.sql",
+  # career/（キャリア設計アプリ）。career_projects / career_documents は
+  # それぞれ career_experiences / career_applications を参照するため後に置く。
+  "./schemas/tables/career_profiles.sql",
+  "./schemas/tables/career_skills.sql",
+  "./schemas/tables/career_experiences.sql",
+  "./schemas/tables/career_projects.sql",
+  "./schemas/tables/career_educations.sql",
+  "./schemas/tables/career_certifications.sql",
+  "./schemas/tables/career_highlights.sql",
+  "./schemas/tables/career_preferences.sql",
+  "./schemas/tables/career_applications.sql",
+  "./schemas/tables/career_documents.sql",
   "./schemas/functions/*.sql",
   "./schemas/views/*.sql",
   "./schemas/triggers/*.sql",
