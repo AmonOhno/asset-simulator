@@ -133,6 +133,7 @@ yarn.lock
 .vercel
 .netlify
 .render
+.wrangler
 
 # Local development
 .local
