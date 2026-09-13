@@ -1,0 +1,13 @@
+{
+  // Cloudflare Workers 静的アセット配信の設定。
+  // "Workers & Pages" の Git 連携では静的サイトでも Deploy command (wrangler deploy) が
+  // 必須になったため、Worker 本体は持たず assets のみを配信する構成にしている。
+  // https://developers.cloudflare.com/workers/static-assets/
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "asset-simulator",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}
