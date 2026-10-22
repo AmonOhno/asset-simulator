@@ -35,7 +35,8 @@
     "dev": "tsc --watch",
     "build": "tsc",
     "clean": "rm -rf dist",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "zustand": "^5.0.6"

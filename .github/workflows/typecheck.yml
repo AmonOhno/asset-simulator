@@ -1,0 +1,29 @@
+name: Typecheck
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: typecheck-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    name: tsc --noEmit (shared / desktop / client)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # packages/shared は dist の型宣言を desktop が参照するため先にビルドする
+      - name: Typecheck
+        run: npm run typecheck

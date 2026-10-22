@@ -8,7 +8,8 @@
     "start": "serve -s build -l 3000",
     "start:cross-env": "cross-env PORT=3000 serve -s build",
     "test": "react-scripts test",
-    "clean": "rm -rf build"
+    "clean": "rm -rf build",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@asset-simulator/shared": "*",
@@ -33,8 +34,8 @@
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^14.4.3",
     "@types/jest": "^27.5.2",
-    "@types/react": "^18.0.38",
-    "@types/react-dom": "^18.0.11",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
     "react-scripts": "^5.0.1",
     "typescript": "^4.9.5"
   },
