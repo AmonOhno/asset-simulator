@@ -150,3 +150,4 @@ alias は `client/vite.config.ts` で定義:
 - [`docs/api/specification.md`](../api/specification.md) — Supabase アクセス規約・RPC・ストアアクション一覧
 - [`docs/database/schema.md`](../database/schema.md) / [`er_diagram.puml`](../database/er_diagram.puml) — DB 設計
 - [`docs/test/scenarios.md`](../test/scenarios.md) — テストシナリオ
+- [`docs/ci/github_actions.md`](../ci/github_actions.md) — GitHub Actions（E2E・Claude Code Review）

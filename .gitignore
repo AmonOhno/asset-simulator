@@ -124,6 +124,8 @@ coverage/
 .coverage
 junit.xml
 test-results/
+playwright-report/
+blob-report/
 
 # Package manager lock files (choose one strategy)
 # Keep package-lock.json but ignore yarn.lock if using npm

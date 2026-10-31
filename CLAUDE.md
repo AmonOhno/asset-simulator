@@ -18,6 +18,7 @@ asset-simulator/
 ├── packages/
 │   └── shared/     # 共有型・ユーティリティ・Zustand ストア
 ├── supabase/       # マイグレーション + Edge Functions（MyOS 連携 API 等）
+├── e2e/            # Playwright スモーク E2E（client/ をビルドして実行、Supabase はモック）
 └── docs/           # 設計ドキュメント
 ```
 
@@ -73,6 +74,12 @@ asset-simulator/
 | APIトークン | `tok_` | `tok_<uuid>` |
 | 支出目標 | `goal_` | `goal_<uuid>` |
 
+## CI（GitHub Actions）
+
+- PR ごとに `.github/workflows/e2e.yml`（shared ユニットテスト + Playwright E2E）と `.github/workflows/claude-code-review.yml`（Claude Code Review）が動く
+- E2E は `--retries=0` で全件パス必須。テストのスキップ・無効化で緑にしない
+- 画面フローを変えたら `e2e/` のテストも更新し、push 前に `CI=1 npx playwright test --retries=0` で確認する
+
 ## セキュリティルール
 
 - `console.log` に環境変数の値を直接出力しない
@@ -91,7 +98,8 @@ asset-simulator/
 | `docs/database/er_diagram.puml` | DB ER 図（PlantUML） |
 | `docs/database/schema.md` | テーブル定義・カラム説明・VIEW・RPC |
 | `docs/database/development_policy.md` | Supabase スキーマのリポジトリ管理・Docker ローカル開発・マイグレーション運用方針 |
-| `docs/test/scenarios.md` | 自動テストの観点一覧・手動テストシナリオ・回帰観点 |
+| `docs/test/scenarios.md` | 自動テスト（ユニット・E2E）の観点一覧・手動テストシナリオ・回帰観点 |
+| `docs/ci/github_actions.md` | GitHub Actions（E2E・Claude Code Review）・必要な Secrets・ブランチ保護の設定手順 |
 
 ## Issue駆動開発
 

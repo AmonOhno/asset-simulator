@@ -33,4 +33,10 @@ Asset Simulator の設計ドキュメント一覧です。API サーバー（Exp
 
 | ファイル | 内容 |
 |---------|------|
-| [test/scenarios.md](test/scenarios.md) | 自動テストの観点一覧・手動テストシナリオ・回帰観点 |
+| [test/scenarios.md](test/scenarios.md) | 自動テスト（ユニット・E2E）の観点一覧・手動テストシナリオ・回帰観点 |
+
+## CI
+
+| ファイル | 内容 |
+|---------|------|
+| [ci/github_actions.md](ci/github_actions.md) | GitHub Actions（E2E・Claude Code Review）・必要な Secrets・Claude GitHub App・ブランチ保護の設定手順 |

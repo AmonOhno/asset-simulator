@@ -74,6 +74,50 @@ npm test --workspace=packages/shared
 npm run test --workspace=desktop -- --watchAll=false
 ```
 
+> **注意（CI 対象外）**: このテストは現状 `main` でも失敗する（`react-calendar` の ESM を CRA の Jest が変換できない、Supabase の環境変数が未設定だと `createClient` が例外を投げる、未ログイン時はヘッダーが描画されない、の 3 点）。そのため CI（`.github/workflows/e2e.yml`）では実行していない。同じ観点（ログイン後にヘッダーが表示される）は 1.3 の E2E で確認している。修正は別 Issue で扱う。
+
+### 1.3 E2E テスト（Playwright）
+
+`e2e/` に Playwright で実装。`client/`（本番デプロイ対象の Vite エントリー）を `vite build` → `vite preview` で配信し、Chromium で実行する。CI の構成は [ci/github_actions.md](../ci/github_actions.md) を参照。
+
+実行方法（CI と同条件）:
+```
+npx playwright install chromium   # 初回のみ
+CI=1 npx playwright test --retries=0
+```
+
+#### モック方針
+
+- Supabase への通信は `e2e/fixtures.ts` で `page.route` によりすべてモックする。URL はダミー（`https://e2e.supabase.test`、予約 TLD のため実在しない）で、Secrets・実 DB は不要
+  - REST / RPC は空配列（データ 0 件の新規ユーザー相当）を返す
+  - ログイン状態は、supabase-js が読む localStorage（`sb-e2e-auth-token`）にダミーセッションを事前投入して再現する
+- 127.0.0.1 と Supabase 以外への通信は遮断し、発生したらテスト失敗にする（想定外の外部依存の検知）
+- 未捕捉の JS 例外（`pageerror`）が 1 件でも出たらテスト失敗にする
+
+#### プロジェクトとテストケース
+
+| プロジェクト | 端末 | 対象 UI | テスト |
+|------------|-----|--------|-------|
+| `desktop-chromium` | Desktop Chrome | `desktop/` | 未ログイン時にログインフォーム（Email / Password / Sign in）を表示し、アプリ本体は表示しない |
+| 〃 | 〃 | 〃 | ログイン後: ヘッダー表示／タブ（イベント入力・ダッシュボード・定期取引・勘定科目管理・取引入力）を切り替えられる |
+| 〃 | 〃 | 〃 | ログイン後: ログアウトでログインフォームに戻る |
+| `mobile-chromium` | iPhone 13（UA・画面サイズ、エンジンは Chromium） | `mobile/app` | 未ログイン時にログイン画面（タイトル・「ログインしてください」・Email 入力）を表示 |
+| 〃 | 〃 | 〃 | ログイン後: ヘッダー「取引管理ダッシュボード」表示／下部タブ（PL/BS・定期取引・勘定科目・取引）を切り替えられる |
+| 〃 | 〃 | 〃 | ログイン後: ログアウトでログイン画面に戻る |
+
+デバイス振り分け（2.8）のうち、PC UA → desktop、iPhone UA → mobile の分岐もこの 2 プロジェクトで確認している。
+
+#### E2E の対象外としたもの
+
+| 対象 | 理由 |
+|-----|------|
+| 実際のログイン（メール / Google / GitHub OAuth） | 実 Supabase Auth と OAuth プロバイダーが必要で、CI に認証情報を置くことになるため。セッション投入で代替 |
+| データの登録・更新・削除（仕訳・勘定科目・定期取引・イベント・支出目標） | 書き込み結果の整合性は DB（RPC・VIEW・トリガー）側のロジックに依存し、モックでは検証にならない。ローカル Supabase（Docker）を CI で起動しマイグレーションを流す構成は、起動時間とメンテナンスコストに見合わないため今回は見送り（手動シナリオ 2.2〜2.7 で確認） |
+| PL/BS・カレンダーの集計値 | 上記と同じく `fn_profit_loss` / `fn_balance_sheet` 等の DB 側計算に依存する |
+| Edge Functions（`supabase/functions/`、MyOS 連携 API） | Deno ランタイム + Supabase が必要で、Web 画面の E2E とは別レイヤーのため |
+| Storybook（`mobile/` のコンポーネントカタログ） | 開発用ツールでありデプロイ対象ではないため |
+| Safari（WebKit）実機挙動・iPad 判定 | CI では Chromium のみを導入している。iPad / Safari の「デスクトップ用 Web サイト」判定は手動シナリオ 2.8 で確認 |
+
 ---
 
 ## 2. 手動テストシナリオ
