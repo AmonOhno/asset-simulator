@@ -16,6 +16,8 @@ export const JournalEntryForm: React.FC = () => {
   const [creditAccountId, setCreditAccountId] = useState('');
   const [amount, setAmount] = useState('');
   const [suggestions, setSuggestions] = useState<FrequentEntrySet[]>([]);
+  // 登録件数。変化するたびにサジェストを再取得し、交通費の行きを入力した直後に帰りの候補を表示する
+  const [registeredCount, setRegisteredCount] = useState(0);
 
   // 直近の仕訳から「よく使う取引入力値セット」を取得してサジェストする
   useEffect(() => {
@@ -26,7 +28,7 @@ export const JournalEntryForm: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [registeredCount]);
 
   const accountName = (id: string) =>
     journalAccounts.find((acc) => acc.id === id)?.name ?? '不明';
@@ -38,14 +40,14 @@ export const JournalEntryForm: React.FC = () => {
     setAmount(String(suggestion.amount));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!date || !description || !debitAccountId || !creditAccountId || !amount) {
       alert('すべての項目を入力してください。');
       return;
     }
 
-    addJournalEntry({
+    await addJournalEntry({
       date,
       description,
       debitAccountId,
@@ -53,6 +55,7 @@ export const JournalEntryForm: React.FC = () => {
       amount: parseFloat(amount),
       user_id: ''
     });
+    setRegisteredCount((c) => c + 1);
 
     // フォームをリセット
     setDescription('');
@@ -82,11 +85,12 @@ export const JournalEntryForm: React.FC = () => {
               <div className="d-flex flex-wrap gap-2">
                 {suggestions.map((s) => (
                   <button
-                    key={`${s.description}-${s.debitAccountId}-${s.creditAccountId}-${s.amount}`}
+                    key={`${s.isReturnTrip ? 'return' : 'frequent'}-${s.description}-${s.debitAccountId}-${s.creditAccountId}-${s.amount}`}
                     type="button"
-                    className="btn btn-outline-primary btn-sm"
+                    className={`btn btn-sm ${s.isReturnTrip ? 'btn-primary' : 'btn-outline-primary'}`}
                     onClick={() => applySuggestion(s)}
                   >
+                    {s.isReturnTrip && <span className="badge bg-light text-primary me-1">帰り</span>}
                     {s.description} ¥{s.amount.toLocaleString()}（{accountName(s.debitAccountId)} / {accountName(s.creditAccountId)}）
                   </button>
                 ))}
