@@ -58,6 +58,15 @@ npm test --workspace=packages/shared
 | `migrateLegacyGoal` | 旧形式の `accountId`（単数）を `accountIds` 配列に変換すること／変換後に旧 `accountId` を残さないこと／現行形式はそのまま維持すること／どちらも無ければ空配列にすること |
 | 各関数の防御的挙動 | `accountIds` が未定義でも `sumGoalActual` / `computeGoalProgress` / `formatGoalLabel` / `isSameAccountSet` が例外を投げないこと（#148 の白画面再発防止） |
 
+#### frequentEntries.test.ts
+
+| 対象関数 | 観点 |
+|---------|------|
+| `aggregateFrequentEntrySets` | 同一の（摘要・借方・貸方・金額）を集計すること／出現回数順・同数なら最終使用日順／上限件数／摘要・科目欠けの除外 |
+| `parseRoute` | 「出発地〜目的地」を分解すること（`〜` `～` `~` `→` を許容）／経路形式でない・出発地と目的地が同じ摘要は `null` |
+| `findPendingReturnTrips` | 行きだけの交通費に帰りのセットを返すこと／帰り入力済みなら返さないこと／過去の往復済みでも新しい行きには返すこと／科目が異なる逆方向は帰りとみなさないこと／新しい行きから順に上限件数 |
+| `buildEntrySuggestions` | 帰り候補を先頭に置き、頻出セットとの重複を除くこと |
+
 #### supabaseError.test.ts
 
 | 対象関数 | 観点 |
@@ -112,6 +121,8 @@ Given/When/Then 形式。特記のない限り desktop・mobile 双方で確認�
 | 4 | 既存仕訳 | カレンダーから編集し保存 | `updateJournalEntry` が呼ばれ、カレンダー・残高に反映される |
 | 5 | 既存仕訳（mobile） | カレンダーの取引一覧から削除 | `deleteJournalEntry` が呼ばれ、`refreshEntries()` でカレンダーが再取得される |
 | 6 | 仕訳登録後 | カレンダーの当該日を確認 | 費用/収益サマリー、仕訳件数が反映される |
+| 7 | 新規登録モード | 摘要「渋谷〜新宿」で交通費を登録 | 「よく使う入力」の先頭に「帰り」バッジ付きで「新宿〜渋谷」（同じ借方・貸方・金額）が表示され、タップでフォームに反映される |
+| 8 | 7 の帰り候補が表示されている | 「新宿〜渋谷」を登録 | 帰り候補が消える |
 
 ### 2.4 カレンダー
 

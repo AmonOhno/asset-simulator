@@ -55,7 +55,8 @@ export default function TransactionEntryCard({
     [journalAccounts]
   );
 
-  // 新規登録モードでは、直近の仕訳から「よく使う取引入力値セット」を取得してサジェストする
+  // 新規登録モードでは、直近の仕訳から「よく使う取引入力値セット」を取得してサジェストする。
+  // 登録のたびに（count 変化で）再取得し、交通費の行きを入力した直後に帰りの候補を表示する
   useEffect(() => {
     if (isEditMode) return;
     let isMounted = true;
@@ -65,7 +66,7 @@ export default function TransactionEntryCard({
     return () => {
       isMounted = false;
     };
-  }, [isEditMode]);
+  }, [isEditMode, count]);
 
   const applySuggestion = (suggestion: FrequentEntrySet) => {
     setDescription(suggestion.description);
@@ -211,7 +212,7 @@ export default function TransactionEntryCard({
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {suggestions.map((s) => (
                   <button
-                    key={`${s.description}-${s.debitAccountId}-${s.creditAccountId}-${s.amount}`}
+                    key={`${s.isReturnTrip ? "return" : "frequent"}-${s.description}-${s.debitAccountId}-${s.creditAccountId}-${s.amount}`}
                     type="button"
                     onClick={() => applySuggestion(s)}
                     style={{
@@ -230,6 +231,20 @@ export default function TransactionEntryCard({
                     }}
                   >
                     <span style={{ fontWeight: 600 }}>
+                      {s.isReturnTrip && (
+                        <span
+                          style={{
+                            marginRight: 4,
+                            padding: "0 4px",
+                            borderRadius: 4,
+                            background: "#2563EB",
+                            color: "#FFFFFF",
+                            fontSize: 11,
+                          }}
+                        >
+                          帰り
+                        </span>
+                      )}
                       {s.description} ¥{s.amount.toLocaleString()}
                     </span>
                     <span style={{ fontSize: 11, color: "#6B7280" }}>

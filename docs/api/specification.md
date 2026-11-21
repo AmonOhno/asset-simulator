@@ -54,7 +54,7 @@
 | `journal_accounts` | insert | `addJournalAccount` | — | — |
 | `journal_accounts` | update | `updateJournalAccount` | `id`, `user_id` | — |
 | `journal_accounts` | delete | `deleteJournalAccount` | `id`, `user_id` | — |
-| `journal_entries` | select | `fetchFrequentEntrySets`（`packages/shared/src/queries/journalEntries.ts` の純粋クエリ。取引入力サジェスト用の直近仕訳取得） | `user_id = :userId` | `date` 降順（直近200件に limit） |
+| `journal_entries` | select | `fetchFrequentEntrySets`（`packages/shared/src/queries/journalEntries.ts` の純粋クエリ。取引入力サジェスト用の直近仕訳取得） | `user_id = :userId` | `date` 降順・同日は `created_at` 降順（直近200件に limit） |
 | `journal_entries` | insert | `insertRecurringExecution`（定期取引実行時の内部ヘルパー） | — | — |
 | `journal_entries` | update | `updateJournalEntry` | `id`, `user_id` | — |
 | `journal_entries` | delete | `deleteJournalEntry` | `id`, `user_id` | — |
@@ -227,7 +227,7 @@ state に書き込む「取得系」アクションは `fetchXxx` 名で統一�
 | 関数 | シグネチャ | 処理概要 | エラー時挙動 |
 |-----|-----------|---------|-------------|
 | `fetchCalendarJournalEntries` | `(startDate, endDate) => Promise<CalendarJournalEntry[]>` | VIEW `v_journal_entries_for_calendar` を期間指定で取得 | `console.error` して `[]` を返す |
-| `fetchFrequentEntrySets` | `(limit?) => Promise<FrequentEntrySet[]>` | `journal_entries` の直近200件（`FREQUENT_ENTRY_LOOKBACK_COUNT`）から（摘要・借方・貸方・金額）の組み合わせを `aggregateFrequentEntrySets`（`utils/frequentEntries.ts`）で集計し、出現回数順に上位 `limit` 件（デフォルト5）を返す | `console.error` して `[]` を返す |
+| `fetchFrequentEntrySets` | `(limit?) => Promise<FrequentEntrySet[]>` | `journal_entries` の直近200件（`FREQUENT_ENTRY_LOOKBACK_COUNT`）から（摘要・借方・貸方・金額）の組み合わせを `aggregateFrequentEntrySets`（`utils/frequentEntries.ts`）で集計し、出現回数順に上位 `limit` 件（デフォルト5）を返す。さらに摘要が「出発地〜目的地」（区切り: `〜` `～` `~` `→`）の仕訳のうち、同じ借方/貸方で逆方向（目的地〜出発地）がまだ入力されていないもの（交通費の行き）について、帰りのセット（`isReturnTrip: true`、最大2件、新しい行きから順）を `findPendingReturnTrips` で生成して先頭に追加する（`buildEntrySuggestions`） | `console.error` して `[]` を返す |
 
 ### reports.ts
 
