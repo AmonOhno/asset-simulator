@@ -14,8 +14,8 @@ export {
 export type { PeriodPreset, PeriodRange, PeriodSettings } from './utils/period';
 export { isExecutionDate, getNextExecutionDate } from './utils/recurrence';
 export { filterSummaryIncludedRows } from './utils/balanceSheet';
-export { aggregateFrequentEntrySets, findPendingReturnTrips, buildEntrySuggestions, parseRoute } from './utils/frequentEntries';
-export type { FrequentEntrySet, FrequentEntrySource } from './utils/frequentEntries';
+export { aggregateFrequentEntrySets, findPendingReturnTrips, buildEntrySuggestions, parseRoute, buildReturnDescription, normalizePlace } from './utils/frequentEntries';
+export type { FrequentEntrySet, FrequentEntrySource, ParsedRoute } from './utils/frequentEntries';
 export {
     sumGoalActual,
     computeGoalProgress,
